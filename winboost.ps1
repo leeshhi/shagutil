@@ -1,0 +1,916 @@
+Add-Type -AssemblyName System.Windows.Forms
+Add-Type -AssemblyName System.Drawing
+
+# Funktion: Schriftgröße rekursiv auf alle Controls in einem Control setzen
+function Set-FontSizeRecursive {
+    param([System.Windows.Forms.Control]$control, [float]$fontSize)
+
+    # Neue Font mit gleicher Familie und Stil, nur Größe geändert
+    $newFont = New-Object System.Drawing.Font($control.Font.FontFamily, $fontSize, $control.Font.Style)
+    $control.Font = $newFont
+
+    foreach ($child in $control.Controls) {
+        Set-FontSizeRecursive -control $child -fontSize $fontSize
+    }
+}
+
+# Admin Check
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltinRole] "Administrator")) {
+    [System.Windows.Forms.MessageBox]::Show("Please run as Administrator!", "Admin Rights Required", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)
+    exit
+}
+
+# --- Tweaks grouped by categories ---
+$tweakCategories = @(
+    @{
+        Category = "Explorer Settings"
+        Tweaks   = @(
+            @{ Label = "Show file extensions"; RestartNeeded = $false;
+                Enable = { Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "HideFileExt" -Value 0 }
+                Disable = { Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "HideFileExt" -Value 1 }
+                GetState = { ((Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "HideFileExt").HideFileExt -eq 0) }
+                Default = $true
+            },
+            @{ Label = "Show hidden files"; RestartNeeded = $false;
+                Enable = { Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "Hidden" -Value 1 }
+                Disable = { Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "Hidden" -Value 2 }
+                GetState = { ((Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "Hidden").Hidden -eq 1) }
+                Default = $false
+            }
+        )
+    },
+    @{
+        Category = "Search Function"
+        Tweaks   = @(
+            @{ Label = "Disable Explorer search box"; RestartNeeded = $true;
+                Enable = { Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search" -Name "SearchboxTaskbarMode" -Value 0 }
+                Disable = { Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search" -Name "SearchboxTaskbarMode" -Value 1 }
+                GetState = { ((Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search" -Name "SearchboxTaskbarMode").SearchboxTaskbarMode -eq 0) }
+                Default = $false
+            }
+        )
+    }
+)
+
+function Restart-Explorer {
+    Get-Process explorer | Stop-Process -Force
+    Start-Sleep -Seconds 1
+    Start-Process explorer.exe
+}
+
+# Colors
+$darkBackColor = [System.Drawing.Color]::FromArgb(30, 30, 30)
+$darkForeColor = [System.Drawing.Color]::White
+$footerBackColor = [System.Drawing.Color]::FromArgb(50, 50, 50)
+$accentColor = [System.Drawing.Color]::FromArgb(0, 122, 204)
+
+# Form
+$form = New-Object System.Windows.Forms.Form
+$form.Text = "Windows Tweaks Tool by leeshhi (shag.gg) - Comparison"
+$form.Size = New-Object System.Drawing.Size(700, 850)
+$form.StartPosition = "CenterScreen"
+$form.FormBorderStyle = 'FixedDialog'
+$form.MaximizeBox = $false
+$form.MinimizeBox = $false
+$form.BackColor = $darkBackColor
+$form.ForeColor = $darkForeColor
+$form.Font = New-Object System.Drawing.Font("Segoe UI", 11)
+
+# TabControl setup
+$tabControl = New-Object System.Windows.Forms.TabControl
+$tabControl.Dock = 'Fill'
+$tabControl.Font = New-Object System.Drawing.Font("Segoe UI", 14)
+
+# OwnerDraw aktivieren für individuelle Tab-Text-Farbe
+$tabControl.DrawMode = [System.Windows.Forms.TabDrawMode]::OwnerDrawFixed
+
+# DrawItem Event für individuelle Tab-Text-Farbe
+$tabControl.Add_DrawItem({
+        param($sender, $e)
+
+        $tab = $sender.TabPages[$e.Index]
+        $font = $tabControl.Font
+        $text = $tab.Text
+
+        if ($text -eq "Untested") {
+            $color = [System.Drawing.Color]::Red
+        }
+        else {
+            $color = [System.Drawing.Color]::Black
+        }
+
+        # Hole Rechteck für aktuellen Tab
+        $rect = $sender.GetTabRect($e.Index)
+
+        # Falls $rect ein Array ist, erstes Element nehmen
+        if ($rect -is [System.Array]) {
+            $rect = $rect[0]
+        }
+
+        # Hintergrund malen
+        $e.Graphics.FillRectangle([System.Drawing.Brushes]::LightGray, $rect)
+
+        # StringFormat zentriert
+        $sf = New-Object System.Drawing.StringFormat
+        $sf.Alignment = [System.Drawing.StringAlignment]::Center
+        $sf.LineAlignment = [System.Drawing.StringAlignment]::Center
+
+        # Mitte des Rechtecks als PointF
+        $pointX = [float]($rect.X) + ([float]($rect.Width) / 2)
+        $pointY = [float]($rect.Y) + ([float]($rect.Height) / 2)
+        $point = New-Object System.Drawing.PointF($pointX, $pointY)
+
+        # Text zeichnen
+        $brush = New-Object System.Drawing.SolidBrush($color)
+        $e.Graphics.DrawString($text, $font, $brush, $point, $sf)
+        $brush.Dispose()
+    })
+
+$form.Controls.Add($tabControl)
+
+# Tab 1: Home
+
+$tabAdvanced = New-Object System.Windows.Forms.TabPage "Home"
+$tabAdvanced.BackColor = $darkBackColor
+$tabAdvanced.ForeColor = $darkForeColor
+$tabControl.TabPages.Add($tabAdvanced)
+
+# Example Label in Advanced Tab
+$advancedLabel = New-Object System.Windows.Forms.Label
+$advancedLabel.Text = "Soon"
+$advancedLabel.AutoSize = $true
+$advancedLabel.Location = New-Object System.Drawing.Point(15, 15)
+$advancedLabel.ForeColor = $darkForeColor
+$tabAdvanced.Controls.Add($advancedLabel)
+
+# Set font size in $tabAdvanced and all its controls
+Set-FontSizeRecursive -control $tabAdvanced -fontSize 11
+
+# Tab 2: General
+
+$tabTree = New-Object System.Windows.Forms.TabPage "General"
+$tabTree.BackColor = $darkBackColor
+$tabTree.ForeColor = $darkForeColor
+$tabControl.TabPages.Add($tabTree)
+
+$treeView = New-Object System.Windows.Forms.TreeView
+$treeView.Size = New-Object System.Drawing.Size(650, 600)
+$treeView.Location = New-Object System.Drawing.Point(15, 15)
+$treeView.BackColor = $darkBackColor
+$treeView.ForeColor = $darkForeColor
+$treeView.HideSelection = $false
+$treeView.CheckBoxes = $true
+$tabTree.Controls.Add($treeView)
+
+# Status Label (Footer)
+$statusLabel = New-Object System.Windows.Forms.Label
+$statusLabel.Size = New-Object System.Drawing.Size(650, 30)
+$statusLabel.Location = New-Object System.Drawing.Point(15, 620)
+$statusLabel.TextAlign = 'MiddleLeft'
+$statusLabel.Text = "Status: Ready"
+$statusLabel.ForeColor = $darkForeColor
+$statusLabel.BackColor = $footerBackColor
+$tabTree.Controls.Add($statusLabel)
+
+# Progress Bar
+$progressBar = New-Object System.Windows.Forms.ProgressBar
+$progressBar.Size = New-Object System.Drawing.Size(650, 20)
+$progressBar.Location = New-Object System.Drawing.Point(15, 655)
+$progressBar.Visible = $false
+$tabTree.Controls.Add($progressBar)
+
+# Buttons Panel
+$buttonPanel = New-Object System.Windows.Forms.Panel
+$buttonPanel.Size = New-Object System.Drawing.Size(650, 50)
+$buttonPanel.Location = New-Object System.Drawing.Point(15, 685)
+$buttonPanel.BackColor = $darkBackColor
+$tabTree.Controls.Add($buttonPanel)
+
+# Apply Button
+$applyButton = New-Object System.Windows.Forms.Button
+$applyButton.Text = "Apply"
+$applyButton.Size = New-Object System.Drawing.Size(120, 30)
+$applyButton.Location = New-Object System.Drawing.Point(510, 10)
+$applyButton.Enabled = $false
+$applyButton.BackColor = $accentColor
+$applyButton.ForeColor = [System.Drawing.Color]::White
+$buttonPanel.Controls.Add($applyButton)
+
+# Restart Explorer Button
+$restartButton = New-Object System.Windows.Forms.Button
+$restartButton.Text = "Restart Explorer"
+$restartButton.Size = New-Object System.Drawing.Size(150, 30)
+$restartButton.Location = New-Object System.Drawing.Point(340, 10)
+$restartButton.Visible = $false
+$restartButton.BackColor = $accentColor
+$restartButton.ForeColor = [System.Drawing.Color]::White
+$buttonPanel.Controls.Add($restartButton)
+
+# Reset Defaults Button
+$resetButton = New-Object System.Windows.Forms.Button
+$resetButton.Text = "Reset to Default"
+$resetButton.Size = New-Object System.Drawing.Size(180, 30)
+$resetButton.Location = New-Object System.Drawing.Point(10, 10)
+$resetButton.BackColor = $accentColor
+$resetButton.ForeColor = [System.Drawing.Color]::White
+$buttonPanel.Controls.Add($resetButton)
+
+# Checkbox list for tweaks
+$checkboxes = @()
+
+# Fill TreeView with categories and tweaks
+foreach ($category in $tweakCategories) {
+    $nodeCat = New-Object System.Windows.Forms.TreeNode $category.Category
+    $nodeCat.ForeColor = $accentColor
+    foreach ($tweak in $category.Tweaks) {
+        $nodeTweak = New-Object System.Windows.Forms.TreeNode $tweak.Label
+        $nodeTweak.Checked = $false
+        $nodeTweak.Tag = $tweak
+        $nodeCat.Nodes.Add($nodeTweak) | Out-Null
+        $checkboxes += $nodeTweak
+    }
+    $treeView.Nodes.Add($nodeCat) | Out-Null
+}
+
+# Set font size in $tabTree and all its controls (Schriftgröße auf 12)
+Set-FontSizeRecursive -control $tabTree -fontSize 11
+
+# Tab 3: Advanced (empty for now)
+
+$tabAdvanced = New-Object System.Windows.Forms.TabPage "Advanced"
+$tabAdvanced.BackColor = $darkBackColor
+$tabAdvanced.ForeColor = $darkForeColor
+$tabControl.TabPages.Add($tabAdvanced)
+
+# Example Label in Advanced Tab
+$advancedLabel = New-Object System.Windows.Forms.Label
+$advancedLabel.Text = "Advanced tweaks use only if you know what your doing."
+$advancedLabel.AutoSize = $true
+$advancedLabel.Location = New-Object System.Drawing.Point(15, 15)
+$advancedLabel.ForeColor = $darkForeColor
+$tabAdvanced.Controls.Add($advancedLabel)
+
+# Set font size in $tabAdvanced and all its controls
+Set-FontSizeRecursive -control $tabAdvanced -fontSize 11
+
+# (You can add controls to $tabAdvanced later...)
+
+# Tab 4: Downloads
+
+$tabDownloads = New-Object System.Windows.Forms.TabPage "Downloads"
+$tabDownloads.BackColor = $darkBackColor
+$tabDownloads.ForeColor = $darkForeColor
+$tabControl.TabPages.Add($tabDownloads)
+
+# Label oben
+$downloadsLabel = New-Object System.Windows.Forms.Label
+$downloadsLabel.Text = "Select the programs to install via winget:"
+$downloadsLabel.AutoSize = $true
+$downloadsLabel.Location = New-Object System.Drawing.Point(15, 15)
+$downloadsLabel.ForeColor = $darkForeColor
+$tabDownloads.Controls.Add($downloadsLabel)
+
+# Kategorien mit Programmen (Name + winget ID)
+$programCategories = @{
+    "Benchmarks"            = @(
+        @{Name = "AIDA64 Extreme"; Id = "FinalWire.AIDA64.Extreme" },
+        @{Name = "CrystalDiskInfo"; Id = "CrystalDewWorld.CrystalDiskInfo" },
+        @{Name = "Geeks3D FurMark 2"; Id = "Geeks3D.FurMark.2" },
+        @{Name = "OCCT"; Id = "OCBase.OCCT.Personal" }
+    )
+    "Browsers"              = @(
+        @{Name = "Brave"; Id = "Brave.Brave" },
+        @{Name = "Chromium"; Id = "Hibbiki.Chromium" },
+        @{Name = "Google Chrome"; Id = "Google.Chrome" },
+        @{Name = "LibreWolf"; Id = "LibreWolf.LibreWolf" },
+        @{Name = "Mozilla Firefox"; Id = "Mozilla.Firefox" },
+        @{Name = "Mozilla Firefox ESR"; Id = "Mozilla.Firefox.ESR" },
+        @{Name = "Vivaldi"; Id = "Vivaldi.Vivaldi" }
+    )
+    "Communication"         = @(
+        @{Name = "Discord"; Id = "Discord.Discord" },
+        @{Name = "Proton Mail"; Id = "Proton.ProtonMail" },
+        @{Name = "TeamSpeak 3 Client"; Id = "TeamSpeakSystems.TeamSpeakClient" }
+    )
+    "Development"           = @(
+        @{Name = "MongoDB Compass"; Id = "MongoDB.Compass.Full" },
+        @{Name = "Docker Desktop"; Id = "Docker.DockerDesktop" },
+        @{Name = "Git"; Id = "Git.Git" },
+        @{Name = "Node.js"; Id = "OpenJS.NodeJS" },
+        @{Name = "Node.js (LTS)"; Id = "OpenJS.NodeJS.LTS" },
+        @{Name = "Postman"; Id = "Postman.Postman" },
+        @{Name = "Python 3"; Id = "Python.Python.3" },
+        @{Name = "JetBrains Toolbox"; Id = "JetBrains.Toolbox" },
+        @{Name = "Fiddler"; Id = "Progress.Fiddler" },
+        @{Name = "WinSCP"; Id = "WinSCP.WinSCP" },
+        @{Name = "Tabby"; Id = "Eugeny.Tabby" },
+        @{Name = "SmartFTP Client"; Id = "SmartSoft.SmartFTP" }
+    )
+    "Editors"               = @(
+        @{Name = "Cursor"; Id = "Anysphere.Cursor" },
+        @{Name = "Kate"; Id = "KDE.Kate" },
+        @{Name = "Notepad++"; Id = "Notepad++.Notepad++" },
+        @{Name = "Vim"; Id = "vim.vim" },
+        @{Name = "Visual Studio Code"; Id = "Microsoft.VisualStudioCode" },
+        @{Name = "Visual Studio Community 2022"; Id = "Microsoft.VisualStudio.2022.Community" },
+        @{Name = "VSCodium"; Id = "VSCodium.VSCodium" }
+    )
+    "File Management"       = @(
+        @{Name = "7-Zip"; Id = "7zip.7zip" },
+        @{Name = "NanaZip"; Id = "M2Team.NanaZip" },
+        @{Name = "Proton Drive"; Id = "Proton.ProtonDrive" },
+        @{Name = "TeraCopy"; Id = "CodeSector.TeraCopy" },
+        @{Name = "WinRAR"; Id = "RARLab.WinRAR" }
+    )
+    "Gaming"                = @(
+        @{Name = "Crosshair V2"; Id = "9N1K9Q56HVXR" },
+        @{Name = "EA app"; Id = "ElectronicArts.EADesktop" },
+        @{Name = "Epic Games Launcher"; Id = "EpicGames.EpicGamesLauncher" },
+        @{Name = "Steam"; Id = "Valve.Steam" },
+        @{Name = "Ubisoft Connect"; Id = "Ubisoft.Connect" }
+    )
+    "Media"                 = @(
+        @{Name = "K-Lite Codec Pack Standard"; Id = "CodecGuide.K-LiteCodecPack.Standard" },
+        @{Name = "MPV"; Id = "shinchiro.mpv" },
+        @{Name = "VLC media player"; Id = "VideoLAN.VLC" },
+        @{Name = "Kodi"; Id = "XBMCFoundation.Kodi" },
+        @{Name = "Audacity"; Id = "Audacity.Audacity" }
+    )
+    "Misc"                  = @(
+        @{Name = "grepWin"; Id = "StefansTools.grepWin" },
+        @{Name = "NTLite"; Id = "Nlitesoft.NTLite" }
+    )
+    "Streaming"             = @(
+        @{Name = "Chatty"; Id = "Chatty.Chatty" },
+        @{Name = "Chatterino"; Id = "ChatterinoTeam.Chatterino" },
+        @{Name = "Elgato Stream Deck"; Id = "Elgato.StreamDeck" },
+        @{Name = "OBS Studio"; Id = "OBSProject.OBSStudio" },
+        @{Name = "StreamlabsOBS"; Id = "Streamlabs.StreamlabsOBS" },
+        @{Name = "streamer.bot"; Id = "streamerbot.streamerbot" },
+        @{Name = "Twitch Studio"; Id = "Twitch.TwitchStudio" }
+    )
+    "System Tools"          = @(
+        @{Name = "CPU-Z"; Id = "CPUID.CPU-Z" },
+        @{Name = "FanControl"; Id = "Rem0o.FanControl" },
+        @{Name = "HWInfo"; Id = "REALiX.HWiNFO" },
+        @{Name = "PowerToys"; Id = "Microsoft.PowerToys" },
+        @{Name = "Process Lasso"; Id = "BitSum.ProcessLasso" },
+        @{Name = "Revo Uninstaller"; Id = "RevoUninstaller.RevoUninstaller" },
+        @{Name = "Snappy Driver Installer Origin"; Id = "GlennDelahoy.SnappyDriverInstallerOrigin" },
+        @{Name = "Wintoys"; Id = "9P8LTPGCBZXD" },
+        @{Name = "CrystalDiskMark"; Id = "CrystalDewWorld.CrystalDiskMark" },
+        @{Name = "Rufus"; Id = "Rufus.Rufus" }
+    )
+    "Utilities"             = @(
+        @{Name = "EarTrumpet"; Id = "File-New-Project.EarTrumpet" },
+        @{Name = "GIMP"; Id = "GIMP.GIMP.3" },
+        @{Name = "Greenshot"; Id = "Greenshot.Greenshot" },
+        @{Name = "Gyazo"; Id = "Nota.Gyazo" },
+        @{Name = "IrfanView"; Id = "IrfanSkiljan.IrfanView" },
+        @{Name = "Krita"; Id = "KDE.Krita" },
+        @{Name = "Lightshot"; Id = "Skillbrains.Lightshot" },
+        @{Name = "Proton Pass"; Id = "Proton.ProtonPass" },
+        @{Name = "ShareX"; Id = "ShareX.ShareX" },
+        @{Name = "Spotify"; Id = "Spotify.Spotify" },
+        @{Name = "TranslucentTB"; Id = "CharlesMilette.TranslucentTB" }
+    )
+    "Virtualization"        = @(
+        @{Name = "VirtualBox"; Id = "Oracle.VirtualBox" },
+        @{Name = "VMware Workstation Player"; Id = "VMware.WorkstationPlayer" },
+        @{Name = "QEMU"; Id = "qemu.qemu" }
+    )
+    "Package Manager Tools" = @(
+        @{Name = "Scoop"; Id = "ScoopInstaller.Scoop" },
+        @{Name = "Chocolatey"; Id = "Chocolatey.Choco" }
+    )
+}
+
+# Check/Auto install winget =
+# MS Store: App Installer > 9NBLGGH4NNS1
+# github.com/microsoft/winget-cli/releases/latest
+# ==> Bevorzugt: MS Store variante, da es komplett nativ gemacht werden kann ohne extra downloads und temp files
+if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+    [System.Windows.Forms.MessageBox]::Show("winget wurde nicht gefunden. Bitte installieren Sie winget zuerst.", "Fehler", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+    return
+}
+
+# Alle installierten Pakete einmal auslesen (für schnellen Check)
+$installedPackagesRaw = winget list 2>$null
+
+$installedPackages = @()
+foreach ($line in $installedPackagesRaw) {
+    # Header überspringen und nur Zeilen mit 3 oder mehr Spalten betrachten
+    if ($line -match '^\s*Name\s+Id\s+Version') { continue }
+    if ($line -match '^\s*$') { continue }
+
+    # Spalten anhand von 2+ Leerzeichen trennen
+    $cols = $line -split '\s{2,}'
+
+    if ($cols.Length -ge 2) {
+        $installedPackages += $cols[1].Trim()
+    }
+}
+function Test-WingetPackageInstalled {
+    param([string]$packageId)
+    return $installedPackages -contains $packageId
+}
+
+function Update-InstalledProgramsStatus {
+    # Winget-Liste neu abrufen
+    $global:installedPackages = @()
+    $installedPackagesRaw = winget list 2>$null
+
+    foreach ($line in $installedPackagesRaw) {
+        if ($line -match '^\s*Name\s+Id\s+Version') { continue }
+        if ($line -match '^\s*$') { continue }
+        $cols = $line -split '\s{2,}'
+        if ($cols.Length -ge 2) {
+            $installedPackages += $cols[1].Trim()
+        }
+    }
+
+    # Tree aktualisieren
+    foreach ($node in $allProgramNodes) {
+        $pkgId = $node.Tag
+        if (Test-WingetPackageInstalled -packageId $pkgId) {
+            $node.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font.FontFamily, 11, [System.Drawing.FontStyle]::Bold)
+            $node.ForeColor = [System.Drawing.Color]::Green
+        }
+        else {
+            $node.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font.FontFamily, 9, [System.Drawing.FontStyle]::Regular)
+            $node.ForeColor = $darkForeColor
+        }
+    }
+}
+
+# TreeView mit Checkboxen und Kategorien
+$downloadTreeView = New-Object System.Windows.Forms.TreeView
+$downloadTreeView.Size = New-Object System.Drawing.Size(650, 600)
+$downloadTreeView.Location = New-Object System.Drawing.Point(15, 50)
+$downloadTreeView.BackColor = $darkBackColor
+$downloadTreeView.ForeColor = $darkForeColor
+$downloadTreeView.HideSelection = $false
+$downloadTreeView.CheckBoxes = $true
+$tabDownloads.Controls.Add($downloadTreeView)
+
+# Liste aller Programm-Knoten für Statusprüfung
+$allProgramNodes = @()
+
+# Kategorien als Parent-Nodes hinzufügen
+foreach ($category in $programCategories.Keys) {
+    $parentNode = New-Object System.Windows.Forms.TreeNode $category
+    $parentNode.ForeColor = $accentColor
+
+    foreach ($prog in $programCategories[$category]) {
+        $childNode = New-Object System.Windows.Forms.TreeNode $prog.Name
+        $childNode.Tag = $prog.Id
+
+        # Installierte Programme hervorheben (fett + grün)
+        if (Test-WingetPackageInstalled -packageId $prog.Id) {
+            $childNode.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font.FontFamily, 11, [System.Drawing.FontStyle]::Bold)
+            $childNode.ForeColor = [System.Drawing.Color]::Green
+        }
+
+        $parentNode.Nodes.Add($childNode) | Out-Null
+        $allProgramNodes += $childNode
+    }
+
+    $downloadTreeView.Nodes.Add($parentNode) | Out-Null
+}
+
+# --- Buttons ---
+# Install Button
+$installButton = New-Object System.Windows.Forms.Button
+$installButton.Text = "Install"
+$installButton.Size = New-Object System.Drawing.Size(100, 30)
+$installButton.Location = New-Object System.Drawing.Point(15, 660)
+$installButton.BackColor = $accentColor
+$installButton.ForeColor = [System.Drawing.Color]::White
+$installButton.Enabled = $false
+$tabDownloads.Controls.Add($installButton)
+
+# Update Button
+$updateButton = New-Object System.Windows.Forms.Button
+$updateButton.Text = "Update"
+$updateButton.Size = New-Object System.Drawing.Size(100, 30)
+$updateButton.Location = New-Object System.Drawing.Point(130, 660)
+$updateButton.BackColor = $accentColor
+$updateButton.ForeColor = [System.Drawing.Color]::White
+$updateButton.Enabled = $false
+$tabDownloads.Controls.Add($updateButton)
+
+# Uninstall Button
+$uninstallButton = New-Object System.Windows.Forms.Button
+$uninstallButton.Text = "Uninstall"
+$uninstallButton.Size = New-Object System.Drawing.Size(100, 30)
+$uninstallButton.Location = New-Object System.Drawing.Point(245, 660)
+$uninstallButton.BackColor = $accentColor
+$uninstallButton.ForeColor = [System.Drawing.Color]::White
+$uninstallButton.Enabled = $false
+$tabDownloads.Controls.Add($uninstallButton)
+
+# Uncheck All Button
+$uncheckAllButton = New-Object System.Windows.Forms.Button
+$uncheckAllButton.Text = "Uncheck All"
+$uncheckAllButton.Size = New-Object System.Drawing.Size(100, 30)
+$uncheckAllButton.Location = New-Object System.Drawing.Point(360, 660)
+$uncheckAllButton.BackColor = $accentColor
+$uncheckAllButton.ForeColor = [System.Drawing.Color]::White
+$tabDownloads.Controls.Add($uncheckAllButton)
+
+# Status Label
+$statusDownloadLabel = New-Object System.Windows.Forms.Label
+$statusDownloadLabel.Size = New-Object System.Drawing.Size(600, 30)
+$statusDownloadLabel.Location = New-Object System.Drawing.Point(15, 700)
+$statusDownloadLabel.ForeColor = $darkForeColor
+$tabDownloads.Controls.Add($statusDownloadLabel)
+
+# Progress Bar
+$downloadProgressBar = New-Object System.Windows.Forms.ProgressBar
+$downloadProgressBar.Size = New-Object System.Drawing.Size(600, 20)
+$downloadProgressBar.Location = New-Object System.Drawing.Point(15, 730)
+$downloadProgressBar.Visible = $false
+$tabDownloads.Controls.Add($downloadProgressBar)
+
+# Variable zum Verhindern von rekursiven Events
+$global:IgnoreCheckEventDownloads = $false
+
+# Funktion zum Status der Auswahl (installiert / nicht installiert)
+function Get-SelectedInstallStatus {
+    $selected = $allProgramNodes | Where-Object { $_.Checked }
+    $installed = @()
+    $notInstalled = @()
+
+    foreach ($node in $selected) {
+        if (Test-WingetPackageInstalled -packageId $node.Tag) {
+            $installed += $node
+        }
+        else {
+            $notInstalled += $node
+        }
+    }
+    return [PSCustomObject]@{
+        Installed    = $installed
+        NotInstalled = $notInstalled
+        AllSelected  = $selected
+    }
+}
+
+# Eventhandler: wenn Parent-Node angeklickt wird, alle Kinder selektieren/deselektieren
+$downloadTreeView.Add_AfterCheck({
+        param($sender, $e)
+
+        if ($global:IgnoreCheckEventDownloads) { return }
+        $global:IgnoreCheckEventDownloads = $true
+
+        if ($e.Node.Nodes.Count -gt 0) {
+            foreach ($child in $e.Node.Nodes) {
+                $child.Checked = $e.Node.Checked
+            }
+        }
+        else {
+            $parent = $e.Node.Parent
+            if ($parent -ne $null) {
+                $uncheckedCount = ($parent.Nodes | Where-Object { -not $_.Checked } | Measure-Object).Count
+                $parent.Checked = ($uncheckedCount -eq 0)
+            }
+        }
+
+        # Prüfe wie viele Programme ausgewählt sind und ob installiert oder nicht
+        $status = Get-SelectedInstallStatus
+        $countInstalled = $status.Installed.Count
+        $countNotInstalled = $status.NotInstalled.Count
+        $countTotal = $status.AllSelected.Count
+
+        # Buttons immer sichtbar
+        $installButton.Visible = $true
+        $updateButton.Visible = $true
+        $uninstallButton.Visible = $true
+
+        if ($countTotal -eq 0) {
+            $installButton.Enabled = $false
+            $updateButton.Enabled = $false
+            $uninstallButton.Enabled = $false
+            $installButton.Text = "Install"
+        }
+        elseif ($countInstalled -eq $countTotal -and $countTotal -gt 0) {
+            # Nur installierte Programme ausgewählt
+            $installButton.Enabled = $false
+            $updateButton.Enabled = $true
+            $uninstallButton.Enabled = $true
+        }
+        elseif ($countNotInstalled -eq $countTotal) {
+            # Nur nicht installierte Programme ausgewählt
+            $installButton.Enabled = $true
+            $updateButton.Enabled = $false
+            $uninstallButton.Enabled = $false
+            $installButton.Text = "Install"
+        }
+        else {
+            # Mischung → Install/Update aktiv, Uninstall deaktiviert
+            $installButton.Enabled = $true
+            $installButton.Text = "Install/Update"
+            $updateButton.Enabled = $false
+            $uninstallButton.Enabled = $false
+        }
+
+        $global:IgnoreCheckEventDownloads = $false
+    })
+
+# Funktion zum Installieren per winget (installiert oder updated)
+function Install-WingetProgram {
+    param([string]$packageId)
+
+    $statusDownloadLabel.Text = "Installing/Updating $packageId..."
+    $downloadProgressBar.Visible = $true
+    $downloadProgressBar.Style = 'Marquee'
+    $form.Refresh()
+
+    $process = Start-Process -FilePath "winget" -ArgumentList "install --id $packageId --accept-source-agreements --accept-package-agreements -h" -NoNewWindow -PassThru -Wait
+
+    $downloadProgressBar.Visible = $false
+
+    if ($process.ExitCode -eq 0) {
+        $statusDownloadLabel.Text = "$packageId installed/updated successfully."
+        return $true
+    }
+    else {
+        $statusDownloadLabel.Text = "Failed to install/update $packageId."
+        return $false
+    }
+}
+
+function Install-OrUpdate {
+    param([System.Windows.Forms.TreeNode[]]$nodes)
+
+    $downloadProgressBar.Style = 'Continuous'
+    $downloadProgressBar.Minimum = 0
+    $downloadProgressBar.Maximum = $nodes.Count
+    $downloadProgressBar.Value = 0
+    $downloadProgressBar.Visible = $true
+
+    foreach ($node in $nodes) {
+        $pkgId = $node.Tag
+        $statusDownloadLabel.Text = "Installing/Updating $($node.Text)..."
+        $form.Refresh()
+        $result = Install-WingetProgram -packageId $pkgId
+        if (-not $result) {
+            [System.Windows.Forms.MessageBox]::Show("Installation/Update of $($node.Text) failed. Aborting.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+            break
+        }
+        $downloadProgressBar.Value++
+    }
+    $downloadProgressBar.Visible = $false
+    $statusDownloadLabel.Text = "Install/Update process completed."
+    Update-InstalledProgramsStatus
+}
+
+function Uninstall-Programs {
+    param([System.Windows.Forms.TreeNode[]]$nodes)
+
+    $downloadProgressBar.Style = 'Continuous'
+    $downloadProgressBar.Minimum = 0
+    $downloadProgressBar.Maximum = $nodes.Count
+    $downloadProgressBar.Value = 0
+    $downloadProgressBar.Visible = $true
+
+    foreach ($node in $nodes) {
+        $pkgId = $node.Tag
+        $statusDownloadLabel.Text = "Uninstalling $($node.Text)..."
+        $form.Refresh()
+
+        $process = Start-Process -FilePath "winget" -ArgumentList "uninstall --id $pkgId -h" -NoNewWindow -PassThru -Wait
+        if ($process.ExitCode -eq 0) {
+            $statusDownloadLabel.Text = "$($node.Text) uninstalled successfully."
+        }
+        else {
+            [System.Windows.Forms.MessageBox]::Show("Uninstallation of $($node.Text) failed.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+            break
+        }
+        $downloadProgressBar.Value++
+    }
+    $downloadProgressBar.Visible = $false
+    $statusDownloadLabel.Text = "Uninstall process completed."
+    Update-InstalledProgramsStatus
+}
+
+# Klick-Events der Buttons
+$installButton.Add_Click({
+        $status = Get-SelectedInstallStatus
+        $toInstallOrUpdate = $status.AllSelected
+        if ($toInstallOrUpdate.Count -eq 0) {
+            $statusDownloadLabel.Text = "No program selected."
+            return
+        }
+        Install-OrUpdate -nodes $toInstallOrUpdate
+    })
+
+$updateButton.Add_Click({
+        $status = Get-SelectedInstallStatus
+        $toUpdate = $status.Installed
+        if ($toUpdate.Count -eq 0) {
+            $statusDownloadLabel.Text = "No installed program selected for update."
+            return
+        }
+        Install-OrUpdate -nodes $toUpdate
+    })
+
+$uninstallButton.Add_Click({
+        $status = Get-SelectedInstallStatus
+        $toUninstall = $status.Installed
+        if ($toUninstall.Count -eq 0) {
+            $statusDownloadLabel.Text = "No installed program selected for uninstall."
+            return
+        }
+        Uninstall-Programs -nodes $toUninstall
+    })
+
+$uncheckAllButton.Add_Click({
+        $global:IgnoreCheckEventDownloads = $true
+    
+        foreach ($parentNode in $downloadTreeView.Nodes) {
+            # Alle Kinder unchecken
+            foreach ($childNode in $parentNode.Nodes) {
+                $childNode.Checked = $false
+            }
+            # Parent auch unchecken
+            $parentNode.Checked = $false
+        }
+    
+        # Buttons deaktivieren
+        $installButton.Enabled = $false
+        $updateButton.Enabled = $false
+        $uninstallButton.Enabled = $false
+    
+        $statusDownloadLabel.Text = "All selections cleared."
+    
+        $global:IgnoreCheckEventDownloads = $false
+    })
+
+# Schriftgröße anpassen
+Set-FontSizeRecursive -control $tabDownloads -fontSize 11
+
+# Tab 5: Untested
+
+$tabUntested = New-Object System.Windows.Forms.TabPage "Untested"
+$tabUntested.BackColor = $darkBackColor
+$tabUntested.ForeColor = $darkForeColor
+$tabControl.TabPages.Add($tabUntested)
+
+# Example Label in Untested Tab
+$untestedLabel = New-Object System.Windows.Forms.Label
+$untestedLabel.Text = "These tweaks are untested and experimental."
+$untestedLabel.AutoSize = $true
+$untestedLabel.Location = New-Object System.Drawing.Point(15, 15)
+$untestedLabel.ForeColor = $darkForeColor
+$tabUntested.Controls.Add($untestedLabel)
+
+# Set font size in $tabUntested and all its controls
+Set-FontSizeRecursive -control $tabUntested -fontSize 11
+
+# (Optional) You can add controls like checkboxes, buttons here similarly
+
+# Functions
+
+function Sync-TweakStates {
+    $hasChangesLocal = $false
+    $restartNeededLocal = $false
+    foreach ($node in $checkboxes) {
+        $tweak = $node.Tag
+        try {
+            $currentState = & $tweak.GetState
+        }
+        catch {
+            $currentState = $false
+        }
+        $node.Checked = $currentState
+
+        if ($node.Checked -ne $tweak.Default) {
+            $hasChangesLocal = $true
+            if ($tweak.RestartNeeded) { $restartNeededLocal = $true }
+        }
+    }
+    $global:hasChanges = $hasChangesLocal
+    $global:restartNeeded = $restartNeededLocal
+    UpdateButtons
+    if (-not $hasChangesLocal) {
+        $statusLabel.Text = "Status: All settings are at default."
+    }
+    else {
+        $statusLabel.Text = "Status: Changes detected, please apply."
+    }
+}
+
+function UpdateButtons {
+    $applyButton.Enabled = $hasChanges
+    $restartButton.Visible = $restartNeeded
+}
+
+# TreeView AfterCheck event - sync child nodes and update parent states
+$treeView.Add_AfterCheck({
+        param($sender, $e)
+
+        if ($global:IgnoreCheckEvent) { return }
+        $global:IgnoreCheckEvent = $true
+
+        if ($e.Node.Tag -eq $null) {
+            # Category checked/unchecked - check/uncheck all children accordingly
+            foreach ($child in $e.Node.Nodes) {
+                $child.Checked = $e.Node.Checked
+            }
+        }
+        else {
+            # Single tweak checked/unchecked - update parent category state
+            $parent = $e.Node.Parent
+            if ($parent -ne $null) {
+                $allChecked = $true
+                $allUnchecked = $true
+                foreach ($child in $parent.Nodes) {
+                    if ($child.Checked) { $allUnchecked = $false } else { $allChecked = $false }
+                }
+                if ($allChecked) {
+                    $parent.Checked = $true
+                    $parent.StateImageIndex = -1
+                }
+                elseif ($allUnchecked) {
+                    $parent.Checked = $false
+                    $parent.StateImageIndex = -1
+                }
+                else {
+                    $parent.Checked = $false
+                }
+            }
+        }
+
+        $global:hasChanges = $true
+
+        $restartNeededLocal = $false
+        foreach ($node in $checkboxes) {
+            if ($node.Checked -ne $node.Tag.Default -and $node.Tag.RestartNeeded) {
+                $restartNeededLocal = $true
+                break
+            }
+        }
+        $global:restartNeeded = $restartNeededLocal
+
+        $statusLabel.Text = "Status: Changes not applied yet."
+        UpdateButtons
+
+        $global:IgnoreCheckEvent = $false
+    })
+
+# Apply button click
+$applyButton.Add_Click({
+        try {
+            $statusLabel.Text = "Status: Applying tweaks..."
+            $progressBar.Visible = $true
+            $progressBar.Minimum = 0
+            $progressBar.Maximum = $checkboxes.Count
+            $progressBar.Value = 0
+            $form.Refresh()
+
+            for ($i = 0; $i -lt $checkboxes.Count; $i++) {
+                $node = $checkboxes[$i]
+                $tweak = $node.Tag
+                if ($node.Checked) {
+                    & $tweak.Enable
+                }
+                else {
+                    & $tweak.Disable
+                }
+                $progressBar.Value = $i + 1
+                $form.Refresh()
+            }
+
+            $progressBar.Visible = $false
+            Sync-TweakStates
+            $statusLabel.Text = "Status: Tweaks applied."
+        }
+        catch {
+            [System.Windows.Forms.MessageBox]::Show("An error occurred while applying tweaks: $_", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+            $progressBar.Visible = $false
+        }
+    })
+
+# Restart Explorer button click
+$restartButton.Add_Click({
+        Restart-Explorer
+        $restartButton.Visible = $false
+        $statusLabel.Text = "Status: Explorer restarted."
+    })
+
+# Reset button click
+$resetButton.Add_Click({
+        foreach ($node in $checkboxes) {
+            $node.Checked = $node.Tag.Default
+        }
+        $statusLabel.Text = "Status: Reset to default."
+        $global:hasChanges = $true
+        UpdateButtons
+    })
+
+# Initial sync
+Sync-TweakStates
+
+# Show form
+[void] $form.ShowDialog()

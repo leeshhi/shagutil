@@ -1,7 +1,7 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
-$scriptVersion = "0.0.2"
+$scriptVersion = "0.0.1"
 
 # Funktion: Schriftgröße rekursiv auf alle Controls in einem Control setzen
 function Set-FontSizeRecursive {
@@ -280,7 +280,7 @@ $form.Add_Load({
     # Zeige die MessageBox basierend auf dem Ergebnis an
     if ($updateInfo.UpdateAvailable) {
         [System.Windows.Forms.MessageBox]::Show(
-            "Eine neue Version ($($updateInfo.RemoteVersion)) ist verfügbar! Deine aktuelle Version ist $($updateInfo.CurrentVersion). Bitte aktualisiere dein Tool." + "`n`n" + "Besuche: $($updateInfo.RepoLink)",
+            "Eine neue Version ($($updateInfo.RemoteVersion)) ist verfügbar! Deine aktuelle Version ist $($updateInfo.CurrentVersion). Bitte aktualisiere dein Tool." + "`n`n" + "Führe den start befehl erneut aus!",
             "Update verfügbar!",
             [System.Windows.Forms.MessageBoxButtons]::OK,
             [System.Windows.Forms.MessageBoxIcon]::Information

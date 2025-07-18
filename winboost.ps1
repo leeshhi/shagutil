@@ -1,13 +1,30 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
-$scriptVersion = "0.0.2"
+$scriptVersion = "0.0.3"
 
 # Admin Check
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltinRole] "Administrator")) {
+    # GEÄNDERT: Nachricht und Icon der MessageBox
     [System.Windows.Forms.MessageBox]::Show("Dieses Skript muss als Administrator ausgeführt werden. Bitte starten Sie PowerShell oder die Skriptdatei erneut mit Administratorrechten.", "Administratorrechte erforderlich", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Stop)
     exit
 }
+
+# Welcome Message (NEU HINZUGEFÜGT)
+Write-Host "██╗    ██╗ ██████╗ ██╗  ██╗██████╗  ██████╗ ███████╗ ██████╗████████╗" -ForegroundColor Cyan
+Write-Host "██║    ██║██╔═══██╗██║  ██║██╔══██╗██╔═══██╗██╔════╝██╔════╝╚══██╔══╝" -ForegroundColor Cyan
+Write-Host "██║ █╗ ██║██║   ██║███████║██████╔╝██║   ██║█████╗  ██║        ██║   " -ForegroundColor Cyan
+Write-Host "██║███╗██║██║   ██║██╔══██║██╔══██╗██║   ██║██╔══╝  ██║        ██║   " -ForegroundColor Cyan
+Write-Host "╚███╔███╔╝╚██████╔╝██║  ██║██║  ██║╚██████╔╝███████╗╚██████╗   ██║   " -ForegroundColor Cyan
+Write-Host " ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝ ╚═════╝   ╚═╝   " -ForegroundColor Cyan
+Write-Host ""
+Write-Host "*********************************************" -ForegroundColor Green
+Write-Host "* Welcome to WinBoost v$scriptVersion!        *" -ForegroundColor Green
+Write-Host "* Optimizing your Windows experience.      *" -ForegroundColor Green
+Write-Host "* *" -ForegroundColor Green
+Write-Host "* Script by leeshhi (shag.gg)              *" -ForegroundColor Green
+Write-Host "*********************************************" -ForegroundColor Green
+Write-Host ""
 
 # Funktion: Schriftgröße rekursiv auf alle Controls in einem Control setzen
 function Set-FontSizeRecursive {
@@ -107,17 +124,6 @@ function Get-BiosInfo {
     "BIOS: $($bios.Caption) Version $($bios.SMBIOSBIOSVersion) (Date: $($bios.ReleaseDate))"
 }
 
-function Get-DriveInfo {
-    $cDrive = Get-CimInstance Win32_LogicalDisk | Where-Object { $_.DeviceID -eq 'C:' }
-    if ($cDrive) {
-        $totalGB = [Math]::Round(($cDrive.Size / 1GB), 2)
-        $freeGB = [Math]::Round(($cDrive.FreeSpace / 1GB), 2)
-        "Drive C: ${freeGB}GB Free of ${totalGB}GB Total"
-    } else {
-        "Drive C: Not found"
-    }
-}
-
 function Get-NetworkInfo {
     $computerName = $env:COMPUTERNAME
     # Ping-Test entfernt, wie gewünscht, um den Start zu beschleunigen
@@ -138,7 +144,6 @@ function Get-AndDisplayAllSystemInfo {
         (Get-GpuInfo),
         (Get-MotherboardInfo),
         (Get-BiosInfo),
-        (Get-DriveInfo),
         (Get-NetworkInfo) # NetworkInfo gibt ein Array zurück
     )
 
@@ -279,14 +284,16 @@ $form.Add_Load({
 
     # Zeige die MessageBox basierend auf dem Ergebnis an
     if ($updateInfo.UpdateAvailable) {
-        [System.Windows.Forms.MessageBox]::Show(
-            "Eine neue Version ($($updateInfo.RemoteVersion)) ist verfügbar! Deine aktuelle Version ist $($updateInfo.CurrentVersion). Bitte aktualisiere dein Tool." + "`n`n" + "Führe den start befehl erneut aus!",
-            "Update verfügbar!",
-            [System.Windows.Forms.MessageBoxButtons]::OK,
-            [System.Windows.Forms.MessageBoxIcon]::Information
-        )
+        # GEÄNDERT: Statt MessageBox, eine Konsolennachricht bei verfügbarem Update
+        Write-Host ">>> UPDATE VERFÜGBAR! <<<" -ForegroundColor Yellow -BackgroundColor Red
+        Write-Host "Eine neue Version ($($updateInfo.RemoteVersion)) ist verfügbar!" -ForegroundColor Yellow
+        Write-Host "Deine aktuelle Version ist $($updateInfo.CurrentVersion)." -ForegroundColor Yellow
+        Write-Host "Bitte aktualisiere dein Tool über den GitHub Link: $($updateInfo.RepoLink)" -ForegroundColor Yellow # RepoLink wird von Check-ForUpdates zurückgegeben
+        Write-Host "Führe den Startbefehl erneut aus, um die neue Version zu nutzen." -ForegroundColor Yellow
+        Write-Host "*********************************************" -ForegroundColor Yellow
+        Write-Host ""
     } elseif ($updateInfo.Error) {
-        # Zeige Fehler an, falls beim Update-Check etwas schief ging
+        # Zeige Fehler an, falls beim Update-Check etwas schief ging (Diese MessageBox bleibt)
         [System.Windows.Forms.MessageBox]::Show(
             "Fehler beim Überprüfen auf Updates: $($updateInfo.Error)",
             "Update-Fehler",

@@ -215,7 +215,7 @@ $accentColor = [System.Drawing.Color]::FromArgb(0, 122, 204)
 
 # Form
 $form = New-Object System.Windows.Forms.Form
-$form.Text = "Windows Tweaks Tool by leeshhi (shag.gg) - Comparison"
+$form.Text = "Windows Tweaks Tool by leeshhi (shag.gg) - Version $scriptVersion"
 $form.Size = New-Object System.Drawing.Size(700, 850)
 $form.StartPosition = "CenterScreen"
 $form.FormBorderStyle = 'FixedDialog'
@@ -280,20 +280,19 @@ $form.Controls.Add($tabControl)
 
 $form.Add_Load({
     # Führe den Update-Check aus
-    $updateInfo = Check-ForUpdates
+    [void]$updateInfo = Check-ForUpdates # Hinzugefügt: [void] um die Ausgabe zu unterdrücken
 
-    # Zeige die MessageBox basierend auf dem Ergebnis an
+    # Zeige die entsprechende Nachricht basierend auf dem Ergebnis an
     if ($updateInfo.UpdateAvailable) {
-        # GEÄNDERT: Statt MessageBox, eine Konsolennachricht bei verfügbarem Update
         Write-Host ">>> UPDATE VERFÜGBAR! <<<" -ForegroundColor Yellow -BackgroundColor Red
         Write-Host "Eine neue Version ($($updateInfo.RemoteVersion)) ist verfügbar!" -ForegroundColor Yellow
         Write-Host "Deine aktuelle Version ist $($updateInfo.CurrentVersion)." -ForegroundColor Yellow
-        Write-Host "Bitte aktualisiere dein Tool über den GitHub Link: $($updateInfo.RepoLink)" -ForegroundColor Yellow # RepoLink wird von Check-ForUpdates zurückgegeben
+        Write-Host "Bitte aktualisiere dein Tool über den GitHub Link: $($updateInfo.RepoLink)" -ForegroundColor Yellow
         Write-Host "Führe den Startbefehl erneut aus, um die neue Version zu nutzen." -ForegroundColor Yellow
         Write-Host "*********************************************" -ForegroundColor Yellow
         Write-Host ""
     } elseif ($updateInfo.Error) {
-        # Zeige Fehler an, falls beim Update-Check etwas schief ging (Diese MessageBox bleibt)
+        # Zeige Fehler an, falls beim Update-Check etwas schief ging
         [System.Windows.Forms.MessageBox]::Show(
             "Fehler beim Überprüfen auf Updates: $($updateInfo.Error)",
             "Update-Fehler",

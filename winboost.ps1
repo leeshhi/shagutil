@@ -42,7 +42,7 @@ function Set-FontSizeRecursive {
 function Check-ForUpdates {
     param(
         [string]$currentVersion = $scriptVersion, # Nimmt die aktuelle Skriptversion an
-        [string]$githubRawUrl = "https://raw.githubusercontent.com/leeshhi/winboost/main/version.txt" # Deine GitHub Raw URL
+        [string]$githubRawUrl = "https://raw.githubusercontent.com/leeshhi/winboost/main/version.txt"
     )
 
     try {
@@ -64,7 +64,7 @@ function Check-ForUpdates {
             }
         } else {
             # Keine neuere Version
-            return @{ UpdateAvailable = $false }
+            #return @{ UpdateAvailable = $false }
         }
     }
     catch {

@@ -17,12 +17,12 @@ Write-Host "█████   █████   █████ █ ███   
 Write-Host "    █   █   █   █   █ █   █     █   █ █   █" -ForegroundColor Cyan
 Write-Host "█████   █   █   █   █ █████ █   █████ █████" -ForegroundColor Cyan
 Write-Host ""
-Write-Host "*********************************************" -ForegroundColor Green
-Write-Host "* Welcome to WinBoost v$scriptVersion!      *" -ForegroundColor Green
-Write-Host "* Optimizing your Windows experience.       *" -ForegroundColor Green
-Write-Host "*                                           *" -ForegroundColor Green
-Write-Host "* Script by leeshhi                         *" -ForegroundColor Green
-Write-Host "*********************************************" -ForegroundColor Green
+Write-Host "*********************************************" -ForegroundColor White
+Write-Host "* Welcome to WinBoost v$scriptVersion!      *" -ForegroundColor White
+Write-Host "* Optimizing your Windows experience.       *" -ForegroundColor White
+Write-Host "*                                           *" -ForegroundColor White
+Write-Host "* Script by leeshhi                         *" -ForegroundColor White
+Write-Host "*********************************************" -ForegroundColor White
 Write-Host ""
 Write-Host ""
 

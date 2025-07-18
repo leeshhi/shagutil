@@ -10,20 +10,19 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
     exit
 }
 
-# Welcome Message (NEU HINZUGEFÜGT)
-Write-Host "██╗    ██╗ ██████╗ ██╗  ██╗██████╗  ██████╗ ███████╗ ██████╗████████╗" -ForegroundColor Cyan
-Write-Host "██║    ██║██╔═══██╗██║  ██║██╔══██╗██╔═══██╗██╔════╝██╔════╝╚══██╔══╝" -ForegroundColor Cyan
-Write-Host "██║ █╗ ██║██║   ██║███████║██████╔╝██║   ██║█████╗  ██║        ██║   " -ForegroundColor Cyan
-Write-Host "██║███╗██║██║   ██║██╔══██║██╔══██╗██║   ██║██╔══╝  ██║        ██║   " -ForegroundColor Cyan
-Write-Host "╚███╔███╔╝╚██████╔╝██║  ██║██║  ██║╚██████╔╝███████╗╚██████╗   ██║   " -ForegroundColor Cyan
-Write-Host " ╚══╝╚══╝  ╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝ ╚═════╝   ╚═╝   " -ForegroundColor Cyan
+# Welcome Message (GEÄNDERT: 'shag.gg' ASCII Art)
+Write-Host "█████   █   █    ███  █████     █████ █████" -ForegroundColor Cyan
+Write-Host "█       █   █   █   █ █         █     █" -ForegroundColor Cyan
+Write-Host "█████   █████   █████ █ ███     █ ███ █ ███" -ForegroundColor Cyan
+Write-Host "    █   █   █   █   █ █   █     █   █ █   █" -ForegroundColor Cyan
+Write-Host "█████   █   █   █   █ █████ █   █████ █████" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "*********************************************" -ForegroundColor Green
-Write-Host "* Welcome to WinBoost v$scriptVersion!        *" -ForegroundColor Green
-Write-Host "* Optimizing your Windows experience.      *" -ForegroundColor Green
-Write-Host "* *" -ForegroundColor Green
-Write-Host "* Script by leeshhi (shag.gg)              *" -ForegroundColor Green
-Write-Host "*********************************************" -ForegroundColor Green
+Write-Host "* Welcome to WinBoost v$scriptVersion!       *" -ForegroundColor Green
+Write-Host "* Optimizing your Windows experience.        *" -ForegroundColor Green
+Write-Host "*                                            *" -ForegroundColor Green
+Write-Host "* Script by leeshhi                          *" -ForegroundColor Green
+Write-Host "**********************************************" -ForegroundColor Green
 Write-Host ""
 
 # Funktion: Schriftgröße rekursiv auf alle Controls in einem Control setzen
@@ -215,7 +214,7 @@ $accentColor = [System.Drawing.Color]::FromArgb(0, 122, 204)
 
 # Form
 $form = New-Object System.Windows.Forms.Form
-$form.Text = "Windows Tweaks Tool by leeshhi (shag.gg) - Version $scriptVersion"
+$form.Text = "Windows Tweaks Tool by leeshhi - Version $scriptVersion"
 $form.Size = New-Object System.Drawing.Size(700, 850)
 $form.StartPosition = "CenterScreen"
 $form.FormBorderStyle = 'FixedDialog'

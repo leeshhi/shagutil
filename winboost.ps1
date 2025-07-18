@@ -18,11 +18,12 @@ Write-Host "    █   █   █   █   █ █   █     █   █ █   █" -
 Write-Host "█████   █   █   █   █ █████ █   █████ █████" -ForegroundColor Cyan
 Write-Host ""
 Write-Host "*********************************************" -ForegroundColor Green
-Write-Host "* Welcome to WinBoost v$scriptVersion!       *" -ForegroundColor Green
-Write-Host "* Optimizing your Windows experience.        *" -ForegroundColor Green
-Write-Host "*                                            *" -ForegroundColor Green
-Write-Host "* Script by leeshhi                          *" -ForegroundColor Green
-Write-Host "**********************************************" -ForegroundColor Green
+Write-Host "* Welcome to WinBoost v$scriptVersion!      *" -ForegroundColor Green
+Write-Host "* Optimizing your Windows experience.       *" -ForegroundColor Green
+Write-Host "*                                           *" -ForegroundColor Green
+Write-Host "* Script by leeshhi                         *" -ForegroundColor Green
+Write-Host "*********************************************" -ForegroundColor Green
+Write-Host ""
 Write-Host ""
 
 # Funktion: Schriftgröße rekursiv auf alle Controls in einem Control setzen

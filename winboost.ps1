@@ -20,7 +20,6 @@ Write-Host ""
 Write-Host "*********************************************" -ForegroundColor White
 Write-Host "* Welcome to WinBoost v$scriptVersion!      *" -ForegroundColor White
 Write-Host "* Optimizing your Windows experience.       *" -ForegroundColor White
-Write-Host "*                                           *" -ForegroundColor White
 Write-Host "* Script by leeshhi                         *" -ForegroundColor White
 Write-Host "*********************************************" -ForegroundColor White
 Write-Host ""
@@ -64,7 +63,7 @@ function Check-ForUpdates {
             }
         } else {
             # Keine neuere Version
-            #return @{ UpdateAvailable = $false }
+            return @{ UpdateAvailable = $false }
         }
     }
     catch {
@@ -287,7 +286,7 @@ $form.Add_Load({
         Write-Host "Deine aktuelle Version ist $($updateInfo.CurrentVersion)." -ForegroundColor Yellow
         Write-Host "Bitte aktualisiere dein Tool über den GitHub Link: $($updateInfo.RepoLink)" -ForegroundColor Yellow
         Write-Host "Führe den Startbefehl erneut aus, um die neue Version zu nutzen." -ForegroundColor Yellow
-        Write-Host "*********************************************" -ForegroundColor Yellow
+        Write-Host "*********************************************" -ForegroundColor White
         Write-Host ""
     } elseif ($updateInfo.Error) {
         # Zeige Fehler an, falls beim Update-Check etwas schief ging

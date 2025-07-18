@@ -1,7 +1,13 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
-$scriptVersion = "0.0.1"
+$scriptVersion = "0.0.2"
+
+# Admin Check
+if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltinRole] "Administrator")) {
+    [System.Windows.Forms.MessageBox]::Show("Dieses Skript muss als Administrator ausgeführt werden. Bitte starten Sie PowerShell oder die Skriptdatei erneut mit Administratorrechten.", "Administratorrechte erforderlich", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Stop)
+    exit
+}
 
 # Funktion: Schriftgröße rekursiv auf alle Controls in einem Control setzen
 function Set-FontSizeRecursive {
@@ -156,12 +162,6 @@ function Get-AndDisplayAllSystemInfo {
             $yPos += 25
         }
     }
-}
-
-# Admin Check
-if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltinRole] "Administrator")) {
-    [System.Windows.Forms.MessageBox]::Show("Please run as Administrator!", "Admin Rights Required", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)
-    exit
 }
 
 # --- Tweaks grouped by categories ---

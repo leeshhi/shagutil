@@ -38,7 +38,6 @@ function Set-FontSizeRecursive {
     }
 }
 
-# --- FUNKTION FÜR UPDATE CHECK ---
 function Check-ForUpdates {
     param(
         [string]$currentVersion = $scriptVersion, # Nimmt die aktuelle Skriptversion an
@@ -75,7 +74,6 @@ function Check-ForUpdates {
         }
     }
 }
-# --- END FUNKTION FÜR UPDATE CHECK ---
 
 function Get-OsInfo {
     $os = Get-CimInstance Win32_OperatingSystem
@@ -279,7 +277,7 @@ $form.Controls.Add($tabControl)
 
 $form.Add_Load({
     # Führe den Update-Check aus
-    [void]$updateInfo = Check-ForUpdates # Hinzugefügt: [void] um die Ausgabe zu unterdrücken
+    $updateInfo = Check-ForUpdates # Korrigiert: "[void]" von der linken Seite entfernt
 
     # Zeige die entsprechende Nachricht basierend auf dem Ergebnis an
     if ($updateInfo.UpdateAvailable) {
@@ -299,6 +297,7 @@ $form.Add_Load({
             [System.Windows.Forms.MessageBoxIcon]::Warning
         )
     }
+    $null # Hinzugefügt: Unterdrückt die implizite Ausgabe des letzten Ausdrucks im Block
 })
 
 # Tab 1: Home

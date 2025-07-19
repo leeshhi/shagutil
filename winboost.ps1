@@ -2,7 +2,7 @@ Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Security
 
-$scriptVersion = "0.0.5"
+$scriptVersion = "0.0.6"
 
 #region 1. Initial Script Setup & Admin Check
 
@@ -329,6 +329,37 @@ function Get-AndDisplayAllSystemInfo {
             $yPos += 25
         }
     }
+}
+
+function Initialize-HomeTabContent {
+    # Zuerst alle dynamischen Controls im Panel entfernen, den Titel aber beibehalten
+    # (Der systemInfoTitle ist das Label "System Information" und soll bleiben)
+    $controlsToRemove = $systemInfoPanel.Controls | Where-Object { $_ -ne $systemInfoTitle }
+    foreach ($control in $controlsToRemove) {
+        $systemInfoPanel.Controls.Remove($control)
+        $control.Dispose() # Ressourcen freigeben
+    }
+
+    # Temporären Lade-Label hinzufügen
+    $loadingLabel = New-Object System.Windows.Forms.Label
+    $loadingLabel.Text = "Loading system information, please wait..."
+    $loadingLabel.AutoSize = $true
+    $loadingLabel.Location = New-Object System.Drawing.Point(10, 40) # Position unter dem Titel
+    $loadingLabel.ForeColor = [System.Drawing.Color]::Gray # Eine dezentere Farbe
+    $systemInfoPanel.Controls.Add($loadingLabel)
+
+    # Das Formular aktualisieren, damit der Lade-Text sofort sichtbar wird
+    $form.Refresh()
+
+    # Eine kurze Pause, damit der Benutzer den Lade-Text sehen kann
+    Start-Sleep -Milliseconds 1000 # Dies kann angepasst werden (z.B. 100 für längere Anzeige)
+
+    # Lade-Label wieder entfernen
+    $systemInfoPanel.Controls.Remove($loadingLabel)
+    $loadingLabel.Dispose() # Ressourcen freigeben
+
+    # Jetzt die tatsächlichen Systeminformationen laden und anzeigen
+    Get-AndDisplayAllSystemInfo
 }
 
 # Panel for System Information (top left)
@@ -1393,11 +1424,86 @@ Set-FontSizeRecursive -control $tabUntested -fontSize 11
 
 #endregion
 
+#region 9. Tab: About
+
+$tabAbout = New-Object System.Windows.Forms.TabPage "About"
+$tabAbout.BackColor = $darkBackColor
+$tabAbout.ForeColor = $darkForeColor
+$tabControl.TabPages.Add($tabAbout)
+
+# About Text Labels
+$aboutLabelYPos = 15
+$aboutTextLines = @(
+    "Hello, my name is Leeshhi. I'm a hobby programmer who does this in my free time and for fun.",
+    "Additionally, I'm also a bit of a PC geek, as many would call it.",
+    "", # Empty line for spacing
+    "This tool was created to offer fellow gamers, like myself, genuine Windows optimizations",
+    "that actually deliver results and aren't just generic nonsense that doesn't even exist.",
+    "I started this project because there are so many poor tools available on the internet.",
+    "", # Empty line for spacing
+    "Only tweaks and adjustments that I personally use and/or have tested will appear here."
+)
+
+foreach ($line in $aboutTextLines) {
+    $label = New-Object System.Windows.Forms.Label
+    $label.Text = $line
+    $label.AutoSize = $true
+    $label.Location = New-Object System.Drawing.Point(15, $aboutLabelYPos)
+    $tabAbout.Controls.Add($label)
+    $aboutLabelYPos += 25 # Vertical spacing between lines
+}
+
+# Buttons for links
+$aboutButtonYPos = $aboutLabelYPos + 20 # Starting position of buttons below the text
+
+$discordButton = New-Object System.Windows.Forms.Button
+$discordButton.Text = "Discord"
+$discordButton.Size = New-Object System.Drawing.Size(150, 30)
+$discordButton.Location = New-Object System.Drawing.Point(15, $aboutButtonYPos)
+$discordButton.BackColor = $accentColor
+$discordButton.ForeColor = [System.Drawing.Color]::White
+$discordButton.Add_Click({ Start-Process "https://discord.gg/gDmjYgydb3" })
+$tabAbout.Controls.Add($discordButton)
+$aboutButtonYPos += 35
+
+$botButton = New-Object System.Windows.Forms.Button
+$botButton.Text = "Discord-bot"
+$botButton.Size = New-Object System.Drawing.Size(150, 30)
+$botButton.Location = New-Object System.Drawing.Point(15, $aboutButtonYPos)
+$botButton.BackColor = $accentColor
+$botButton.ForeColor = [System.Drawing.Color]::White
+$botButton.Add_Click({ Start-Process "https://shag.gg" })
+$tabAbout.Controls.Add($botButton)
+$aboutButtonYPos += 35
+
+$botDcButton = New-Object System.Windows.Forms.Button
+$botDcButton.Text = "Bot web > shag.gg"
+$botDcButton.Size = New-Object System.Drawing.Size(150, 30)
+$botDcButton.Location = New-Object System.Drawing.Point(15, $aboutButtonYPos)
+$botDcButton.BackColor = $accentColor
+$botDcButton.ForeColor = [System.Drawing.Color]::White
+$botDcButton.Add_Click({ Start-Process "https://discord.gg/qxPNcgtTqn" })
+$tabAbout.Controls.Add($botDcButton)
+$aboutButtonYPos += 35
+
+$githubProjectButton = New-Object System.Windows.Forms.Button
+$githubProjectButton.Text = "GitHub"
+$githubProjectButton.Size = New-Object System.Drawing.Size(150, 30)
+$githubProjectButton.Location = New-Object System.Drawing.Point(15, $aboutButtonYPos)
+$githubProjectButton.BackColor = $accentColor
+$githubProjectButton.ForeColor = [System.Drawing.Color]::White
+$githubProjectButton.Add_Click({ Start-Process "https://github.com/leeshhi" })
+$tabAbout.Controls.Add($githubProjectButton)
+
+Set-FontSizeRecursive -control $tabAbout -fontSize 11
+
+#endregion
+
 #region 9. Final Execution
 
 # Initial calls for Home tab info
 $form.Add_Shown({
-        Get-AndDisplayAllSystemInfo
+        Initialize-HomeTabContent
     })
 
 # Show form

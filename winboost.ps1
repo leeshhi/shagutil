@@ -1,7 +1,7 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
-$scriptVersion = "0.0.4"
+$scriptVersion = "0.0.5"
 
 # Admin Check
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltinRole] "Administrator")) {
@@ -62,7 +62,8 @@ function Check-ForUpdates {
                 CurrentVersion  = $currentVersion;
                 RepoLink        = "https://github.com/leeshhi/winboost" # Your repository link
             }
-        } else {
+        }
+        else {
             # No newer version
             return @{ UpdateAvailable = $false }
         }
@@ -107,7 +108,8 @@ function Get-GpuInfo {
     # Ensure "GPU: " is only displayed once, even if multiple GPUs are present
     if ($gpuStrings.Count -gt 0) {
         "GPU: " + ($gpuStrings -join ", ")
-    } else {
+    }
+    else {
         "GPU: Not found"
     }
 }
@@ -156,7 +158,8 @@ function Get-AndDisplayAllSystemInfo {
                 $systemInfoPanel.Controls.Add($label)
                 $yPos += 25
             }
-        } else {
+        }
+        else {
             $label = New-Object System.Windows.Forms.Label
             $label.Text = $line
             $label.AutoSize = $true
@@ -277,29 +280,30 @@ $form.Controls.Add($tabControl)
 
 
 $form.Add_Load({
-    # Perform the update check
-    $updateInfo = Check-ForUpdates
+        # Perform the update check
+        $updateInfo = Check-ForUpdates
 
-    # Display the corresponding message based on the result
-    if ($updateInfo.UpdateAvailable) {
-        Write-Host ">>> UPDATE AVAILABLE! <<<" -ForegroundColor Yellow -BackgroundColor Red
-        Write-Host "A new version ($($updateInfo.RemoteVersion)) is available!" -ForegroundColor Yellow
-        Write-Host "Your current version is $($updateInfo.CurrentVersion)." -ForegroundColor Yellow
-        Write-Host "Please update your tool via the GitHub link: $($updateInfo.RepoLink)" -ForegroundColor Yellow
-        Write-Host "Run the start command again to use the new version." -ForegroundColor Yellow
-        Write-Host "*********************************************" -ForegroundColor White
-        Write-Host ""
-    } elseif ($updateInfo.Error) {
-        # Display error if something went wrong during the update check
-        [System.Windows.Forms.MessageBox]::Show(
-            "Error checking for updates: $($updateInfo.Error)",
-            "Update Error",
-            [System.Windows.Forms.MessageBoxButtons]::OK,
-            [System.Windows.Forms.MessageBoxIcon]::Warning
-        )
-    }
-    $null # Added: Suppresses implicit output of the last expression in the block
-})
+        # Display the corresponding message based on the result
+        if ($updateInfo.UpdateAvailable) {
+            Write-Host ">>> UPDATE AVAILABLE! <<<" -ForegroundColor Yellow -BackgroundColor Red
+            Write-Host "A new version ($($updateInfo.RemoteVersion)) is available!" -ForegroundColor Yellow
+            Write-Host "Your current version is $($updateInfo.CurrentVersion)." -ForegroundColor Yellow
+            Write-Host "Please update your tool via the GitHub link: $($updateInfo.RepoLink)" -ForegroundColor Yellow
+            Write-Host "Run the start command again to use the new version." -ForegroundColor Yellow
+            Write-Host "*********************************************" -ForegroundColor White
+            Write-Host ""
+        }
+        elseif ($updateInfo.Error) {
+            # Display error if something went wrong during the update check
+            [System.Windows.Forms.MessageBox]::Show(
+                "Error checking for updates: $($updateInfo.Error)",
+                "Update Error",
+                [System.Windows.Forms.MessageBoxButtons]::OK,
+                [System.Windows.Forms.MessageBoxIcon]::Warning
+            )
+        }
+        $null # Added: Suppresses implicit output of the last expression in the block
+    })
 
 # Tab 1: Home
 
@@ -341,10 +345,10 @@ $quickLinksPanel.Controls.Add($quickLinksTitle)
 # Quick Links Buttons
 $buttonYPos = 40
 $quickLinks = @(
-    @{"Text"="Task Manager"; "Action"={ Start-Process taskmgr.exe }},
-    @{"Text"="Device Manager"; "Action"={ Start-Process devmgmt.msc }},
-    @{"Text"="Control Panel"; "Action"={ Start-Process control.exe }},
-    @{"Text"="Disk Management"; "Action"={ Start-Process diskmgmt.msc }}
+    @{"Text" = "Task Manager"; "Action" = { Start-Process taskmgr.exe } },
+    @{"Text" = "Device Manager"; "Action" = { Start-Process devmgmt.msc } },
+    @{"Text" = "Control Panel"; "Action" = { Start-Process control.exe } },
+    @{"Text" = "Disk Management"; "Action" = { Start-Process diskmgmt.msc } }
 )
 
 foreach ($link in $quickLinks) {
@@ -925,66 +929,66 @@ function Get-SelectedInstallStatus {
 
 # Eventhandler: wenn Parent-Node angeklickt wird, alle Kinder selektieren/deselektieren
 $downloadTreeView.Add_AfterCheck({
-    param($sender, $e)
+        param($sender, $e)
 
-    if ($global:IgnoreCheckEventDownloads) { return }
-    $global:IgnoreCheckEventDownloads = $true
+        if ($global:IgnoreCheckEventDownloads) { return }
+        $global:IgnoreCheckEventDownloads = $true
 
-    if ($e.Node.Nodes.Count -gt 0) {
-        foreach ($child in $e.Node.Nodes) {
-            $child.Checked = $e.Node.Checked
+        if ($e.Node.Nodes.Count -gt 0) {
+            foreach ($child in $e.Node.Nodes) {
+                $child.Checked = $e.Node.Checked
+            }
         }
-    }
-    else {
-        $parent = $e.Node.Parent
-        if ($parent -ne $null) {
-            $uncheckedCount = ($parent.Nodes | Where-Object { -not $_.Checked } | Measure-Object).Count
-            $parent.Checked = ($uncheckedCount -eq 0)
+        else {
+            $parent = $e.Node.Parent
+            if ($parent -ne $null) {
+                $uncheckedCount = ($parent.Nodes | Where-Object { -not $_.Checked } | Measure-Object).Count
+                $parent.Checked = ($uncheckedCount -eq 0)
+            }
         }
-    }
 
-    # Prüfe wie viele Programme ausgewählt sind und ob installiert oder nicht
-    $status = Get-SelectedInstallStatus
-    $countInstalled = $status.Installed.Count
-    $countNotInstalled = $status.NotInstalled.Count
-    $countTotal = $status.AllSelected.Count
+        # Prüfe wie viele Programme ausgewählt sind und ob installiert oder nicht
+        $status = Get-SelectedInstallStatus
+        $countInstalled = $status.Installed.Count
+        $countNotInstalled = $status.NotInstalled.Count
+        $countTotal = $status.AllSelected.Count
 
-    # Buttons immer sichtbar
-    $installButton.Visible = $true
-    $updateButton.Visible = $true
-    $uninstallButton.Visible = $true
+        # Buttons immer sichtbar
+        $installButton.Visible = $true
+        $updateButton.Visible = $true
+        $uninstallButton.Visible = $true
 
-    # Hier die Logik zur Aktivierung/Deaktivierung
-    if ($countTotal -eq 0) {
-        # Nichts ausgewählt
-        $installButton.Enabled = $false
-        $updateButton.Enabled = $true # Update Button immer aktiv
-        $uninstallButton.Enabled = $false
-        $installButton.Text = "Install"
-    }
-    elseif ($countInstalled -eq $countTotal -and $countTotal -gt 0) {
-        # Nur installierte Programme ausgewählt
-        $installButton.Enabled = $false
-        $updateButton.Enabled = $true # Update Button immer aktiv
-        $uninstallButton.Enabled = $true
-    }
-    elseif ($countNotInstalled -eq $countTotal) {
-        # Nur nicht installierte Programme ausgewählt
-        $installButton.Enabled = $true
-        $updateButton.Enabled = $true # Update Button immer aktiv
-        $uninstallButton.Enabled = $false
-        $installButton.Text = "Install"
-    }
-    else {
-        # Mischung (installiert und nicht installiert) ausgewählt
-        $installButton.Enabled = $true
-        $installButton.Text = "Install/Update"
-        $updateButton.Enabled = $true # Update Button immer aktiv
-        $uninstallButton.Enabled = $false
-    }
+        # Hier die Logik zur Aktivierung/Deaktivierung
+        if ($countTotal -eq 0) {
+            # Nichts ausgewählt
+            $installButton.Enabled = $false
+            $updateButton.Enabled = $true # Update Button immer aktiv
+            $uninstallButton.Enabled = $false
+            $installButton.Text = "Install"
+        }
+        elseif ($countInstalled -eq $countTotal -and $countTotal -gt 0) {
+            # Nur installierte Programme ausgewählt
+            $installButton.Enabled = $false
+            $updateButton.Enabled = $true # Update Button immer aktiv
+            $uninstallButton.Enabled = $true
+        }
+        elseif ($countNotInstalled -eq $countTotal) {
+            # Nur nicht installierte Programme ausgewählt
+            $installButton.Enabled = $true
+            $updateButton.Enabled = $true # Update Button immer aktiv
+            $uninstallButton.Enabled = $false
+            $installButton.Text = "Install"
+        }
+        else {
+            # Mischung (installiert und nicht installiert) ausgewählt
+            $installButton.Enabled = $true
+            $installButton.Text = "Install/Update"
+            $updateButton.Enabled = $true # Update Button immer aktiv
+            $uninstallButton.Enabled = $false
+        }
 
-    $global:IgnoreCheckEventDownloads = $false
-})
+        $global:IgnoreCheckEventDownloads = $false
+    })
 
 # Funktion zum Installieren per winget (installiert oder updated)
 function Install-WingetProgram {
@@ -1004,7 +1008,8 @@ function Install-WingetProgram {
     if ($wingetResult.TimedOut) {
         [System.Windows.Forms.MessageBox]::Show("The installation of $($packageId) has exceeded the time limit.", "Winget Timeout", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
         return $false
-    } elseif ($wingetResult.ExitCode -ne 0) {
+    }
+    elseif ($wingetResult.ExitCode -ne 0) {
         $errorMessage = "Error installing/updating $($packageId). Exit Code: $($wingetResult.ExitCode). "
         if (![string]::IsNullOrEmpty($wingetResult.Errors)) {
             $errorMessage += "Fehler: $($wingetResult.Errors)."
@@ -1012,7 +1017,8 @@ function Install-WingetProgram {
         $errorMessage += "`n`nDetails in: $($wingetResult.ErrorFile)"
         [System.Windows.Forms.MessageBox]::Show($errorMessage, "Winget installation/update error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
         return $false
-    } else {
+    }
+    else {
         $statusDownloadLabel.Text = "$($packageId) installed/updated."
         return $true
     }
@@ -1064,7 +1070,8 @@ function Uninstall-Programs {
         if ($wingetResult.TimedOut) {
             [System.Windows.Forms.MessageBox]::Show("Uninstalling $($node.Text) has exceeded the time limit.", "Winget Timeout", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
             break # Breche ab, wenn ein Timeout auftritt
-        } elseif ($wingetResult.ExitCode -ne 0) {
+        }
+        elseif ($wingetResult.ExitCode -ne 0) {
             $errorMessage = "Error uninstalling $($node.Text). Exit Code: $($wingetResult.ExitCode). "
             if (![string]::IsNullOrEmpty($wingetResult.Errors)) {
                 $errorMessage += "Error: $($wingetResult.Errors)."
@@ -1072,7 +1079,8 @@ function Uninstall-Programs {
             $errorMessage += "`n`nDetails in: $($wingetResult.ErrorFile)"
             [System.Windows.Forms.MessageBox]::Show($errorMessage, "Winget uninstallation error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
             break # Breche ab, wenn ein Fehler auftritt
-        } else {
+        }
+        else {
             $statusDownloadLabel.Text = "$($node.Text) uninstalled."
         }
         $downloadProgressBar.Value++
@@ -1121,33 +1129,34 @@ function Invoke-WingetCommand {
 
             # Rückgabe-Objekt mit allen relevanten Informationen
             [PSCustomObject]@{
-                ExitCode = $process.ExitCode
-                Output = $output
-                Errors = $errors
+                ExitCode   = $process.ExitCode
+                Output     = $output
+                Errors     = $errors
                 OutputFile = $outputFile
-                ErrorFile = $errorFile
-                TimedOut = $false
+                ErrorFile  = $errorFile
+                TimedOut   = $false
             }
-        } else {
+        }
+        else {
             $process.Kill()
             [PSCustomObject]@{
-                ExitCode = $null # Kein ExitCode bei Timeout
-                Output = ""
-                Errors = "Winget command timed out ($($timeoutSeconds)s)."
+                ExitCode   = $null # Kein ExitCode bei Timeout
+                Output     = ""
+                Errors     = "Winget command timed out ($($timeoutSeconds)s)."
                 OutputFile = $outputFile
-                ErrorFile = $errorFile
-                TimedOut = $true
+                ErrorFile  = $errorFile
+                TimedOut   = $true
             }
         }
     }
     catch {
         [PSCustomObject]@{
-            ExitCode = $null
-            Output = ""
-            Errors = "Unexpected error when running winget: $_"
+            ExitCode   = $null
+            Output     = ""
+            Errors     = "Unexpected error when running winget: $_"
             OutputFile = $outputFile
-            ErrorFile = $errorFile
-            TimedOut = $false
+            ErrorFile  = $errorFile
+            TimedOut   = $false
         }
     }
 }
@@ -1162,82 +1171,87 @@ $uninstallButton.Add_Click({
         Uninstall-Programs -nodes $toUninstall
     })
 
-    # Klick-Events der Buttons
+# Klick-Events der Buttons
 $installButton.Add_Click({
-    $status = Get-SelectedInstallStatus
-    $toInstallOrUpdate = $status.AllSelected
-    if ($toInstallOrUpdate.Count -eq 0) {
-        $statusDownloadLabel.Text = "No program selected."
-        return
-    }
-    Install-OrUpdate -nodes $toInstallOrUpdate
-})
+        $status = Get-SelectedInstallStatus
+        $toInstallOrUpdate = $status.AllSelected
+        if ($toInstallOrUpdate.Count -eq 0) {
+            $statusDownloadLabel.Text = "No program selected."
+            return
+        }
+        Install-OrUpdate -nodes $toInstallOrUpdate
+    })
 
 $updateButton.Add_Click({
-    try {
-        $selectedNodes = $downloadTreeView.Nodes.Find("Installed", $true) | Where-Object { $_.Checked }
+        try {
+            $selectedNodes = $downloadTreeView.Nodes.Find("Installed", $true) | Where-Object { $_.Checked }
 
-        if ($selectedNodes.Count -eq 0) {
-            # Keine spezifischen Programme ausgewählt, also "Alle aktualisieren"
-            [System.Windows.Forms.MessageBox]::Show("No individual programs selected. Start updating all available Winget updates.", "Update all", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+            if ($selectedNodes.Count -eq 0) {
+                # Keine spezifischen Programme ausgewählt, also "Alle aktualisieren"
+                [System.Windows.Forms.MessageBox]::Show("No individual programs selected. Start updating all available Winget updates.", "Update all", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
             
-            # Überprüfe, ob es überhaupt aktualisierbare Pakete gibt
-            # Hinweis: Deine globale Variable $global:updatablePackageIds wird aktuell nicht gefüllt.
-            # Um diese Prüfung sinnvoll zu nutzen, müsste Update-InstalledPackageIds auch die updatable Packages ermitteln.
-            # Fürs Erste kommentiere ich diese Prüfung aus, bis wir sie implementieren oder entfernen.
-            # if ($global:updatablePackageIds.Count -eq 0) {
-            #     [System.Windows.Forms.MessageBox]::Show("Es sind keine Winget-Updates verfügbar.", "Keine Updates", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
-            #     return
-            # }
+                # Überprüfe, ob es überhaupt aktualisierbare Pakete gibt
+                # Hinweis: Deine globale Variable $global:updatablePackageIds wird aktuell nicht gefüllt.
+                # Um diese Prüfung sinnvoll zu nutzen, müsste Update-InstalledPackageIds auch die updatable Packages ermitteln.
+                # Fürs Erste kommentiere ich diese Prüfung aus, bis wir sie implementieren oder entfernen.
+                # if ($global:updatablePackageIds.Count -eq 0) {
+                #     [System.Windows.Forms.MessageBox]::Show("Es sind keine Winget-Updates verfügbar.", "Keine Updates", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+                #     return
+                # }
 
-            $dialogResult = [System.Windows.Forms.MessageBox]::Show(
-                "Do you want to install all available Winget package updates? This may take some time.",
-                "Install all updates?",
-                [System.Windows.Forms.MessageBoxButtons]::YesNo,
-                [System.Windows.Forms.MessageBoxIcon]::Question
-            )
+                $dialogResult = [System.Windows.Forms.MessageBox]::Show(
+                    "Do you want to install all available Winget package updates? This may take some time.",
+                    "Install all updates?",
+                    [System.Windows.Forms.MessageBoxButtons]::YesNo,
+                    [System.Windows.Forms.MessageBoxIcon]::Question
+                )
 
-            if ($dialogResult -eq [System.Windows.Forms.DialogResult]::Yes) {
-                $statusDownloadLabel.Text = "Status: Updating all Winget packages..."
-                $downloadProgressBar.Style = 'Marquee'
-                $downloadProgressBar.Visible = $true
-                $form.Refresh()
+                if ($dialogResult -eq [System.Windows.Forms.DialogResult]::Yes) {
+                    $statusDownloadLabel.Text = "Status: Updating all Winget packages..."
+                    $downloadProgressBar.Style = 'Marquee'
+                    $downloadProgressBar.Visible = $true
+                    $form.Refresh()
 
-                $wingetResult = Invoke-WingetCommand -arguments "upgrade --all --accept-package-agreements --accept-source-agreements" -timeoutSeconds 300
+                    $wingetResult = Invoke-WingetCommand -arguments "upgrade --all --accept-package-agreements --accept-source-agreements" -timeoutSeconds 300
                 
-                if ($wingetResult.TimedOut) {
-                    [System.Windows.Forms.MessageBox]::Show("The update of all Winget packages has timed out.", "Winget Timeout", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-                } elseif ($wingetResult.ExitCode -ne 0) {
-                    $errorMessage = "Error updating all packages. Exit Code: $($wingetResult.ExitCode). "
-                    if (![string]::IsNullOrEmpty($wingetResult.Errors)) {
-                        $errorMessage += "Error: $($wingetResult.Errors)."
+                    if ($wingetResult.TimedOut) {
+                        [System.Windows.Forms.MessageBox]::Show("The update of all Winget packages has timed out.", "Winget Timeout", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
                     }
-                    $errorMessage += "`n`nDetails in: $($wingetResult.ErrorFile)"
-                    [System.Windows.Forms.MessageBox]::Show($errorMessage, "Winget upgrade error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-                } else {
-                    [System.Windows.Forms.MessageBox]::Show("All Winget packages have been updated (if updates were available).", "Updates Abgeschlossen", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+                    elseif ($wingetResult.ExitCode -ne 0) {
+                        $errorMessage = "Error updating all packages. Exit Code: $($wingetResult.ExitCode). "
+                        if (![string]::IsNullOrEmpty($wingetResult.Errors)) {
+                            $errorMessage += "Error: $($wingetResult.Errors)."
+                        }
+                        $errorMessage += "`n`nDetails in: $($wingetResult.ErrorFile)"
+                        [System.Windows.Forms.MessageBox]::Show($errorMessage, "Winget upgrade error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+                    }
+                    else {
+                        [System.Windows.Forms.MessageBox]::Show("All Winget packages have been updated (if updates were available).", "Updates Abgeschlossen", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+                    }
                 }
             }
-        } else {
-            # Einzelne Programme ausgewählt, verarbeite diese wie gehabt
-            $dialogResult = [System.Windows.Forms.MessageBox]::Show(
-                "Do you want to update the selected programs?",
-                "Update programs?",
-                [System.Windows.Forms.MessageBoxButtons]::YesNo,
-                [System.Windows.Forms.MessageBoxIcon]::Question
-            )
+            else {
+                # Einzelne Programme ausgewählt, verarbeite diese wie gehabt
+                $dialogResult = [System.Windows.Forms.MessageBox]::Show(
+                    "Do you want to update the selected programs?",
+                    "Update programs?",
+                    [System.Windows.Forms.MessageBoxButtons]::YesNo,
+                    [System.Windows.Forms.MessageBoxIcon]::Question
+                )
 
-            if ($dialogResult -eq [System.Windows.Forms.DialogResult]::Yes) {
-                # Hier rufen wir Install-OrUpdate auf, nicht Install-SelectedPackages
-                Install-OrUpdate -nodes $selectedNodes
+                if ($dialogResult -eq [System.Windows.Forms.DialogResult]::Yes) {
+                    # Hier rufen wir Install-OrUpdate auf, nicht Install-SelectedPackages
+                    Install-OrUpdate -nodes $selectedNodes
+                }
             }
         }
-    } catch {
-        [System.Windows.Forms.MessageBox]::Show("An error has occurred: $_", "Fehler", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-    } finally {
-        Update-InstalledProgramsStatus -parentForm $form -progressBar $downloadProgressBar -statusLabel $statusDownloadLabel
-    }
-})
+        catch {
+            [System.Windows.Forms.MessageBox]::Show("An error has occurred: $_", "Fehler", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+        }
+        finally {
+            Update-InstalledProgramsStatus -parentForm $form -progressBar $downloadProgressBar -statusLabel $statusDownloadLabel
+        }
+    })
 
 $uncheckAllButton.Add_Click({
         $global:IgnoreCheckEventDownloads = $true

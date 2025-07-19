@@ -11,6 +11,7 @@ if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdenti
 }
 
 # Welcome Message (GEÄNDERT: 'shag.gg' ASCII Art)
+Write-Host ""
 Write-Host "█████   █   █    ███  █████     █████ █████" -ForegroundColor Green
 Write-Host "█       █   █   █   █ █         █     █" -ForegroundColor Green
 Write-Host "█████   █████   █████ █ ███     █ ███ █ ███" -ForegroundColor Green

@@ -1152,83 +1152,6 @@ function Invoke-WingetCommand {
     }
 }
 
-# Klick-Events der Buttons
-$installButton.Add_Click({
-        $status = Get-SelectedInstallStatus
-        $toInstallOrUpdate = $status.AllSelected
-        if ($toInstallOrUpdate.Count -eq 0) {
-            $statusDownloadLabel.Text = "No program selected."
-            return
-        }
-        Install-OrUpdate -nodes $toInstallOrUpdate
-    })
-
-    $updateButton.Add_Click({
-        try {
-            $selectedNodes = $downloadTreeView.Nodes.Find("Installed", $true) | Where-Object { $_.Checked }
-    
-            if ($selectedNodes.Count -eq 0) {
-                # Keine spezifischen Programme ausgewählt, also "Alle aktualisieren"
-                [System.Windows.Forms.MessageBox]::Show("No individual programs selected. Start updating all available Winget updates.", "Update all", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
-                
-                # Überprüfe, ob es überhaupt aktualisierbare Pakete gibt
-                # Hinweis: Deine globale Variable $global:updatablePackageIds wird aktuell nicht gefüllt.
-                # Um diese Prüfung sinnvoll zu nutzen, müsste Update-InstalledPackageIds auch die updatable Packages ermitteln.
-                # Fürs Erste kommentiere ich diese Prüfung aus, bis wir sie implementieren oder entfernen.
-                # if ($global:updatablePackageIds.Count -eq 0) {
-                #     [System.Windows.Forms.MessageBox]::Show("Es sind keine Winget-Updates verfügbar.", "Keine Updates", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
-                #     return
-                # }
-    
-                $dialogResult = [System.Windows.Forms.MessageBox]::Show(
-                    "MDo you want to install all available Winget package updates? This may take some time.",
-                    "Install all updates?",
-                    [System.Windows.Forms.MessageBoxButtons]::YesNo,
-                    [System.Windows.Forms.MessageBoxIcon]::Question
-                )
-    
-                if ($dialogResult -eq [System.Windows.Forms.DialogResult]::Yes) {
-                    $statusDownloadLabel.Text = "Status: Updating all Winget packages..."
-                    $downloadProgressBar.Style = 'Marquee'
-                    $downloadProgressBar.Visible = $true
-                    $form.Refresh()
-    
-                    $wingetResult = Invoke-WingetCommand -arguments "upgrade --all --accept-package-agreements --accept-source-agreements" -timeoutSeconds 300
-                    
-                    if ($wingetResult.TimedOut) {
-                        [System.Windows.Forms.MessageBox]::Show("The update of all Winget packages has timed out.", "Winget Timeout", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-                    } elseif ($wingetResult.ExitCode -ne 0) {
-                        $errorMessage = "Error updating all packages. Exit Code: $($wingetResult.ExitCode). "
-                        if (![string]::IsNullOrEmpty($wingetResult.Errors)) {
-                            $errorMessage += "Error: $($wingetResult.Errors)."
-                        }
-                        $errorMessage += "`n`nDetails in: $($wingetResult.ErrorFile)"
-                        [System.Windows.Forms.MessageBox]::Show($errorMessage, "Winget upgrade error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-                    } else {
-                        [System.Windows.Forms.MessageBox]::Show("All Winget packages have been updated (if updates were available).", "Updates Abgeschlossen", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
-                    }
-                }
-            } else {
-                # Einzelne Programme ausgewählt, verarbeite diese wie gehabt
-                $dialogResult = [System.Windows.Forms.MessageBox]::Show(
-                    "Do you want to update the selected programs?",
-                    "Update programs?",
-                    [System.Windows.Forms.MessageBoxButtons]::YesNo,
-                    [System.Windows.Forms.MessageBoxIcon]::Question
-                )
-    
-                if ($dialogResult -eq [System.Windows.Forms.DialogResult]::Yes) {
-                    # Hier rufen wir Install-OrUpdate auf, nicht Install-SelectedPackages
-                    Install-OrUpdate -nodes $selectedNodes
-                }
-            }
-        } catch {
-            [System.Windows.Forms.MessageBox]::Show("An error has occurred: $_", "Fehler", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-        } finally {
-            Update-InstalledProgramsStatus -parentForm $form -progressBar $downloadProgressBar -statusLabel $statusDownloadLabel
-        }
-    })
-
 $uninstallButton.Add_Click({
         $status = Get-SelectedInstallStatus
         $toUninstall = $status.Installed
@@ -1238,6 +1161,83 @@ $uninstallButton.Add_Click({
         }
         Uninstall-Programs -nodes $toUninstall
     })
+
+    # Klick-Events der Buttons
+$installButton.Add_Click({
+    $status = Get-SelectedInstallStatus
+    $toInstallOrUpdate = $status.AllSelected
+    if ($toInstallOrUpdate.Count -eq 0) {
+        $statusDownloadLabel.Text = "No program selected."
+        return
+    }
+    Install-OrUpdate -nodes $toInstallOrUpdate
+})
+
+$updateButton.Add_Click({
+    try {
+        $selectedNodes = $downloadTreeView.Nodes.Find("Installed", $true) | Where-Object { $_.Checked }
+
+        if ($selectedNodes.Count -eq 0) {
+            # Keine spezifischen Programme ausgewählt, also "Alle aktualisieren"
+            [System.Windows.Forms.MessageBox]::Show("No individual programs selected. Start updating all available Winget updates.", "Update all", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+            
+            # Überprüfe, ob es überhaupt aktualisierbare Pakete gibt
+            # Hinweis: Deine globale Variable $global:updatablePackageIds wird aktuell nicht gefüllt.
+            # Um diese Prüfung sinnvoll zu nutzen, müsste Update-InstalledPackageIds auch die updatable Packages ermitteln.
+            # Fürs Erste kommentiere ich diese Prüfung aus, bis wir sie implementieren oder entfernen.
+            # if ($global:updatablePackageIds.Count -eq 0) {
+            #     [System.Windows.Forms.MessageBox]::Show("Es sind keine Winget-Updates verfügbar.", "Keine Updates", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+            #     return
+            # }
+
+            $dialogResult = [System.Windows.Forms.MessageBox]::Show(
+                "MDo you want to install all available Winget package updates? This may take some time.",
+                "Install all updates?",
+                [System.Windows.Forms.MessageBoxButtons]::YesNo,
+                [System.Windows.Forms.MessageBoxIcon]::Question
+            )
+
+            if ($dialogResult -eq [System.Windows.Forms.DialogResult]::Yes) {
+                $statusDownloadLabel.Text = "Status: Updating all Winget packages..."
+                $downloadProgressBar.Style = 'Marquee'
+                $downloadProgressBar.Visible = $true
+                $form.Refresh()
+
+                $wingetResult = Invoke-WingetCommand -arguments "upgrade --all --accept-package-agreements --accept-source-agreements" -timeoutSeconds 300
+                
+                if ($wingetResult.TimedOut) {
+                    [System.Windows.Forms.MessageBox]::Show("The update of all Winget packages has timed out.", "Winget Timeout", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+                } elseif ($wingetResult.ExitCode -ne 0) {
+                    $errorMessage = "Error updating all packages. Exit Code: $($wingetResult.ExitCode). "
+                    if (![string]::IsNullOrEmpty($wingetResult.Errors)) {
+                        $errorMessage += "Error: $($wingetResult.Errors)."
+                    }
+                    $errorMessage += "`n`nDetails in: $($wingetResult.ErrorFile)"
+                    [System.Windows.Forms.MessageBox]::Show($errorMessage, "Winget upgrade error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+                } else {
+                    [System.Windows.Forms.MessageBox]::Show("All Winget packages have been updated (if updates were available).", "Updates Abgeschlossen", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+                }
+            }
+        } else {
+            # Einzelne Programme ausgewählt, verarbeite diese wie gehabt
+            $dialogResult = [System.Windows.Forms.MessageBox]::Show(
+                "Do you want to update the selected programs?",
+                "Update programs?",
+                [System.Windows.Forms.MessageBoxButtons]::YesNo,
+                [System.Windows.Forms.MessageBoxIcon]::Question
+            )
+
+            if ($dialogResult -eq [System.Windows.Forms.DialogResult]::Yes) {
+                # Hier rufen wir Install-OrUpdate auf, nicht Install-SelectedPackages
+                Install-OrUpdate -nodes $selectedNodes
+            }
+        }
+    } catch {
+        [System.Windows.Forms.MessageBox]::Show("An error has occurred: $_", "Fehler", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+    } finally {
+        Update-InstalledProgramsStatus -parentForm $form -progressBar $downloadProgressBar -statusLabel $statusDownloadLabel
+    }
+})
 
 $uncheckAllButton.Add_Click({
         $global:IgnoreCheckEventDownloads = $true

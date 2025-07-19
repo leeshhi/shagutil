@@ -5,31 +5,31 @@ $scriptVersion = "0.0.3"
 
 # Admin Check
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltinRole] "Administrator")) {
-    # GEÄNDERT: Nachricht und Icon der MessageBox
-    [System.Windows.Forms.MessageBox]::Show("Dieses Skript muss als Administrator ausgeführt werden. Bitte starten Sie PowerShell oder die Skriptdatei erneut mit Administratorrechten.", "Administratorrechte erforderlich", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Stop)
+    # MODIFIED: MessageBox message and icon
+    [System.Windows.Forms.MessageBox]::Show("This script must be run as an Administrator. Please restart PowerShell or the script file with administrative privileges.", "Administrator Privileges Required", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Stop)
     exit
 }
 
 # Welcome Message (GEÄNDERT: 'shag.gg' ASCII Art)
-Write-Host "█████   █   █    ███  █████     █████ █████" -ForegroundColor Cyan
-Write-Host "█       █   █   █   █ █         █     █" -ForegroundColor Cyan
-Write-Host "█████   █████   █████ █ ███     █ ███ █ ███" -ForegroundColor Cyan
-Write-Host "    █   █   █   █   █ █   █     █   █ █   █" -ForegroundColor Cyan
-Write-Host "█████   █   █   █   █ █████ █   █████ █████" -ForegroundColor Cyan
+Write-Host "█████   █   █    ███  █████     █████ █████" -ForegroundColor Green
+Write-Host "█       █   █   █   █ █         █     █" -ForegroundColor Green
+Write-Host "█████   █████   █████ █ ███     █ ███ █ ███" -ForegroundColor Green
+Write-Host "    █   █   █   █   █ █   █     █   █ █   █" -ForegroundColor Green
+Write-Host "█████   █   █   █   █ █████ █   █████ █████" -ForegroundColor Green
 Write-Host ""
-Write-Host "*********************************************" -ForegroundColor White
-Write-Host "* Welcome to WinBoost v$scriptVersion!      *" -ForegroundColor White
-Write-Host "* Optimizing your Windows experience.       *" -ForegroundColor White
-Write-Host "* Script by leeshhi                         *" -ForegroundColor White
-Write-Host "*********************************************" -ForegroundColor White
+Write-Host "*********************************************" -ForegroundColor Cyan
+Write-Host "* Welcome to WinBoost v$scriptVersion!      *" -ForegroundColor Cyan
+Write-Host "* Optimizing your Windows experience.       *" -ForegroundColor Cyan
+Write-Host "* Script by leeshhi                         *" -ForegroundColor Cyan
+Write-Host "*********************************************" -ForegroundColor Cyan
 Write-Host ""
 Write-Host ""
 
-# Funktion: Schriftgröße rekursiv auf alle Controls in einem Control setzen
+# Function: Recursively set font size for all controls within a control
 function Set-FontSizeRecursive {
     param([System.Windows.Forms.Control]$control, [float]$fontSize)
 
-    # Neue Font mit gleicher Familie und Stil, nur Größe geändert
+    # New Font with same family and style, only size changed
     $newFont = New-Object System.Drawing.Font($control.Font.FontFamily, $fontSize, $control.Font.Style)
     $control.Font = $newFont
 
@@ -40,34 +40,34 @@ function Set-FontSizeRecursive {
 
 function Check-ForUpdates {
     param(
-        [string]$currentVersion = $scriptVersion, # Nimmt die aktuelle Skriptversion an
+        [string]$currentVersion = $scriptVersion, # Assumes the current script version
         [string]$githubRawUrl = "https://raw.githubusercontent.com/leeshhi/winboost/main/version.txt"
     )
 
     try {
-        # Remote-Versionsdatei von GitHub abrufen
+        # Fetch remote version file from GitHub
         $remoteVersionText = Invoke-RestMethod -Uri $githubRawUrl -ErrorAction Stop
-        $remoteVersion = $remoteVersionText.Trim() # Leerzeichen entfernen
+        $remoteVersion = $remoteVersionText.Trim() # Remove whitespace
 
-        # Versionen vergleichen
+        # Compare versions
         $currentVersionObject = [Version]$currentVersion
         $remoteVersionObject = [Version]$remoteVersion
 
         if ($remoteVersionObject -gt $currentVersionObject) {
-            # Neuere Version verfügbar: Gib Details zurück
+            # Newer version available: Return details
             return @{
                 UpdateAvailable = $true;
                 RemoteVersion   = $remoteVersion;
                 CurrentVersion  = $currentVersion;
-                RepoLink        = "https://github.com/leeshhi/winboost" # Dein Repository-Link
+                RepoLink        = "https://github.com/leeshhi/winboost" # Your repository link
             }
         } else {
-            # Keine neuere Version
+            # No newer version
             return @{ UpdateAvailable = $false }
         }
     }
     catch {
-        # Fehler beim Abrufen der Updates: Gib den Fehler zurück
+        # Error fetching updates: Return the error
         return @{
             UpdateAvailable = $false;
             Error           = $_.Exception.Message
@@ -86,11 +86,11 @@ function Get-CpuInfo {
 }
 
 function Get-RamInfo {
-    $os = Get-CimInstance Win32_OperatingSystem # FreePhysicalMemory ist in KB
-    $ram = Get-CimInstance Win32_ComputerSystem # TotalPhysicalMemory ist in Byte
+    $os = Get-CimInstance Win32_OperatingSystem # FreePhysicalMemory is in KB
+    $ram = Get-CimInstance Win32_ComputerSystem # TotalPhysicalMemory is in Bytes
 
     $totalMemoryGB = [Math]::Round(($ram.TotalPhysicalMemory / 1GB), 2)
-    # Korrektur: FreePhysicalMemory ist in KB, Umrechnung in GB
+    # Correction: FreePhysicalMemory is in KB, convert to GB
     $freeMemoryGB = [Math]::Round(($os.FreePhysicalMemory / (1024 * 1024)), 2)
     
     "RAM: ${totalMemoryGB}GB Total / ${freeMemoryGB}GB Available"
@@ -100,10 +100,10 @@ function Get-GpuInfo {
     $gpus = Get-CimInstance Win32_VideoController | Select-Object Name
     $gpuStrings = @()
     foreach ($gpu in $gpus) {
-        # Zeigt nur noch den Namen an, da RAM-Info Probleme bereitet hat
+        # Only shows the name, as RAM info caused issues
         $gpuStrings += "$($gpu.Name)"
     }
-    # Sicherstellen, dass "GPU: " nur einmal angezeigt wird, auch wenn mehrere GPUs vorhanden sind
+    # Ensure "GPU: " is only displayed once, even if multiple GPUs are present
     if ($gpuStrings.Count -gt 0) {
         "GPU: " + ($gpuStrings -join ", ")
     } else {
@@ -113,7 +113,7 @@ function Get-GpuInfo {
 
 function Get-MotherboardInfo {
     $board = Get-CimInstance Win32_BaseBoard
-    "Mainboard: $($board.Manufacturer) $($board.Product)"
+    "Motherboard: $($board.Manufacturer) $($board.Product)"
 }
 
 function Get-BiosInfo {
@@ -123,17 +123,17 @@ function Get-BiosInfo {
 
 function Get-NetworkInfo {
     $computerName = $env:COMPUTERNAME
-    # Ping-Test entfernt, wie gewünscht, um den Start zu beschleunigen
-    # Public IP wurde bereits vorher entfernt
+    # Ping test removed, as requested, to speed up startup
+    # Public IP was already removed previously
     
-    "Gerätename: $computerName" # Nur noch Gerätename
+    "Device Name: $computerName" # Only device name now
 }
 
-# Hauptfunktion zum Abrufen und Anzeigen aller Systeminformationen
+# Main function to retrieve and display all system information
 function Get-AndDisplayAllSystemInfo {
-    $yPos = 40 # Startposition Y für Labels
+    $yPos = 40 # Starting Y position for labels
 
-    # Funktionen aufrufen und Labels erstellen
+    # Call functions and create labels
     $systemInfoLabels = @(
         (Get-OsInfo),
         (Get-CpuInfo),
@@ -141,11 +141,11 @@ function Get-AndDisplayAllSystemInfo {
         (Get-GpuInfo),
         (Get-MotherboardInfo),
         (Get-BiosInfo),
-        (Get-NetworkInfo) # NetworkInfo gibt ein Array zurück
+        (Get-NetworkInfo) # NetworkInfo returns an array
     )
 
     foreach ($line in $systemInfoLabels) {
-        # Wenn $line ein Array ist (wie bei Get-NetworkInfo), jedes Element einzeln verarbeiten
+        # If $line is an array (like with Get-NetworkInfo), process each element individually
         if ($line -is [array]) {
             foreach ($subLine in $line) {
                 $label = New-Object System.Windows.Forms.Label
@@ -227,10 +227,10 @@ $tabControl = New-Object System.Windows.Forms.TabControl
 $tabControl.Dock = 'Fill'
 $tabControl.Font = New-Object System.Drawing.Font("Segoe UI", 14)
 
-# OwnerDraw aktivieren für individuelle Tab-Text-Farbe
+# Enable OwnerDraw for individual tab text color
 $tabControl.DrawMode = [System.Windows.Forms.TabDrawMode]::OwnerDrawFixed
 
-# DrawItem Event für individuelle Tab-Text-Farbe
+# DrawItem Event for individual tab text color
 $tabControl.Add_DrawItem({
         param($sender, $e)
 
@@ -245,28 +245,28 @@ $tabControl.Add_DrawItem({
             $color = [System.Drawing.Color]::Black
         }
 
-        # Hole Rechteck für aktuellen Tab
+        # Get rectangle for current tab
         $rect = $sender.GetTabRect($e.Index)
 
-        # Falls $rect ein Array ist, erstes Element nehmen
+        # If $rect is an array, take the first element
         if ($rect -is [System.Array]) {
             $rect = $rect[0]
         }
 
-        # Hintergrund malen
+        # Paint background
         $e.Graphics.FillRectangle([System.Drawing.Brushes]::LightGray, $rect)
 
-        # StringFormat zentriert
+        # StringFormat centered
         $sf = New-Object System.Drawing.StringFormat
         $sf.Alignment = [System.Drawing.StringAlignment]::Center
         $sf.LineAlignment = [System.Drawing.StringAlignment]::Center
 
-        # Mitte des Rechtecks als PointF
+        # Center of the rectangle as PointF
         $pointX = [float]($rect.X) + ([float]($rect.Width) / 2)
         $pointY = [float]($rect.Y) + ([float]($rect.Height) / 2)
         $point = New-Object System.Drawing.PointF($pointX, $pointY)
 
-        # Text zeichnen
+        # Draw text
         $brush = New-Object System.Drawing.SolidBrush($color)
         $e.Graphics.DrawString($text, $font, $brush, $point, $sf)
         $brush.Dispose()
@@ -276,28 +276,28 @@ $form.Controls.Add($tabControl)
 
 
 $form.Add_Load({
-    # Führe den Update-Check aus
-    $updateInfo = Check-ForUpdates # Korrigiert: "[void]" von der linken Seite entfernt
+    # Perform the update check
+    $updateInfo = Check-ForUpdates
 
-    # Zeige die entsprechende Nachricht basierend auf dem Ergebnis an
+    # Display the corresponding message based on the result
     if ($updateInfo.UpdateAvailable) {
-        Write-Host ">>> UPDATE VERFÜGBAR! <<<" -ForegroundColor Yellow -BackgroundColor Red
-        Write-Host "Eine neue Version ($($updateInfo.RemoteVersion)) ist verfügbar!" -ForegroundColor Yellow
-        Write-Host "Deine aktuelle Version ist $($updateInfo.CurrentVersion)." -ForegroundColor Yellow
-        Write-Host "Bitte aktualisiere dein Tool über den GitHub Link: $($updateInfo.RepoLink)" -ForegroundColor Yellow
-        Write-Host "Führe den Startbefehl erneut aus, um die neue Version zu nutzen." -ForegroundColor Yellow
+        Write-Host ">>> UPDATE AVAILABLE! <<<" -ForegroundColor Yellow -BackgroundColor Red
+        Write-Host "A new version ($($updateInfo.RemoteVersion)) is available!" -ForegroundColor Yellow
+        Write-Host "Your current version is $($updateInfo.CurrentVersion)." -ForegroundColor Yellow
+        Write-Host "Please update your tool via the GitHub link: $($updateInfo.RepoLink)" -ForegroundColor Yellow
+        Write-Host "Run the start command again to use the new version." -ForegroundColor Yellow
         Write-Host "*********************************************" -ForegroundColor White
         Write-Host ""
     } elseif ($updateInfo.Error) {
-        # Zeige Fehler an, falls beim Update-Check etwas schief ging
+        # Display error if something went wrong during the update check
         [System.Windows.Forms.MessageBox]::Show(
-            "Fehler beim Überprüfen auf Updates: $($updateInfo.Error)",
-            "Update-Fehler",
+            "Error checking for updates: $($updateInfo.Error)",
+            "Update Error",
             [System.Windows.Forms.MessageBoxButtons]::OK,
             [System.Windows.Forms.MessageBoxIcon]::Warning
         )
     }
-    $null # Hinzugefügt: Unterdrückt die implizite Ausgabe des letzten Ausdrucks im Block
+    $null # Added: Suppresses implicit output of the last expression in the block
 })
 
 # Tab 1: Home
@@ -307,14 +307,14 @@ $tabHome.BackColor = $darkBackColor
 $tabHome.ForeColor = $darkForeColor
 $tabControl.TabPages.Add($tabHome)
 
-# Panel für Systeminformationen (oben links)
+# Panel for System Information (top left)
 $systemInfoPanel = New-Object System.Windows.Forms.Panel
 $systemInfoPanel.Size = New-Object System.Drawing.Size(550, 400)
 $systemInfoPanel.Location = New-Object System.Drawing.Point(10, 10)
 $systemInfoPanel.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
 $tabHome.Controls.Add($systemInfoPanel)
 
-# Titel für Systeminformationen im Panel
+# Title for System Information in the panel
 $systemInfoTitle = New-Object System.Windows.Forms.Label
 $systemInfoTitle.Text = "System Information"
 $systemInfoTitle.Font = New-Object System.Drawing.Font($systemInfoTitle.Font.FontFamily, 12, [System.Drawing.FontStyle]::Bold)
@@ -322,14 +322,14 @@ $systemInfoTitle.AutoSize = $true
 $systemInfoTitle.Location = New-Object System.Drawing.Point(10, 10)
 $systemInfoPanel.Controls.Add($systemInfoTitle)
 
-# Panel für Quick Links (direkt unter Systeminformationen)
+# Panel for Quick Links (directly below System Information)
 $quickLinksPanel = New-Object System.Windows.Forms.Panel
 $quickLinksPanel.Size = New-Object System.Drawing.Size(200, 200)
 $quickLinksPanel.Location = New-Object System.Drawing.Point(10, ($systemInfoPanel.Location.Y + $systemInfoPanel.Size.Height + 20)) # 20px Abstand
 $quickLinksPanel.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
 $tabHome.Controls.Add($quickLinksPanel)
 
-# Titel für Quick Links
+# Title for Quick Links
 $quickLinksTitle = New-Object System.Windows.Forms.Label
 $quickLinksTitle.Text = "Quick Links"
 $quickLinksTitle.Font = New-Object System.Drawing.Font($quickLinksTitle.Font.FontFamily, 12, [System.Drawing.FontStyle]::Bold)
@@ -340,10 +340,10 @@ $quickLinksPanel.Controls.Add($quickLinksTitle)
 # Quick Links Buttons
 $buttonYPos = 40
 $quickLinks = @(
-    @{"Text"="Task-Manager"; "Action"={ Start-Process taskmgr.exe }},
-    @{"Text"="Geräte-Manager"; "Action"={ Start-Process devmgmt.msc }},
-    @{"Text"="Systemsteuerung"; "Action"={ Start-Process control.exe }},
-    @{"Text"="Datenträgerverwaltung"; "Action"={ Start-Process diskmgmt.msc }}
+    @{"Text"="Task Manager"; "Action"={ Start-Process taskmgr.exe }},
+    @{"Text"="Device Manager"; "Action"={ Start-Process devmgmt.msc }},
+    @{"Text"="Control Panel"; "Action"={ Start-Process control.exe }},
+    @{"Text"="Disk Management"; "Action"={ Start-Process diskmgmt.msc }}
 )
 
 foreach ($link in $quickLinks) {
@@ -358,15 +358,15 @@ foreach ($link in $quickLinks) {
     $buttonYPos += 35
 }
 
-# --- NEU: Panel für Kontaktinformationen (rechts neben Quick Links) ---
+# --- NEW: Panel for Contact Information (right next to Quick Links) ---
 $contactPanel = New-Object System.Windows.Forms.Panel
-$contactPanel.Size = New-Object System.Drawing.Size(200, 200) # Gleiche Größe wie Quick Links Panel
-# Position: Rechts vom QuickLinksPanel, oben ausgerichtet mit QuickLinksPanel
+$contactPanel.Size = New-Object System.Drawing.Size(200, 200) # Same size as Quick Links Panel
+# Position: Right of QuickLinksPanel, aligned to the top with QuickLinksPanel
 $contactPanel.Location = New-Object System.Drawing.Point(($quickLinksPanel.Location.X + $quickLinksPanel.Size.Width + 20), $quickLinksPanel.Location.Y)
 $contactPanel.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
 $tabHome.Controls.Add($contactPanel)
 
-# Titel für Kontakt
+# Title for Contact
 $contactTitle = New-Object System.Windows.Forms.Label
 $contactTitle.Text = "Connect with me"
 $contactTitle.Font = New-Object System.Drawing.Font($contactTitle.Font.FontFamily, 12, [System.Drawing.FontStyle]::Bold)
@@ -374,7 +374,7 @@ $contactTitle.AutoSize = $true
 $contactTitle.Location = New-Object System.Drawing.Point(10, 10)
 $contactPanel.Controls.Add($contactTitle)
 
-# Kontaktinformationen (Beispiel mit LinkLabels)
+# Contact Information (Example with LinkLabels)
 $contactYPos = 40
 
 # Website Link
@@ -413,7 +413,7 @@ $discord2Link.Add_LinkClicked({ Start-Process "https://discord.gg/qxPNcgtTqn" })
 $contactPanel.Controls.Add($discord2Link)
 $contactYPos += 25
 
-# Wichtig: Schriftgröße für den Home Tab und seine Controls setzen
+# Important: Set font size for the Home Tab and its controls
 Set-FontSizeRecursive -control $tabHome -fontSize 11
 
 
@@ -504,7 +504,7 @@ foreach ($category in $tweakCategories) {
     $treeView.Nodes.Add($nodeCat) | Out-Null
 }
 
-# Set font size in $tabTree and all its controls (Schriftgröße auf 12)
+# Set font size in $tabTree and all its controls
 Set-FontSizeRecursive -control $tabTree -fontSize 11
 
 # Tab 3: Advanced (empty for now)
@@ -534,7 +534,7 @@ $tabDownloads.BackColor = $darkBackColor
 $tabDownloads.ForeColor = $darkForeColor
 $tabControl.TabPages.Add($tabDownloads)
 
-# Label oben
+# Label top
 $downloadsLabel = New-Object System.Windows.Forms.Label
 $downloadsLabel.Text = "Select the programs to install via winget:"
 $downloadsLabel.AutoSize = $true
@@ -542,7 +542,7 @@ $downloadsLabel.Location = New-Object System.Drawing.Point(15, 15)
 $downloadsLabel.ForeColor = $darkForeColor
 $tabDownloads.Controls.Add($downloadsLabel)
 
-# Kategorien mit Programmen (Name + winget ID)
+# Categories with programs (Name + winget ID)
 $programCategories = @{
     "Benchmarks"            = @(
         @{Name = "AIDA64 Extreme"; Id = "FinalWire.AIDA64.Extreme" },
@@ -668,7 +668,7 @@ $programCategories = @{
 # ==> Bevorzugt: MS Store variante, da es komplett nativ gemacht werden kann ohne extra downloads und temp files
 
 if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-    [System.Windows.Forms.MessageBox]::Show("winget wurde nicht gefunden. Es wird versucht, den App Installer (mit winget) aus dem Microsoft Store zu installieren.", "winget nicht gefunden", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+    [System.Windows.Forms.MessageBox]::Show("winget was not found. Attempting to install the app installer (using winget) from the Microsoft Store.", "winget not found", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
 
     try {
         # Pfad zur PowerShell-Executable
@@ -681,20 +681,20 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
 
         # Warten, bis der Store-Prozess beendet wird, oder eine gewisse Zeit abwarten
         # Es ist schwierig, die Installation im Store zu automatisieren, daher ist Benutzerinteraktion nötig.
-        [System.Windows.Forms.MessageBox]::Show("Bitte installieren Sie den 'App Installer' (Paket-ID: 9NBLGGH4NNS1) aus dem sich öffnenden Microsoft Store Fenster. Klicken Sie dann auf 'OK' hier, wenn die Installation abgeschlossen ist.", "Installation von winget", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+        [System.Windows.Forms.MessageBox]::Show("Please install the 'App Installer' (Package ID: 9NBLGGH4NNS1) from the Microsoft Store window that opens. Then click 'OK' here when the installation is complete.", "Installing winget", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
 
         # Nach der Installation erneut prüfen
         Start-Sleep -Seconds 5 # Gib dem System etwas Zeit, winget nach der Installation zu registrieren
         if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-            [System.Windows.Forms.MessageBox]::Show("winget konnte nach der Installation nicht gefunden werden. Bitte starten Sie das Skript neu oder stellen Sie sicher, dass winget korrekt installiert ist.", "Fehler bei winget", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+            [System.Windows.Forms.MessageBox]::Show("winget could not be found after installation. Please restart the script or make sure winget is installed correctly.", "Error in winget", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
             exit
         }
         else {
-            [System.Windows.Forms.MessageBox]::Show("winget wurde erfolgreich erkannt. Das Skript wird fortgesetzt.", "winget gefunden", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+            [System.Windows.Forms.MessageBox]::Show("winget was successfully detected. The script will continue.", "winget found", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
         }
     }
     catch {
-        [System.Windows.Forms.MessageBox]::Show("Ein Fehler ist beim Versuch aufgetreten, den Microsoft Store für die winget-Installation zu öffnen: $_. Bitte installieren Sie winget manuell.", "Fehler", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+        [System.Windows.Forms.MessageBox]::Show("An error occurred while attempting to open the Microsoft Store for winget installation: $_. Please install winget manually.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
         exit
     }
 }
@@ -712,7 +712,7 @@ function Update-InstalledPackageIds {
 
     $progressBar.Style = 'Marquee'
     $progressBar.Visible = $true
-    $statusLabel.Text = "Lade installierte Winget-Pakete (kann dauern)..."
+    $statusLabel.Text = "Loading installed Winget packages (may take some time)..."
     $parentForm.Refresh() # GUI aktualisieren
 
     $global:installedPackageIds.Clear() # Bestehende Liste leeren
@@ -720,7 +720,7 @@ function Update-InstalledPackageIds {
     $errors = ""
 
     try {
-        $statusDownloadLabel.Text = "Status: Lade installierte Winget-Pakete (kann dauern)..."
+        $statusDownloadLabel.Text = "Status: Loading installed Winget packages (may take some time)..."
         $progressBar.Style = 'Marquee'
         $progressBar.Visible = $true
         $parentForm.Refresh()
@@ -728,25 +728,25 @@ function Update-InstalledPackageIds {
         $wingetResult = Invoke-WingetCommand -arguments "list --source winget" -timeoutSeconds 60
 
         if ($wingetResult.TimedOut) {
-            [System.Windows.Forms.MessageBox]::Show($wingetResult.Errors, "Winget-Zeitüberschreitung", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-            $statusLabel.Text = "Status: Laden fehlgeschlagen (Timeout)."
+            [System.Windows.Forms.MessageBox]::Show($wingetResult.Errors, "Winget timeout", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+            $statusLabel.Text = "Status: Loading failed (timeout)."
             return
         }
 
         if ($wingetResult.ExitCode -ne 0) {
-            $errorMessage = "Winget 'list' Befehl ist mit Fehlercode $($wingetResult.ExitCode) beendet. "
+            $errorMessage = "Winget 'list' command failed with error code $($wingetResult.ExitCode) finished. "
             if (![string]::IsNullOrEmpty($wingetResult.Errors)) {
-                $errorMessage += "Fehler: $($wingetResult.Errors)."
+                $errorMessage += "Error: $($wingetResult.Errors)."
             }
             $errorMessage += "`n`nDetails in: $($wingetResult.ErrorFile)"
-            [System.Windows.Forms.MessageBox]::Show($errorMessage, "Winget-Fehler", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-            $statusLabel.Text = "Status: Laden fehlgeschlagen."
+            [System.Windows.Forms.MessageBox]::Show($errorMessage, "Winget error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+            $statusLabel.Text = "Status: Loading failed."
             return
         }
         
         if ([string]::IsNullOrEmpty($wingetResult.Output)) {
-            [System.Windows.Forms.MessageBox]::Show("Winget 'list' Befehl lieferte keine Ausgabe. Möglicherweise ein Konfigurationsproblem.", "Winget-Warnung", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)
-            $statusLabel.Text = "Status: Laden fehlgeschlagen."
+            [System.Windows.Forms.MessageBox]::Show("The winget 'list' command returned no output. Possibly a configuration issue.", "Winget warning", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)
+            $statusLabel.Text = "Status: Loading failed."
             return
         }
 
@@ -764,11 +764,11 @@ function Update-InstalledPackageIds {
                 $global:installedPackageIds[$cols[1].Trim()] = $true
             }
         }
-        $statusLabel.Text = "Status: Winget-Pakete geladen."
+        $statusLabel.Text = "Status: Winget packages loaded."
     }
     catch {
-        [System.Windows.Forms.MessageBox]::Show("Ein unerwarteter Fehler beim Abrufen der Winget-Paketliste: $_", "Winget-Fehler", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-        $statusLabel.Text = "Status: Laden fehlgeschlagen."
+        [System.Windows.Forms.MessageBox]::Show("An unexpected error occurred while retrieving the winget package list: $_", "Winget error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+        $statusLabel.Text = "Status: Loading failed."
     }
     finally {
         $progressBar.Visible = $false
@@ -855,16 +855,6 @@ $installButton.ForeColor = [System.Drawing.Color]::White
 $installButton.Enabled = $false
 $tabDownloads.Controls.Add($installButton)
 
-# Update Button
-$updateButton = New-Object System.Windows.Forms.Button
-$updateButton.Text = "Update all"
-$updateButton.Size = New-Object System.Drawing.Size(100, 30)
-$updateButton.Location = New-Object System.Drawing.Point(130, 660)
-$updateButton.BackColor = $accentColor
-$updateButton.ForeColor = [System.Drawing.Color]::White
-$updateButton.Enabled = $true
-$tabDownloads.Controls.Add($updateButton)
-
 # Uninstall Button
 $uninstallButton = New-Object System.Windows.Forms.Button
 $uninstallButton.Text = "Uninstall"
@@ -874,6 +864,16 @@ $uninstallButton.BackColor = $accentColor
 $uninstallButton.ForeColor = [System.Drawing.Color]::White
 $uninstallButton.Enabled = $false
 $tabDownloads.Controls.Add($uninstallButton)
+
+# Update Button
+$updateButton = New-Object System.Windows.Forms.Button
+$updateButton.Text = "Update all"
+$updateButton.Size = New-Object System.Drawing.Size(100, 30)
+$updateButton.Location = New-Object System.Drawing.Point(130, 660)
+$updateButton.BackColor = $accentColor
+$updateButton.ForeColor = [System.Drawing.Color]::White
+$updateButton.Enabled = $true
+$tabDownloads.Controls.Add($updateButton)
 
 # Uncheck All Button
 $uncheckAllButton = New-Object System.Windows.Forms.Button
@@ -989,7 +989,7 @@ $downloadTreeView.Add_AfterCheck({
 function Install-WingetProgram {
     param([string]$packageId)
 
-    $statusDownloadLabel.Text = "Status: Installiere/Aktualisiere $($packageId)..."
+    $statusDownloadLabel.Text = "Status: Install/Update $($packageId)..."
     $downloadProgressBar.Visible = $true
     $downloadProgressBar.Style = 'Marquee'
     $form.Refresh()
@@ -1001,18 +1001,18 @@ function Install-WingetProgram {
     $downloadProgressBar.Visible = $false
 
     if ($wingetResult.TimedOut) {
-        [System.Windows.Forms.MessageBox]::Show("Die Installation von $($packageId) hat das Zeitlimit überschritten.", "Winget Timeout", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+        [System.Windows.Forms.MessageBox]::Show("The installation of $($packageId) has exceeded the time limit.", "Winget Timeout", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
         return $false
     } elseif ($wingetResult.ExitCode -ne 0) {
-        $errorMessage = "Fehler bei der Installation/Aktualisierung von $($packageId). Exit Code: $($wingetResult.ExitCode). "
+        $errorMessage = "Error installing/updating $($packageId). Exit Code: $($wingetResult.ExitCode). "
         if (![string]::IsNullOrEmpty($wingetResult.Errors)) {
             $errorMessage += "Fehler: $($wingetResult.Errors)."
         }
         $errorMessage += "`n`nDetails in: $($wingetResult.ErrorFile)"
-        [System.Windows.Forms.MessageBox]::Show($errorMessage, "Winget Installation/Update Fehler", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+        [System.Windows.Forms.MessageBox]::Show($errorMessage, "Winget installation/update error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
         return $false
     } else {
-        $statusDownloadLabel.Text = "$($packageId) installiert/aktualisiert."
+        $statusDownloadLabel.Text = "$($packageId) installed/updated."
         return $true
     }
 }
@@ -1055,29 +1055,29 @@ function Uninstall-Programs {
 
     foreach ($node in $nodes) {
         $pkgId = $node.Tag
-        $statusDownloadLabel.Text = "Status: Deinstalliere $($node.Text) (ID: $($pkgId))..."
+        $statusDownloadLabel.Text = "Status: Uninstall $($node.Text) (ID: $($pkgId))..."
         $form.Refresh()
 
         $wingetResult = Invoke-WingetCommand -arguments "uninstall --id $($pkgId) --accept-source-agreements" -timeoutSeconds $timeoutSeconds
         
         if ($wingetResult.TimedOut) {
-            [System.Windows.Forms.MessageBox]::Show("Die Deinstallation von $($node.Text) hat das Zeitlimit überschritten.", "Winget Timeout", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+            [System.Windows.Forms.MessageBox]::Show("Uninstalling $($node.Text) has exceeded the time limit.", "Winget Timeout", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
             break # Breche ab, wenn ein Timeout auftritt
         } elseif ($wingetResult.ExitCode -ne 0) {
-            $errorMessage = "Fehler bei der Deinstallation von $($node.Text). Exit Code: $($wingetResult.ExitCode). "
+            $errorMessage = "Error uninstalling $($node.Text). Exit Code: $($wingetResult.ExitCode). "
             if (![string]::IsNullOrEmpty($wingetResult.Errors)) {
-                $errorMessage += "Fehler: $($wingetResult.Errors)."
+                $errorMessage += "Error: $($wingetResult.Errors)."
             }
             $errorMessage += "`n`nDetails in: $($wingetResult.ErrorFile)"
-            [System.Windows.Forms.MessageBox]::Show($errorMessage, "Winget Deinstallation Fehler", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+            [System.Windows.Forms.MessageBox]::Show($errorMessage, "Winget uninstallation error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
             break # Breche ab, wenn ein Fehler auftritt
         } else {
-            $statusDownloadLabel.Text = "$($node.Text) deinstalliert."
+            $statusDownloadLabel.Text = "$($node.Text) uninstalled."
         }
         $downloadProgressBar.Value++
     }
     $downloadProgressBar.Visible = $false
-    $statusDownloadLabel.Text = "Deinstallationsvorgang abgeschlossen."
+    $statusDownloadLabel.Text = "Uninstallation process completed."
     Update-InstalledProgramsStatus
 }
 
@@ -1132,7 +1132,7 @@ function Invoke-WingetCommand {
             [PSCustomObject]@{
                 ExitCode = $null # Kein ExitCode bei Timeout
                 Output = ""
-                Errors = "Winget-Befehl hat das Zeitlimit überschritten ($($timeoutSeconds)s)."
+                Errors = "Winget command timed out ($($timeoutSeconds)s)."
                 OutputFile = $outputFile
                 ErrorFile = $errorFile
                 TimedOut = $true
@@ -1143,7 +1143,7 @@ function Invoke-WingetCommand {
         [PSCustomObject]@{
             ExitCode = $null
             Output = ""
-            Errors = "Unerwarteter Fehler beim Ausführen von winget: $_"
+            Errors = "Unexpected error when running winget: $_"
             OutputFile = $outputFile
             ErrorFile = $errorFile
             TimedOut = $false
@@ -1168,7 +1168,7 @@ $installButton.Add_Click({
     
             if ($selectedNodes.Count -eq 0) {
                 # Keine spezifischen Programme ausgewählt, also "Alle aktualisieren"
-                [System.Windows.Forms.MessageBox]::Show("Keine einzelnen Programme ausgewählt. Starte die Aktualisierung aller verfügbaren Winget-Updates.", "Alle aktualisieren", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+                [System.Windows.Forms.MessageBox]::Show("No individual programs selected. Start updating all available Winget updates.", "Update all", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
                 
                 # Überprüfe, ob es überhaupt aktualisierbare Pakete gibt
                 # Hinweis: Deine globale Variable $global:updatablePackageIds wird aktuell nicht gefüllt.
@@ -1180,14 +1180,14 @@ $installButton.Add_Click({
                 # }
     
                 $dialogResult = [System.Windows.Forms.MessageBox]::Show(
-                    "Möchten Sie alle verfügbaren Winget-Paket-Updates installieren? Dies kann einige Zeit dauern.",
-                    "Alle Updates installieren?",
+                    "MDo you want to install all available Winget package updates? This may take some time.",
+                    "Install all updates?",
                     [System.Windows.Forms.MessageBoxButtons]::YesNo,
                     [System.Windows.Forms.MessageBoxIcon]::Question
                 )
     
                 if ($dialogResult -eq [System.Windows.Forms.DialogResult]::Yes) {
-                    $statusDownloadLabel.Text = "Status: Aktualisiere alle Winget-Pakete..."
+                    $statusDownloadLabel.Text = "Status: Updating all Winget packages..."
                     $downloadProgressBar.Style = 'Marquee'
                     $downloadProgressBar.Visible = $true
                     $form.Refresh()
@@ -1195,23 +1195,23 @@ $installButton.Add_Click({
                     $wingetResult = Invoke-WingetCommand -arguments "upgrade --all --accept-package-agreements --accept-source-agreements" -timeoutSeconds 300
                     
                     if ($wingetResult.TimedOut) {
-                        [System.Windows.Forms.MessageBox]::Show("Die Aktualisierung aller Winget-Pakete hat das Zeitlimit überschritten.", "Winget Timeout", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+                        [System.Windows.Forms.MessageBox]::Show("The update of all Winget packages has timed out.", "Winget Timeout", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
                     } elseif ($wingetResult.ExitCode -ne 0) {
-                        $errorMessage = "Fehler beim Aktualisieren aller Pakete. Exit Code: $($wingetResult.ExitCode). "
+                        $errorMessage = "Error updating all packages. Exit Code: $($wingetResult.ExitCode). "
                         if (![string]::IsNullOrEmpty($wingetResult.Errors)) {
-                            $errorMessage += "Fehler: $($wingetResult.Errors)."
+                            $errorMessage += "Error: $($wingetResult.Errors)."
                         }
                         $errorMessage += "`n`nDetails in: $($wingetResult.ErrorFile)"
-                        [System.Windows.Forms.MessageBox]::Show($errorMessage, "Winget Upgrade Fehler", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+                        [System.Windows.Forms.MessageBox]::Show($errorMessage, "Winget upgrade error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
                     } else {
-                        [System.Windows.Forms.MessageBox]::Show("Alle Winget-Pakete wurden aktualisiert (falls Updates verfügbar waren).", "Updates Abgeschlossen", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+                        [System.Windows.Forms.MessageBox]::Show("All Winget packages have been updated (if updates were available).", "Updates Abgeschlossen", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
                     }
                 }
             } else {
                 # Einzelne Programme ausgewählt, verarbeite diese wie gehabt
                 $dialogResult = [System.Windows.Forms.MessageBox]::Show(
-                    "Möchten Sie die ausgewählten Programme aktualisieren?",
-                    "Programme aktualisieren?",
+                    "Do you want to update the selected programs?",
+                    "Update programs?",
                     [System.Windows.Forms.MessageBoxButtons]::YesNo,
                     [System.Windows.Forms.MessageBoxIcon]::Question
                 )
@@ -1222,7 +1222,7 @@ $installButton.Add_Click({
                 }
             }
         } catch {
-            [System.Windows.Forms.MessageBox]::Show("Ein Fehler ist aufgetreten: $_", "Fehler", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+            [System.Windows.Forms.MessageBox]::Show("An error has occurred: $_", "Fehler", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
         } finally {
             Update-InstalledProgramsStatus -parentForm $form -progressBar $downloadProgressBar -statusLabel $statusDownloadLabel
         }
@@ -1264,7 +1264,7 @@ $uncheckAllButton.Add_Click({
 Set-FontSizeRecursive -control $tabDownloads -fontSize 11
 
 # Vor dem Initialisieren der Winget-Liste eine kurze Meldung anzeigen
-$statusDownloadLabel.Text = "Status: Initialisiere Winget-Daten..."
+$statusDownloadLabel.Text = "Status: Initializing Winget data..."
 $downloadProgressBar.Visible = $true
 $downloadProgressBar.Style = 'Marquee' # Setzt den Stil auf "Marquee" für eine durchlaufende Animation
 $form.Refresh() # Wichtig, damit die GUI sofort aktualisiert wird

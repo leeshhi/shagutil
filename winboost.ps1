@@ -1,7 +1,7 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
-$scriptVersion = "0.0.3"
+$scriptVersion = "0.0.4"
 
 # Admin Check
 if (-not ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltinRole] "Administrator")) {
@@ -852,7 +852,7 @@ $installButton.Text = "Install"
 $installButton.Size = New-Object System.Drawing.Size(100, 30)
 $installButton.Location = New-Object System.Drawing.Point(15, 660)
 $installButton.BackColor = $accentColor
-$installButton.ForeColor = [System.Drawing.Color]::White
+$installButton.ForeColor = [System.Drawing.Color]::Lime
 $installButton.Enabled = $false
 $tabDownloads.Controls.Add($installButton)
 
@@ -862,7 +862,7 @@ $uninstallButton.Text = "Uninstall"
 $uninstallButton.Size = New-Object System.Drawing.Size(100, 30)
 $uninstallButton.Location = New-Object System.Drawing.Point(245, 660)
 $uninstallButton.BackColor = $accentColor
-$uninstallButton.ForeColor = [System.Drawing.Color]::White
+$uninstallButton.ForeColor = [System.Drawing.Color]::Red
 $uninstallButton.Enabled = $false
 $tabDownloads.Controls.Add($uninstallButton)
 
@@ -872,7 +872,7 @@ $updateButton.Text = "Update all"
 $updateButton.Size = New-Object System.Drawing.Size(100, 30)
 $updateButton.Location = New-Object System.Drawing.Point(130, 660)
 $updateButton.BackColor = $accentColor
-$updateButton.ForeColor = [System.Drawing.Color]::White
+$updateButton.ForeColor = [System.Drawing.Color]::Lime
 $updateButton.Enabled = $true
 $tabDownloads.Controls.Add($updateButton)
 
@@ -1191,7 +1191,7 @@ $updateButton.Add_Click({
             # }
 
             $dialogResult = [System.Windows.Forms.MessageBox]::Show(
-                "MDo you want to install all available Winget package updates? This may take some time.",
+                "Do you want to install all available Winget package updates? This may take some time.",
                 "Install all updates?",
                 [System.Windows.Forms.MessageBoxButtons]::YesNo,
                 [System.Windows.Forms.MessageBoxIcon]::Question

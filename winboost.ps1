@@ -1,11 +1,9 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Security
-
-$scriptVersion = "0.0.6"
+$scriptVersion = "0.0.7"
 
 #region 1. Initial Script Setup & Admin Check
-
 # Admin Check
 if (-not ([Security.Principal.WindowsPrincipal][System.Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltinRole] "Administrator")) {
     [System.Windows.Forms.MessageBox]::Show("This script must be run as an Administrator. Please restart PowerShell or the script file with administrative privileges.", "Administrator Privileges Required", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Stop)
@@ -21,34 +19,20 @@ Write-Host "    █   █   █   █   █ █   █     █   █ █   █" -
 Write-Host "█████   █   █   █   █ █████ █   █████ █████" -ForegroundColor Green
 Write-Host ""
 Write-Host "*********************************************" -ForegroundColor Cyan
-Write-Host "* Welcome to WinBoost v$scriptVersion!      *" -ForegroundColor Cyan
+Write-Host "* Welcome to ShagUtil v$scriptVersion!      *" -ForegroundColor Cyan
 Write-Host "* Optimizing your Windows experience.       *" -ForegroundColor Cyan
 Write-Host "* Script by leeshhi                         *" -ForegroundColor Cyan
 Write-Host "*********************************************" -ForegroundColor Cyan
 Write-Host ""
 Write-Host ""
-
 #endregion
 
 #region 2. Global Helper Functions
-
-# Function: Recursively set font size for all controls within a control
-function Set-FontSizeRecursive {
-    param([System.Windows.Forms.Control]$control, [float]$fontSize)
-
-    $newFont = New-Object System.Drawing.Font($control.Font.FontFamily, $fontSize, $control.Font.Style)
-    $control.Font = $newFont
-
-    foreach ($child in $control.Controls) {
-        Set-FontSizeRecursive -control $child -fontSize $fontSize
-    }
-}
-
 # Function: Check for script updates
-function Check-ForUpdates {
+function CheckUpdates {
     param(
         [string]$currentVersion = $scriptVersion,
-        [string]$githubRawUrl = "https://raw.githubusercontent.com/leeshhi/winboost/main/version.txt"
+        [string]$githubRawUrl = "https://raw.githubusercontent.com/leeshhi/shagutil/main/version.txt"
     )
 
     try {
@@ -63,7 +47,7 @@ function Check-ForUpdates {
                 UpdateAvailable = $true;
                 RemoteVersion   = $remoteVersion;
                 CurrentVersion  = $currentVersion;
-                RepoLink        = "https://github.com/leeshhi/winboost"
+                RepoLink        = "https://github.com/leeshhi/shagutil"
             }
         }
         else {
@@ -144,6 +128,7 @@ function Invoke-WingetCommand {
         }
     }
 }
+#endregion
 
 # Restart Explorer Function
 function Restart-Explorer {
@@ -157,11 +142,9 @@ $global:hasChanges = $false
 $global:restartNeeded = $false
 $global:IgnoreCheckEvent = $false # For General tab TreeView
 $global:IgnoreCheckEventDownloads = $false # For Downloads tab TreeView
-
 #endregion
 
 #region 3. Main Form & TabControl Setup
-
 # Colors
 $darkBackColor = [System.Drawing.Color]::FromArgb(30, 30, 30)
 $darkForeColor = [System.Drawing.Color]::White
@@ -170,7 +153,7 @@ $accentColor = [System.Drawing.Color]::FromArgb(0, 122, 204)
 
 # Form
 $form = New-Object System.Windows.Forms.Form
-$form.Text = "Windows Tweaks Tool by leeshhi - Version $scriptVersion"
+$form.Text = "Shag Windows Utility - Version $scriptVersion"
 $form.Size = New-Object System.Drawing.Size(700, 850)
 $form.StartPosition = "CenterScreen"
 $form.FormBorderStyle = 'FixedDialog'
@@ -183,7 +166,7 @@ $form.Font = New-Object System.Drawing.Font("Segoe UI", 11)
 # TabControl setup
 $tabControl = New-Object System.Windows.Forms.TabControl
 $tabControl.Dock = 'Fill'
-$tabControl.Font = New-Object System.Drawing.Font("Segoe UI", 14)
+#$tabControl.Font = New-Object System.Drawing.Font("Segoe UI", 14)
 $tabControl.DrawMode = [System.Windows.Forms.TabDrawMode]::OwnerDrawFixed
 
 # DrawItem Event for individual tab text color
@@ -223,7 +206,7 @@ $form.Controls.Add($tabControl)
 
 # Form Load Event (for Update Check)
 $form.Add_Load({
-        $updateInfo = Check-ForUpdates
+        $updateInfo = CheckUpdates
         if ($updateInfo.UpdateAvailable) {
             Write-Host ">>> UPDATE AVAILABLE! <<<" -ForegroundColor Yellow -BackgroundColor Red
             Write-Host "A new version ($($updateInfo.RemoteVersion)) is available!" -ForegroundColor Yellow
@@ -243,19 +226,15 @@ $form.Add_Load({
         }
         $null
     })
-
 #endregion
 
 #region 4. Tab: Home
-
 $tabHome = New-Object System.Windows.Forms.TabPage "Home"
 $tabHome.BackColor = $darkBackColor
 $tabHome.ForeColor = $darkForeColor
 $tabControl.TabPages.Add($tabHome)
 
 #region Home Tab - System Information Panel & Functions
-
-# Functions to get system information
 function Get-OsInfo {
     $os = Get-CimInstance Win32_OperatingSystem
     "OS: $($os.Caption) Version $($os.Version) (Build $($os.BuildNumber))"
@@ -376,11 +355,9 @@ $systemInfoTitle.Font = New-Object System.Drawing.Font($systemInfoTitle.Font.Fon
 $systemInfoTitle.AutoSize = $true
 $systemInfoTitle.Location = New-Object System.Drawing.Point(10, 10)
 $systemInfoPanel.Controls.Add($systemInfoTitle)
-
 #endregion
 
 #region Home Tab - Quick Links Panel
-
 # Panel for Quick Links (directly below System Information)
 $quickLinksPanel = New-Object System.Windows.Forms.Panel
 $quickLinksPanel.Size = New-Object System.Drawing.Size(200, 200)
@@ -416,11 +393,9 @@ foreach ($link in $quickLinks) {
     $quickLinksPanel.Controls.Add($button)
     $buttonYPos += 35
 }
-
 #endregion
 
 #region Home Tab - Contact Information Panel
-
 $contactPanel = New-Object System.Windows.Forms.Panel
 $contactPanel.Size = New-Object System.Drawing.Size(200, 200)
 $contactPanel.Location = New-Object System.Drawing.Point(($quickLinksPanel.Location.X + $quickLinksPanel.Size.Width + 20), $quickLinksPanel.Location.Y)
@@ -468,70 +443,271 @@ $discord2Link.Location = New-Object System.Drawing.Point(10, $contactYPos)
 $discord2Link.Add_LinkClicked({ Start-Process "https://discord.gg/qxPNcgtTqn" })
 $contactPanel.Controls.Add($discord2Link)
 $contactYPos += 25
-
 #endregion
-
-Set-FontSizeRecursive -control $tabHome -fontSize 11
-
 #endregion
 
 #region 5. Tab: General
-
 $tabGeneral = New-Object System.Windows.Forms.TabPage "General"
 $tabGeneral.BackColor = $darkBackColor
 $tabGeneral.ForeColor = $darkForeColor
 $tabControl.TabPages.Add($tabGeneral)
 
-#region General Tab - Tweak Data
-
-$tweakCategories = @(
-    @{
-        Category = "Explorer Settings"
-        Tweaks   = @(
-            @{ Label = "Show file extensions"; RestartNeeded = $false;
-                Enable = { Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "HideFileExt" -Value 0 }
-                Disable = { Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "HideFileExt" -Value 1 }
-                GetState = { ((Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "HideFileExt").HideFileExt -eq 0) }
-                Default = $true
-            },
-            @{ Label = "Show hidden files"; RestartNeeded = $false;
-                Enable = { Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "Hidden" -Value 1 }
-                Disable = { Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "Hidden" -Value 2 }
-                GetState = { ((Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "Hidden").Hidden -eq 1) }
-                Default = $false
-            }
-        )
-    },
-    @{
-        Category = "Search Function"
-        Tweaks   = @(
-            @{ Label = "Disable Explorer search box"; RestartNeeded = $true;
-                Enable = { Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search" -Name "SearchboxTaskbarMode" -Value 0 }
-                Disable = { Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search" -Name "SearchboxTaskbarMode" -Value 1 }
-                GetState = { ((Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search" -Name "SearchboxTaskbarMode").SearchboxTaskbarMode -eq 0) }
-                Default = $false
-            }
-        )
+#region Tweak functions
+# Function to get current registry value
+function Get-RegistryValue {
+    param([string]$Path, [string]$Name)
+    try {
+        $value = Get-ItemProperty -Path $Path -Name $Name -ErrorAction SilentlyContinue
+        if ($value) {
+            return $value.$Name
+        }
+        return $null
     }
-)
+    catch {
+        Write-Warning ("Could not read registry value {0} from {1}: {2}" -f $Name, $Path, $_)
+        return $null
+    }
+}
 
+# Function to set registry value
+function Set-RegistryValue {
+    param([string]$Path, [string]$Name, $Value, [string]$Type)
+    try {
+        if (-not (Test-Path $Path)) {
+            New-Item -Path $Path -Force | Out-Null
+        }
+        Set-ItemProperty -Path $Path -Name $Name -Value $Value -Type $Type -Force -ErrorAction Stop
+        $global:hasChanges = $true
+        return $true
+    }
+    catch {
+        Write-Warning ("Could not set registry value {0} to {1} in {2}: {3}" -f $Name, $Value, $Path, $_)
+        return $false
+    }
+}
+
+# Function to get service start type
+function Get-ServiceStatus {
+    param([string]$ServiceName)
+    try {
+        $service = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
+        if ($service) {
+            # Convert start type to a comparable number
+            switch ($service.StartType) {
+                "Boot" { return 0 }
+                "System" { return 1 }
+                "Automatic" { return 2 }
+                "Manual" { return 3 }
+                "Disabled" { return 4 }
+                default { return $null }
+            }
+        }
+        return $null
+    }
+    catch {
+        Write-Warning ("Could not get start type for service {0}: {1}" -f $ServiceName, $_)
+        return $null
+    }
+}
+
+# Function to set service start type
+function Set-ServiceStartType {
+    param([string]$ServiceName, [int]$StartType)
+    try {
+        Set-Service -Name $ServiceName -StartupType ([System.ServiceProcess.ServiceStartMode]$StartType) -ErrorAction Stop
+        # Optionally, restart service if it was running and changed to Automatic/Manual
+        # Get-Service -Name $ServiceName | Restart-Service -ErrorAction SilentlyContinue
+        $global:hasChanges = $true
+        $global:restartNeeded = $true
+        return $true
+    }
+    catch {
+        Write-Warning ("Could not set start type for service {0} to {1}: {2}" -f $ServiceName, $StartType, $_)
+        return $false
+    }
+}
 #endregion
 
-#region General Tab - GUI Elements
+#region Tweak Data
+$generalTweaks = @(
+    @{
+        Name         = "Disable Desktop Icons Cache"
+        Description  = "Disables the caching of desktop icons, which can sometimes cause display issues or bloat."
+        Category     = "Performance"
+        RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+        ValueName    = "DisableThumbnailCache"
+        TweakValue   = 1
+        DefaultValue = 0
+        ValueType    = "DWord"
+    },
+    @{
+        Name         = "Disable Diagnostic Data"
+        Description  = "Stops Windows from sending diagnostic and usage data to Microsoft."
+        Category     = "Privacy"
+        RegistryPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Privacy"
+        ValueName    = "AllowTelemetry"
+        TweakValue   = 0
+        DefaultValue = 1
+        ValueType    = "DWord"
+    },
+    @{
+        Name         = "Disable Game DVR (Xbox Game Bar)"
+        Description  = "Turns off the Game DVR feature, which can impact game performance."
+        Category     = "Gaming"
+        RegistryPath = "HKCU:\System\GameConfigStore"
+        ValueName    = "GameDVR_Enabled"
+        TweakValue   = 0
+        DefaultValue = 1
+        ValueType    = "DWord"
+    },
+    @{
+        Name         = "Disable Search Indexer"
+        Description  = "Disables the Windows Search Indexer service, saving disk I/O and RAM."
+        Category     = "Performance"
+        RegistryPath = "HKLM:\SYSTEM\CurrentControlSet\Services\WSearch"
+        ValueName    = "Start"
+        TweakValue   = 4 # 4 = Disabled
+        DefaultValue = 2 # 2 = Automatic
+        ValueType    = "DWord"
+        Action       = "Service" # Indicates this is a service action, not just registry
+        Service      = "WSearch"
+    },
+    @{
+        Name         = "Disable Visual Effects (Adjust for best performance)"
+        Description  = "Adjusts visual effects for best performance (disables animations, shadows etc.). This typically applies multiple settings, so we'll treat it as a group or a specific set of registry changes."
+        Category     = "Visuals"
+        # For simplicity, we'll represent this as a single tweak, but it often involves multiple registry keys.
+        # For a full implementation, you'd list all affected keys/values here, or create a specific function.
+        # Example for one part:
+        RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects"
+        ValueName    = "VisualFXSetting"
+        TweakValue   = 2 # 2 = Adjust for best performance
+        DefaultValue = 0 # 0 = Let Windows choose what's best, or a specific default
+        ValueType    = "DWord"
+    }
+)
+#endregion
 
+#region GUI Elements
 $treeView = New-Object System.Windows.Forms.TreeView
-$treeView.Size = New-Object System.Drawing.Size(650, 600)
+$treeView.Size = New-Object System.Drawing.Size(650, 550) # Anpassung der Größe
 $treeView.Location = New-Object System.Drawing.Point(15, 15)
 $treeView.BackColor = $darkBackColor
 $treeView.ForeColor = $darkForeColor
 $treeView.HideSelection = $false
 $treeView.CheckBoxes = $true
+$treeView.ShowNodeToolTips = $true
+#$treeView.ItemHeight = 20
 $tabGeneral.Controls.Add($treeView)
+
+# Global list to hold all tweak nodes for easier access
+$allTweakNodes = @()
+
+# Populate TreeView with categories and tweaks
+function GeneralTreeView {
+    param([Parameter(Mandatory = $true)][System.Windows.Forms.TreeView]$treeViewToPopulate)
+    $treeViewToPopulate.Nodes.Clear()
+
+    $tempTweakNodes = [System.Collections.Generic.List[System.Windows.Forms.TreeNode]]::new()
+    $categories = [System.Collections.Generic.Dictionary[string, System.Collections.Generic.List[PSObject]]]::new()
+
+    foreach ($tweak in $generalTweaks) {
+        $categoryName = $tweak.Category
+        if ([string]::IsNullOrEmpty($categoryName)) {
+            $categoryName = "Unkategorisiert" # Fallback für den unwahrscheinlichen Fall, dass eine Kategorie doch leer ist
+        }
+        if (-not $categories.ContainsKey($categoryName)) {
+            $categories.Add($categoryName, [System.Collections.Generic.List[PSObject]]::new())
+        }
+        $categories[$categoryName].Add($tweak)
+    }
+
+    # Jetzt iterieren wir über die manuell erstellten Kategorien
+    foreach ($categoryEntry in $categories.GetEnumerator() | Sort-Object Name) {
+        $categoryName = $categoryEntry.Key
+        $tweaksInThisCategory = $categoryEntry.Value
+
+        $parentNode = New-Object System.Windows.Forms.TreeNode $categoryName
+        $parentNode.ForeColor = $accentColor
+        $parentNode.NodeFont = New-Object System.Drawing.Font($treeViewToPopulate.Font, [System.Drawing.FontStyle]::Bold)
+        #$parentNode.NodeFont = New-Object System.Drawing.Font($treeViewToPopulate.Font.FontFamily, 10, [System.Drawing.FontStyle]::Bold)
+        $treeViewToPopulate.Nodes.Add($parentNode) | Out-Null
+        
+        # Erweitert den übergeordneten Knoten, damit die Unterelemente sichtbar sind
+        $parentNode.Expand() 
+        
+        foreach ($tweak in $tweaksInThisCategory | Sort-Object Name) {
+            $childNode = New-Object System.Windows.Forms.TreeNode $tweak.Name
+            $childNode.Tag = $tweak
+            $childNode.ToolTipText = $tweak.Description
+            $parentNode.Nodes.Add($childNode) | Out-Null
+            $tempTweakNodes.Add($childNode)
+        }
+    }
+
+    $global:allTweakNodes = $tempTweakNodes.ToArray()
+}
+
+# Function to update the visual status of tweaks in the TreeView
+function Update-GeneralTweaksStatus {
+    foreach ($node in $global:allTweakNodes) {
+        # Defensive Prüfung: Sicherstellen, dass $node ein gültiges TreeNode-Objekt ist und Tag-Daten hat
+        if (-not ($node -is [System.Windows.Forms.TreeNode]) -or -not $node.Tag) {
+            Write-Warning "Überspringe ungültigen Knoten oder Knoten ohne Tweak-Daten in allTweakNodes. Knoten: $($node | Out-String)"
+            continue # Diesen ungültigen Knoten überspringen
+        }
+
+        $tweak = $node.Tag
+        $currentValue = $null
+
+        # Überprüfen, ob RegistryPath oder Service-Name für Get-RegistryValue gültig ist
+        if (($tweak.RegistryPath -ne $null -and $tweak.RegistryPath -ne "") -or `
+            ($tweak.Action -eq "Service" -and $tweak.Service -ne $null -and $tweak.Service -ne "")) {
+            
+            # Überprüfe, ob es sich um einen Dienst-Tweak handelt und rufe Get-ServiceStatus auf
+            if ($tweak.Action -eq "Service") {
+                $currentValue = Get-ServiceStatus -serviceName $tweak.Service
+            }
+            else {
+                # Überprüfe, ob der Registry-Pfad existiert, bevor versucht wird, den Wert zu lesen
+                if (-not (Test-Path $tweak.RegistryPath)) {
+                    Write-Warning "Registry-Pfad existiert nicht: $($tweak.RegistryPath). Kann Wert für $($tweak.Name) nicht lesen."
+                    $node.Checked = $false # Standardmäßig nicht ausgewählt, wenn Pfad ungültig
+                    $node.NodeFont = New-Object System.Drawing.Font($treeView.Font, [System.Drawing.FontStyle]::Regular)
+                    $node.ForeColor = $darkForeColor
+                    continue # Überspringe diesen Knoten
+                }
+                $currentValue = Get-RegistryValue -path $tweak.RegistryPath -name $tweak.ValueName -type $tweak.ValueType
+            }
+
+            # Nachdem currentValue erfolgreich abgerufen wurde, Checked, NodeFont, ForeColor anwenden
+            if (($currentValue -eq $tweak.TweakValue) -or ($tweak.Action -eq "Service" -and $currentValue -eq $tweak.TweakValue)) {
+                $node.Checked = $true
+                $node.NodeFont = New-Object System.Drawing.Font($treeView.Font, [System.Drawing.FontStyle]::Bold)
+                #$node.NodeFont = New-Object System.Drawing.Font($treeView.Font.FontFamily, 11, [System.Drawing.FontStyle]::Bold)
+                #$node.ForeColor = $accentColor
+                $node.ForeColor = [System.Drawing.Color]::Lime
+            }
+            else {
+                $node.Checked = $false
+                $node.NodeFont = New-Object System.Drawing.Font($treeView.Font, [System.Drawing.FontStyle]::Regular)
+                $node.ForeColor = $darkForeColor
+            }
+        }
+        else {
+            # Fälle behandeln, in denen $tweak oder sein Pfad/Dienstname ungültig/fehlt
+            Write-Warning "Tweak-Daten fehlen oder sind ungültig für Knoten $($node.Text): $($tweak | Out-String). Status kann nicht bestimmt werden."
+            $node.Checked = $false # Standardmäßig nicht ausgewählt
+            $node.NodeFont = New-Object System.Drawing.Font($treeView.Font, [System.Drawing.FontStyle]::Regular)
+            $node.ForeColor = $darkForeColor
+        }
+    }
+}
 
 # Status Label (Footer)
 $statusLabel = New-Object System.Windows.Forms.Label
 $statusLabel.Size = New-Object System.Drawing.Size(650, 30)
-$statusLabel.Location = New-Object System.Drawing.Point(15, 620)
+$statusLabel.Location = New-Object System.Drawing.Point(15, ($treeView.Location.Y + $treeView.Size.Height + 10))
 $statusLabel.TextAlign = 'MiddleLeft'
 $statusLabel.Text = "Status: Ready"
 $statusLabel.ForeColor = $darkForeColor
@@ -541,219 +717,233 @@ $tabGeneral.Controls.Add($statusLabel)
 # Progress Bar
 $progressBar = New-Object System.Windows.Forms.ProgressBar
 $progressBar.Size = New-Object System.Drawing.Size(650, 20)
-$progressBar.Location = New-Object System.Drawing.Point(15, 655)
+$progressBar.Location = New-Object System.Drawing.Point(15, ($statusLabel.Location.Y + $statusLabel.Size.Height + 5))
 $progressBar.Visible = $false
 $tabGeneral.Controls.Add($progressBar)
 
 # Buttons Panel
 $buttonPanel = New-Object System.Windows.Forms.Panel
 $buttonPanel.Size = New-Object System.Drawing.Size(650, 50)
-$buttonPanel.Location = New-Object System.Drawing.Point(15, 685)
+$buttonPanel.Location = New-Object System.Drawing.Point(15, ($progressBar.Location.Y + $progressBar.Size.Height + 5))
 $buttonPanel.BackColor = $darkBackColor
 $tabGeneral.Controls.Add($buttonPanel)
 
 # Apply Button
 $applyButton = New-Object System.Windows.Forms.Button
-$applyButton.Text = "Apply"
-$applyButton.Size = New-Object System.Drawing.Size(120, 30)
-$applyButton.Location = New-Object System.Drawing.Point(510, 10)
-$applyButton.Enabled = $false
+$applyButton.Text = "Apply Selected Tweaks"
+$applyButton.Size = New-Object System.Drawing.Size(180, 30)
+$applyButton.Location = New-Object System.Drawing.Point(0, 10)
 $applyButton.BackColor = $accentColor
 $applyButton.ForeColor = [System.Drawing.Color]::White
+$applyButton.Enabled = $false # Initially disabled
 $buttonPanel.Controls.Add($applyButton)
 
-# Restart Explorer Button
-$restartButton = New-Object System.Windows.Forms.Button
-$restartButton.Text = "Restart Explorer"
-$restartButton.Size = New-Object System.Drawing.Size(150, 30)
-$restartButton.Location = New-Object System.Drawing.Point(340, 10)
-$restartButton.Visible = $false
-$restartButton.BackColor = $accentColor
-$restartButton.ForeColor = [System.Drawing.Color]::White
-$buttonPanel.Controls.Add($restartButton)
-
-# Reset Defaults Button
+# Reset Button
 $resetButton = New-Object System.Windows.Forms.Button
-$resetButton.Text = "Reset to Default"
+$resetButton.Text = "Reset Selected to Default"
 $resetButton.Size = New-Object System.Drawing.Size(180, 30)
-$resetButton.Location = New-Object System.Drawing.Point(10, 10)
+$resetButton.Location = New-Object System.Drawing.Point(190, 10)
 $resetButton.BackColor = $accentColor
 $resetButton.ForeColor = [System.Drawing.Color]::White
+$resetButton.Enabled = $false # Initially disabled
 $buttonPanel.Controls.Add($resetButton)
 
-# Checkbox list for tweaks (populated later)
-$checkboxes = @()
-
-# Fill TreeView with categories and tweaks
-foreach ($category in $tweakCategories) {
-    $nodeCat = New-Object System.Windows.Forms.TreeNode $category.Category
-    $nodeCat.ForeColor = $accentColor
-    foreach ($tweak in $category.Tweaks) {
-        $nodeTweak = New-Object System.Windows.Forms.TreeNode $tweak.Label
-        $nodeTweak.Checked = $false
-        $nodeTweak.Tag = $tweak
-        $nodeCat.Nodes.Add($nodeTweak) | Out-Null
-        $checkboxes += $nodeTweak
-    }
-    $treeView.Nodes.Add($nodeCat) | Out-Null
-}
-
-Set-FontSizeRecursive -control $tabGeneral -fontSize 11
-
+# Uncheck All Button for General Tab
+$generalUncheckAllButton = New-Object System.Windows.Forms.Button
+$generalUncheckAllButton.Text = "Uncheck All"
+$generalUncheckAllButton.Size = New-Object System.Drawing.Size(100, 30)
+$generalUncheckAllButton.Location = New-Object System.Drawing.Point(380, 10)
+$generalUncheckAllButton.BackColor = $accentColor
+$generalUncheckAllButton.ForeColor = [System.Drawing.Color]::White
+$buttonPanel.Controls.Add($generalUncheckAllButton)
 #endregion
 
-#region General Tab - Event Handlers & Functions
-
-# Function to update button states (Apply and Restart Explorer)
-function UpdateButtons {
-    $applyButton.Enabled = $global:hasChanges
-    $restartButton.Visible = $global:restartNeeded
-}
-
-# Function to synchronize tweak states (from registry to checkboxes)
-function Sync-TweakStates {
-    $hasChangesLocal = $false
-    $restartNeededLocal = $false
-    foreach ($node in $checkboxes) {
-        $tweak = $node.Tag
-        try {
-            $currentState = & $tweak.GetState
-        }
-        catch {
-            $currentState = $false
-        }
-        $node.Checked = $currentState
-
-        if ($node.Checked -ne $tweak.Default) {
-            $hasChangesLocal = $true
-            if ($tweak.RestartNeeded) { $restartNeededLocal = $true }
-        }
-    }
-    $global:hasChanges = $hasChangesLocal
-    $global:restartNeeded = $restartNeededLocal
-    UpdateButtons
-    if (-not $hasChangesLocal) {
-        $statusLabel.Text = "Status: All settings are at default."
-    }
-    else {
-        $statusLabel.Text = "Status: Changes detected, please apply."
-    }
-}
-
-# TreeView AfterCheck event - sync child nodes and update parent states
+#region Event Handlers
 $treeView.Add_AfterCheck({
         param($sender, $e)
 
         if ($global:IgnoreCheckEvent) { return }
         $global:IgnoreCheckEvent = $true
 
-        if ($e.Node.Tag -eq $null) {
-            # It's a category node
+        if ($e.Node.Nodes.Count -gt 0) {
+            # Category node: Check/Uncheck all children
             foreach ($child in $e.Node.Nodes) {
                 $child.Checked = $e.Node.Checked
             }
         }
         else {
-            # It's a tweak node
+            # Tweak node: Update parent's checked state
             $parent = $e.Node.Parent
             if ($parent -ne $null) {
-                $allChecked = $true
-                $allUnchecked = $true
-                foreach ($child in $parent.Nodes) {
-                    if ($child.Checked) { $allUnchecked = $false } else { $allChecked = $false }
-                }
-                if ($allChecked) {
-                    $parent.Checked = $true
-                    $parent.StateImageIndex = -1 # No mixed state icon
-                }
-                elseif ($allUnchecked) {
-                    $parent.Checked = $false
-                    $parent.StateImageIndex = -1 # No mixed state icon
-                }
-                else {
-                    $parent.Checked = $false # Parent checkbox remains unchecked for mixed state
-                }
+                $checkedChildrenCount = ($parent.Nodes | Where-Object { $_.Checked }).Count
+                $parent.Checked = ($checkedChildrenCount -eq $parent.Nodes.Count)
             }
         }
 
-        $global:hasChanges = $true
+        # Enable/Disable Apply/Reset buttons based on selections
+        $checkedTweaks = $global:allTweakNodes | Where-Object { $_.Checked }
+        $uncheckedTweaks = $global:allTweakNodes | Where-Object { -not $_.Checked }
 
-        $restartNeededLocal = $false
-        foreach ($node in $checkboxes) {
-            if ($node.Checked -ne $node.Tag.Default -and $node.Tag.RestartNeeded) {
-                $restartNeededLocal = $true
-                break
-            }
-        }
-        $global:restartNeeded = $restartNeededLocal
-
-        $statusLabel.Text = "Status: Changes not applied yet."
-        UpdateButtons
+        $applyButton.Enabled = $checkedTweaks.Count -gt 0
+        $resetButton.Enabled = $uncheckedTweaks.Count -gt 0 # Reset enabled if any are unchecked (implying they are currently tweaked or could be reset)
 
         $global:IgnoreCheckEvent = $false
     })
 
-# Apply button click
+# Apply Button Click for General Tab
 $applyButton.Add_Click({
-        try {
+        $checkedTweaks = $global:allTweakNodes | Where-Object { $_.Checked }
+        if ($checkedTweaks.Count -eq 0) {
+            [System.Windows.Forms.MessageBox]::Show("Please select at least one tweak to apply.", "No Tweaks Selected", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+            return
+        }
+
+        $dialogResult = [System.Windows.Forms.MessageBox]::Show(
+            "Are you sure you want to apply the selected tweaks? This might require a system restart.",
+            "Confirm Apply Tweaks",
+            [System.Windows.Forms.MessageBoxButtons]::YesNo,
+            [System.Windows.Forms.MessageBoxIcon]::Question
+        )
+
+        if ($dialogResult -eq [System.Windows.Forms.DialogResult]::Yes) {
             $statusLabel.Text = "Status: Applying tweaks..."
-            $progressBar.Visible = $true
+            $progressBar.Style = 'Continuous'
             $progressBar.Minimum = 0
-            $progressBar.Maximum = $checkboxes.Count
+            $progressBar.Maximum = $checkedTweaks.Count
             $progressBar.Value = 0
+            $progressBar.Visible = $true
             $form.Refresh()
 
-            for ($i = 0; $i -lt $checkboxes.Count; $i++) {
-                $node = $checkboxes[$i]
+            $global:hasChanges = $false
+            $global:restartNeeded = $false
+
+            foreach ($node in $checkedTweaks) {
                 $tweak = $node.Tag
-                if ($node.Checked) {
-                    & $tweak.Enable
+                $statusLabel.Text = "Applying: $($tweak.Name)..."
+                $form.Refresh()
+
+                $success = $false
+                if ($tweak.Action -eq "Service") {
+                    $success = Set-ServiceStartType -ServiceName $tweak.Service -StartType $tweak.TweakValue
                 }
                 else {
-                    & $tweak.Disable
+                    $success = Set-RegistryValue -Path $tweak.RegistryPath -Name $tweak.ValueName -Value $tweak.TweakValue -Type $tweak.ValueType
                 }
-                $progressBar.Value = $i + 1
-                $form.Refresh()
+
+                if ($success) {
+                    $progressBar.Value++
+                }
+                else {
+                    [System.Windows.Forms.MessageBox]::Show("Failed to apply tweak: $($tweak.Name). Please check console for details.", "Error Applying Tweak", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+                }
             }
 
             $progressBar.Visible = $false
-            Sync-TweakStates
-            $statusLabel.Text = "Status: Tweaks applied."
-        }
-        catch {
-            [System.Windows.Forms.MessageBox]::Show("An error occurred while applying tweaks: $_", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-            $progressBar.Visible = $false
+            $statusLabel.Text = "Status: Tweak application complete."
+            Update-GeneralTweaksStatus # Re-check status after applying
+            $form.Refresh()
+
+            if ($global:restartNeeded) {
+                $restartDialogResult = [System.Windows.Forms.MessageBox]::Show(
+                    "Some changes require a system restart to take effect. Do you want to restart now?",
+                    "Restart Required",
+                    [System.Windows.Forms.MessageBoxButtons]::YesNo,
+                    [System.Windows.Forms.MessageBoxIcon]::Question
+                )
+                if ($restartDialogResult -eq [System.Windows.Forms.DialogResult]::Yes) {
+                    Restart-Computer -Force
+                }
+            }
         }
     })
 
-# Restart Explorer button click
-$restartButton.Add_Click({
-        Restart-Explorer
-        $restartButton.Visible = $false
-        $statusLabel.Text = "Status: Explorer restarted."
-    })
-
-# Reset button click
+# Reset Button Click for General Tab
 $resetButton.Add_Click({
-        foreach ($node in $checkboxes) {
-            $node.Checked = $node.Tag.Default
+        # Get all tweaks that are NOT checked (meaning we want to reset them to default)
+        $toResetTweaks = $global:allTweakNodes | Where-Object { -not $_.Checked }
+
+        if ($toResetTweaks.Count -eq 0) {
+            [System.Windows.Forms.MessageBox]::Show("No tweaks selected to reset. Select the tweaks you want to keep active, and then click 'Reset' to revert the unchecked ones to their default state.", "No Tweaks Selected", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+            return
         }
-        $statusLabel.Text = "Status: Reset to default."
-        $global:hasChanges = $true # Mark as changed to enable Apply button
-        UpdateButtons
+    
+        $dialogResult = [System.Windows.Forms.MessageBox]::Show(
+            "Are you sure you want to reset the unchecked tweaks to their default Windows values? This might require a system restart.",
+            "Confirm Reset Tweaks",
+            [System.Windows.Forms.MessageBoxButtons]::YesNo,
+            [System.Windows.Forms.MessageBoxIcon]::Question
+        )
+
+        if ($dialogResult -eq [System.Windows.Forms.DialogResult]::Yes) {
+            $statusLabel.Text = "Status: Resetting tweaks to default..."
+            $progressBar.Style = 'Continuous'
+            $progressBar.Minimum = 0
+            $progressBar.Maximum = $toResetTweaks.Count
+            $progressBar.Value = 0
+            $progressBar.Visible = $true
+            $form.Refresh()
+
+            $global:hasChanges = $false
+            $global:restartNeeded = $false
+
+            foreach ($node in $toResetTweaks) {
+                $tweak = $node.Tag
+                $statusLabel.Text = "Resetting: $($tweak.Name)..."
+                $form.Refresh()
+
+                $success = $false
+                if ($tweak.Action -eq "Service") {
+                    $success = Set-ServiceStartType -ServiceName $tweak.Service -StartType $tweak.DefaultValue
+                }
+                else {
+                    $success = Set-RegistryValue -Path $tweak.RegistryPath -Name $tweak.ValueName -Value $tweak.DefaultValue -Type $tweak.ValueType
+                }
+
+                if ($success) {
+                    $progressBar.Value++
+                }
+                else {
+                    [System.Windows.Forms.MessageBox]::Show("Failed to reset tweak: $($tweak.Name). Please check console for details.", "Error Resetting Tweak", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+                }
+            }
+
+            $progressBar.Visible = $false
+            $statusLabel.Text = "Status: Tweak reset complete."
+            Update-GeneralTweaksStatus # Re-check status after resetting
+            $form.Refresh()
+
+            if ($global:restartNeeded) {
+                $restartDialogResult = [System.Windows.Forms.MessageBox]::Show(
+                    "Some changes require a system restart to take effect. Do you want to restart now?",
+                    "Restart Required",
+                    [System.Windows.Forms.MessageBoxButtons]::YesNo,
+                    [System.Windows.Forms.MessageBoxIcon]::Question
+                )
+                if ($restartDialogResult -eq [System.Windows.Forms.DialogResult]::Yes) {
+                    Restart-Computer -Force
+                }
+            }
+        }
     })
 
-# Initial sync of tweak states on form load
-$form.Add_Shown({
-        Sync-TweakStates
+# Uncheck All Button Click for General Tab
+$generalUncheckAllButton.Add_Click({
+        $global:IgnoreCheckEvent = $true
+
+        foreach ($parentNode in $treeView.Nodes) {
+            foreach ($childNode in $parentNode.Nodes) { $childNode.Checked = $false }
+            $parentNode.Checked = $false
+        }
+
+        $applyButton.Enabled = $false
+        $resetButton.Enabled = $false
+
+        $statusLabel.Text = "All selections cleared."
+        $global:IgnoreCheckEvent = $false
     })
-
 #endregion
 
-#endregion
-
-#region 6. Tab: Advanced (Empty for now)
-
+#region 6. Tab: Advanced
 $tabAdvanced = New-Object System.Windows.Forms.TabPage "Advanced"
 $tabAdvanced.BackColor = $darkBackColor
 $tabAdvanced.ForeColor = $darkForeColor
@@ -766,20 +956,15 @@ $advancedLabel.AutoSize = $true
 $advancedLabel.Location = New-Object System.Drawing.Point(15, 15)
 $advancedLabel.ForeColor = $darkForeColor
 $tabAdvanced.Controls.Add($advancedLabel)
-
-Set-FontSizeRecursive -control $tabAdvanced -fontSize 11
-
 #endregion
 
 #region 7. Tab: Downloads
-
 $tabDownloads = New-Object System.Windows.Forms.TabPage "Downloads"
 $tabDownloads.BackColor = $darkBackColor
 $tabDownloads.ForeColor = $darkForeColor
 $tabControl.TabPages.Add($tabDownloads)
 
 #region Downloads Tab - Program Data
-
 $programCategories = @{
     "Benchmarks"            = @(
         @{Name = "AIDA64 Extreme"; Id = "FinalWire.AIDA64.Extreme" },
@@ -893,15 +1078,12 @@ $programCategories = @{
         @{Name = "VMware Workstation Player"; Id = "VMware.WorkstationPlayer" }
     )
 }
-
 #endregion
 
 #region Downloads Tab - Winget Installation/Check
-
 # Check/Auto install winget
 if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     [System.Windows.Forms.MessageBox]::Show("winget was not found. Attempting to install the app installer (using winget) from the Microsoft Store.", "winget not found", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
-
     try {
         $process = Start-Process -FilePath "ms-windows-store://pdp/?ProductId=9NBLGGH4NNS1" -PassThru -NoNewWindow -ErrorAction Stop
         [System.Windows.Forms.MessageBox]::Show("Please install the 'App Installer' (Package ID: 9NBLGGH4NNS1) from the Microsoft Store window that opens. Then click 'OK' here when the installation is complete.", "Installing winget", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
@@ -921,11 +1103,9 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
 }
 
 $global:installedPackageIds = @{}
-
 #endregion
 
 #region Downloads Tab - Winget Related Functions
-
 # Function to update the list of installed Winget packages
 function Update-InstalledPackageIds {
     param(
@@ -1000,11 +1180,13 @@ function Update-InstalledProgramsStatus {
     foreach ($node in $allProgramNodes) {
         $pkgId = $node.Tag
         if (Test-WingetPackageInstalled -packageId $pkgId) {
-            $node.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font.FontFamily, 11, [System.Drawing.FontStyle]::Bold)
+            #$node.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font.FontFamily, 11, [System.Drawing.FontStyle]::Bold)
+            $node.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font, [System.Drawing.FontStyle]::Bold)
             $node.ForeColor = [System.Drawing.Color]::Green
         }
         else {
-            $node.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font.FontFamily, 11, [System.Drawing.FontStyle]::Regular)
+            #$node.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font.FontFamily, 11, [System.Drawing.FontStyle]::Regular)
+            $node.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font, [System.Drawing.FontStyle]::Regular)
             $node.ForeColor = $darkForeColor
         }
     }
@@ -1124,11 +1306,9 @@ function Uninstall-Programs {
     $statusDownloadLabel.Text = "Uninstallation process completed."
     Update-InstalledProgramsStatus
 }
-
 #endregion
 
 #region Downloads Tab - GUI Elements
-
 # Label top
 $downloadsLabel = New-Object System.Windows.Forms.Label
 $downloadsLabel.Text = "Select the programs to install via winget:"
@@ -1161,7 +1341,8 @@ foreach ($category in $programCategories.Keys) {
 
         # Highlight installed programs (bold + green)
         if (Test-WingetPackageInstalled -packageId $prog.Id) {
-            $childNode.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font.FontFamily, 11, [System.Drawing.FontStyle]::Bold)
+            #$childNode.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font.FontFamily, 11, [System.Drawing.FontStyle]::Bold)
+            $childNode.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font, [System.Drawing.FontStyle]::Bold)
             $childNode.ForeColor = [System.Drawing.Color]::Green
         }
 
@@ -1223,13 +1404,9 @@ $downloadProgressBar.Size = New-Object System.Drawing.Size(600, 20)
 $downloadProgressBar.Location = New-Object System.Drawing.Point(15, 730)
 $downloadProgressBar.Visible = $false
 $tabDownloads.Controls.Add($downloadProgressBar)
-
-Set-FontSizeRecursive -control $tabDownloads -fontSize 11
-
 #endregion
 
 #region Downloads Tab - Event Handlers
-
 # TreeView AfterCheck event
 $downloadTreeView.Add_AfterCheck({
         param($sender, $e)
@@ -1400,13 +1577,10 @@ $form.Add_Shown({
             $script:downloadsTabInitialized = $true
         }
     })
-
 #endregion
-
 #endregion
 
 #region 8. Tab: Untested
-
 $tabUntested = New-Object System.Windows.Forms.TabPage "Untested"
 $tabUntested.BackColor = $darkBackColor
 $tabUntested.ForeColor = $darkForeColor
@@ -1419,13 +1593,9 @@ $untestedLabel.AutoSize = $true
 $untestedLabel.Location = New-Object System.Drawing.Point(15, 15)
 $untestedLabel.ForeColor = $darkForeColor
 $tabUntested.Controls.Add($untestedLabel)
-
-Set-FontSizeRecursive -control $tabUntested -fontSize 11
-
 #endregion
 
 #region 9. Tab: About
-
 $tabAbout = New-Object System.Windows.Forms.TabPage "About"
 $tabAbout.BackColor = $darkBackColor
 $tabAbout.ForeColor = $darkForeColor
@@ -1494,19 +1664,22 @@ $githubProjectButton.BackColor = $accentColor
 $githubProjectButton.ForeColor = [System.Drawing.Color]::White
 $githubProjectButton.Add_Click({ Start-Process "https://github.com/leeshhi" })
 $tabAbout.Controls.Add($githubProjectButton)
-
-Set-FontSizeRecursive -control $tabAbout -fontSize 11
-
 #endregion
 
 #region 9. Final Execution
-
-# Initial calls for Home tab info
+# Initial calls for Home tab info and General tab setup
 $form.Add_Shown({
         Initialize-HomeTabContent
+
+        # Initial population and status check for General tab
+        # Always re-populate GeneralTreeView on initial load to ensure categories are visible.
+        GeneralTreeView -treeViewToPopulate $treeView # Diese Zeile ist jetzt IMMER aktiv
+        Update-GeneralTweaksStatus
+        # Hier stand vorher die Zeile $script:generalTabInitialized = $true, die muss weg
     })
 
 # Show form
 [void] $form.ShowDialog()
 
+Write-Host "`nGoodbye! Thank you for using ShagUtil." -ForegroundColor Green
 #endregion

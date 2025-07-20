@@ -10,8 +10,8 @@ if (-not ([Security.Principal.WindowsPrincipal][System.Security.Principal.Window
     exit
 }
 
-# Welcome Message (GEÄNDERT: 'shag.gg' ASCII Art)
-Write-Host "clear"
+# Welcome Message
+Write-Host clear
 Write-Host ""
 Write-Host "█████   █   █    ███  █████     █████ █████" -ForegroundColor Green
 Write-Host "█       █   █   █   █ █         █     █" -ForegroundColor Green
@@ -139,7 +139,6 @@ $global:hasChanges = $false
 $global:restartNeeded = $false
 $global:IgnoreCheckEvent = $false # For General tab TreeView
 $global:IgnoreCheckEventDownloads = $false # For Downloads tab TreeView
-#endregion
 
 #region 3. Main Form & TabControl Setup
 # Colors
@@ -523,6 +522,7 @@ function Set-ServiceStartType {
         return $false
     }
 }
+#endregion
 #endregion
 
 #region Tweak Data

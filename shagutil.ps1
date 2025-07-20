@@ -1,6 +1,6 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
-Add-Type -AssemblyName System.Security
+Add-Type -AssemblyName System.Security # Needed ?
 $scriptVersion = "0.0.9"
 
 #region 1. Initial Script Setup & Admin Check
@@ -53,14 +53,13 @@ function CheckUpdates {
     }
 }
 
-# Function: Invoke Winget Commands and Log Output
 function Invoke-WingetCommand {
+    # Function: Invoke Winget Commands and Log Output
     param([string]$arguments, [int]$timeoutSeconds = 60)
 
     $tempDir = [System.IO.Path]::GetTempPath()
     $outputFile = [System.IO.Path]::Combine($tempDir, "winget_output_$(Get-Date -Format 'yyyyMMdd_HHmmss').log")
     $errorFile = [System.IO.Path]::Combine($tempDir, "winget_error_$(Get-Date -Format 'yyyyMMdd_HHmmss').log")
-
     $processInfo = New-Object System.Diagnostics.ProcessStartInfo
     $processInfo.FileName = "winget"
     $processInfo.Arguments = $arguments
@@ -125,12 +124,19 @@ $form = New-Object System.Windows.Forms.Form
 $form.Text = "Shag Windows Utility - Version $scriptVersion"
 $form.Size = New-Object System.Drawing.Size(700, 850)
 $form.StartPosition = "CenterScreen"
-$form.FormBorderStyle = 'FixedDialog'
+$form.FormBorderStyle = 'Sizable' #FixedDialog
 $form.MaximizeBox = $false
-$form.MinimizeBox = $false
+$form.MinimizeBox = $true
 $form.ForeColor = [System.Drawing.Color]::Black
 $form.Font = New-Object System.Drawing.Font("Segoe UI", 11)
-# TabControl setup
+
+### Form ToDo:
+# > https://learn.microsoft.com/de-de/dotnet/api/system.windows.forms.control.anchor?view=windowsdesktop-9.0
+# > https://learn.microsoft.com/de-de/dotnet/api/system.windows.forms.form.autoscalebasesize?view=windowsdesktop-8.0#system-windows-forms-form-autoscalebasesize
+
+
+
+# TabControl setup  #  > Make tab size bigger
 $tabControl = New-Object System.Windows.Forms.TabControl
 $tabControl.Dock = 'Fill'
 $tabControl.DrawMode = [System.Windows.Forms.TabDrawMode]::OwnerDrawFixed
@@ -141,6 +147,8 @@ $tabControl.Add_DrawItem({ # DrawItem Event for individual tab text color
         $font = $tabControl.Font
         $text = $tab.Text
 
+        # Make tab size bigger
+
         if ($text -eq "Untested") {
             $color = [System.Drawing.Color]::Red
         }
@@ -150,7 +158,7 @@ $tabControl.Add_DrawItem({ # DrawItem Event for individual tab text color
 
         $rect = $sender.GetTabRect($e.Index)
         if ($rect -is [System.Array]) { $rect = $rect[0] } # Ensure it's a single Rectangle
-        $e.Graphics.FillRectangle([System.Drawing.Brushes]::LightGray, $rect)
+        $e.Graphics.FillRectangle([System.Drawing.Brushes]::DeepSkyBlue, $rect)
         $sf = New-Object System.Drawing.StringFormat
         $sf.Alignment = [System.Drawing.StringAlignment]::Center
         $sf.LineAlignment = [System.Drawing.StringAlignment]::Center
@@ -167,12 +175,12 @@ $form.Controls.Add($tabControl)
 $form.Add_Load({ # Form Load Event (for Update Check)
         $updateInfo = CheckUpdates
         if ($updateInfo.UpdateAvailable) {
+            Clear-Host
+            Write-Host ""
             Write-Host ">>> UPDATE AVAILABLE! <<<" -ForegroundColor Yellow -BackgroundColor Red
             Write-Host "A new version ($($updateInfo.RemoteVersion)) is available!" -ForegroundColor Yellow
             Write-Host "Your current version is $($updateInfo.CurrentVersion)." -ForegroundColor Yellow
-            Write-Host "Please update your tool via the GitHub link: $($updateInfo.RepoLink)" -ForegroundColor Yellow
             Write-Host "Run the start command again to use the new version." -ForegroundColor Yellow
-            Write-Host "*********************************************" -ForegroundColor White
             Write-Host ""
         }
         elseif ($updateInfo.Error) {
@@ -725,7 +733,7 @@ $buttonPanel.Location = New-Object System.Drawing.Point(15, ($progressBar.Locati
 $tabGeneral.Controls.Add($buttonPanel)
 # Apply Button
 $applyButton = New-Object System.Windows.Forms.Button
-$applyButton.Text = "Apply tweaks"
+$applyButton.Text = "Apply tweaks(s)"
 $applyButton.Size = New-Object System.Drawing.Size(100, 30)
 $applyButton.Location = New-Object System.Drawing.Point(0, 10)
 $applyButton.BackColor = [System.Drawing.Color]::LimeGreen
@@ -733,7 +741,7 @@ $applyButton.Enabled = $false # Initially disabled
 $buttonPanel.Controls.Add($applyButton)
 # Reset Button
 $resetButton = New-Object System.Windows.Forms.Button
-$resetButton.Text = "Reset Selected to Default"
+$resetButton.Text = "Reset selected to Default"
 $resetButton.AutoSize = New-Object System.Drawing.Size(180, 30)
 $resetButton.Location = New-Object System.Drawing.Point(120, 10)
 $resetButton.BackColor = [System.Drawing.Color]::DarkOrange
@@ -741,7 +749,7 @@ $resetButton.Enabled = $false # Initially disabled
 $buttonPanel.Controls.Add($resetButton)
 # Uncheck All Button for General Tab
 $generalUncheckAllButton = New-Object System.Windows.Forms.Button
-$generalUncheckAllButton.Text = "Uncheck All"
+$generalUncheckAllButton.Text = "Uncheck all"
 $generalUncheckAllButton.Size = New-Object System.Drawing.Size(100, 30)
 $generalUncheckAllButton.Location = New-Object System.Drawing.Point(320, 10)
 $generalUncheckAllButton.BackColor = [System.Drawing.Color]::SlateGray
@@ -1351,7 +1359,7 @@ $downloadTreeView.Add_AfterCheck({
         if ($global:IgnoreCheckEventDownloads) { 
             return 
         }
-        
+
         $global:IgnoreCheckEventDownloads = $true
 
         if ($e.Node.Nodes.Count -gt 0) {
@@ -1397,6 +1405,7 @@ $downloadTreeView.Add_AfterCheck({
         else {
             $installButton.Enabled = $true
             $installButton.Text = "Install/Update"
+            $installButton.AutoSize = $true
             $updateButton.Enabled = $true
             $uninstallButton.Enabled = $false
         }

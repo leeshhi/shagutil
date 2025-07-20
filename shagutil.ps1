@@ -11,7 +11,7 @@ if (-not ([Security.Principal.WindowsPrincipal][System.Security.Principal.Window
 }
 
 # Welcome Message
-Write-Host clear
+Clear-Host
 Write-Host ""
 Write-Host "█████   █   █    ███  █████     █████ █████" -ForegroundColor Green
 Write-Host "█       █   █   █   █ █         █     █" -ForegroundColor Green
@@ -399,7 +399,7 @@ function Initialize-HomeTabContent {
                 $systemInfoLabels = Receive-Job $currentJob
 
                 # Systeminformationen auf dem UI anzeigen
-                $yPos = 10 # Startposition der ersten Info (relative to the panel)
+                $yPos = 40 # Startposition der ersten Info (relative to the panel)
                 foreach ($line in $systemInfoLabels) {
                     if ($line -is [array]) {
                         foreach ($subLine in $line) {

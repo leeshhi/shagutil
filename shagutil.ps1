@@ -1,16 +1,14 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Security
-$scriptVersion = "0.0.8"
+$scriptVersion = "0.0.9"
 
 #region 1. Initial Script Setup & Admin Check
-# Admin Check
 if (-not ([Security.Principal.WindowsPrincipal][System.Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltinRole] "Administrator")) {
     [System.Windows.Forms.MessageBox]::Show("This script must be run as an Administrator. Please restart PowerShell or the script file with administrative privileges.", "Administrator Privileges Required", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Stop)
     exit
 }
 
-# Welcome Message
 Clear-Host
 Write-Host ""
 Write-Host "█████   █   █    ███  █████     █████ █████" -ForegroundColor Green
@@ -25,17 +23,13 @@ Write-Host ""
 #endregion
 
 #region 2. Global Helper Functions
-# Function: Check for script updates
 function CheckUpdates {
-    param(
-        [string]$currentVersion = $scriptVersion,
-        [string]$githubRawUrl = "https://raw.githubusercontent.com/leeshhi/shagutil/main/version.txt"
-    )
+    # Function: Check for script updates
+    param([string]$currentVersion = $scriptVersion, [string]$githubRawUrl = "https://raw.githubusercontent.com/leeshhi/shagutil/main/version.txt")
 
     try {
         $remoteVersionText = Invoke-RestMethod -Uri $githubRawUrl -ErrorAction Stop
         $remoteVersion = $remoteVersionText.Trim()
-
         $currentVersionObject = [Version]$currentVersion
         $remoteVersionObject = [Version]$remoteVersion
 
@@ -61,10 +55,7 @@ function CheckUpdates {
 
 # Function: Invoke Winget Commands and Log Output
 function Invoke-WingetCommand {
-    param(
-        [string]$arguments,
-        [int]$timeoutSeconds = 60
-    )
+    param([string]$arguments, [int]$timeoutSeconds = 60)
 
     $tempDir = [System.IO.Path]::GetTempPath()
     $outputFile = [System.IO.Path]::Combine($tempDir, "winget_output_$(Get-Date -Format 'yyyyMMdd_HHmmss').log")
@@ -77,7 +68,6 @@ function Invoke-WingetCommand {
     $processInfo.RedirectStandardError = $true
     $processInfo.UseShellExecute = $false
     $processInfo.CreateNoWindow = $true
-
     $process = New-Object System.Diagnostics.Process
     $process.StartInfo = $processInfo
 
@@ -89,7 +79,6 @@ function Invoke-WingetCommand {
         if ($process.WaitForExit($timeoutSeconds * 1000)) {
             $output = $outputTask.Result
             $errors = $errorTask.Result
-
             $output | Out-File -FilePath $outputFile -Encoding UTF8
             $errors | Out-File -FilePath $errorFile -Encoding UTF8
 
@@ -125,28 +114,12 @@ function Invoke-WingetCommand {
         }
     }
 }
-#endregion
 
-# Restart Explorer Function
-function Restart-Explorer {
-    Get-Process explorer | Stop-Process -Force
-    Start-Sleep -Seconds 1
-    Start-Process explorer.exe
-}
-
-# Global Variables for Tweaks
+#region 3. Main Form & TabControl Setup
 $global:hasChanges = $false
 $global:restartNeeded = $false
 $global:IgnoreCheckEvent = $false # For General tab TreeView
 $global:IgnoreCheckEventDownloads = $false # For Downloads tab TreeView
-
-#region 3. Main Form & TabControl Setup
-# Colors
-$darkBackColor = [System.Drawing.Color]::FromArgb(30, 30, 30)
-$darkForeColor = [System.Drawing.Color]::White
-$footerBackColor = [System.Drawing.Color]::FromArgb(50, 50, 50)
-$accentColor = [System.Drawing.Color]::FromArgb(0, 122, 204)
-
 # Form
 $form = New-Object System.Windows.Forms.Form
 $form.Text = "Shag Windows Utility - Version $scriptVersion"
@@ -155,20 +128,15 @@ $form.StartPosition = "CenterScreen"
 $form.FormBorderStyle = 'FixedDialog'
 $form.MaximizeBox = $false
 $form.MinimizeBox = $false
-$form.BackColor = $darkBackColor
-$form.ForeColor = $darkForeColor
+$form.ForeColor = [System.Drawing.Color]::Black
 $form.Font = New-Object System.Drawing.Font("Segoe UI", 11)
-
 # TabControl setup
 $tabControl = New-Object System.Windows.Forms.TabControl
 $tabControl.Dock = 'Fill'
-#$tabControl.Font = New-Object System.Drawing.Font("Segoe UI", 14)
 $tabControl.DrawMode = [System.Windows.Forms.TabDrawMode]::OwnerDrawFixed
 
-# DrawItem Event for individual tab text color
-$tabControl.Add_DrawItem({
+$tabControl.Add_DrawItem({ # DrawItem Event for individual tab text color
         param($sender, $e)
-
         $tab = $sender.TabPages[$e.Index]
         $font = $tabControl.Font
         $text = $tab.Text
@@ -182,17 +150,13 @@ $tabControl.Add_DrawItem({
 
         $rect = $sender.GetTabRect($e.Index)
         if ($rect -is [System.Array]) { $rect = $rect[0] } # Ensure it's a single Rectangle
-
         $e.Graphics.FillRectangle([System.Drawing.Brushes]::LightGray, $rect)
-
         $sf = New-Object System.Drawing.StringFormat
         $sf.Alignment = [System.Drawing.StringAlignment]::Center
         $sf.LineAlignment = [System.Drawing.StringAlignment]::Center
-
         $pointX = [float]($rect.X) + ([float]($rect.Width) / 2)
         $pointY = [float]($rect.Y) + ([float]($rect.Height) / 2)
         $point = New-Object System.Drawing.PointF($pointX, $pointY)
-
         $brush = New-Object System.Drawing.SolidBrush($color)
         $e.Graphics.DrawString($text, $font, $brush, $point, $sf)
         $brush.Dispose()
@@ -200,8 +164,7 @@ $tabControl.Add_DrawItem({
 
 $form.Controls.Add($tabControl)
 
-# Form Load Event (for Update Check)
-$form.Add_Load({
+$form.Add_Load({ # Form Load Event (for Update Check)
         $updateInfo = CheckUpdates
         if ($updateInfo.UpdateAvailable) {
             Write-Host ">>> UPDATE AVAILABLE! <<<" -ForegroundColor Yellow -BackgroundColor Red
@@ -226,43 +189,32 @@ $form.Add_Load({
 
 #region 4. Tab: Home
 $tabHome = New-Object System.Windows.Forms.TabPage "Home"
-$tabHome.BackColor = $darkBackColor
-$tabHome.ForeColor = $darkForeColor
 $tabControl.TabPages.Add($tabHome)
 
 #region Home Tab - System Information Panel & Functions
 function Initialize-HomeTabContent {
     param($systemInfoPanel, $form, $systemInfoTitle)
-
-    # Zuerst alle dynamischen Controls im Panel entfernen, den Titel aber beibehalten
     $controlsToRemove = $systemInfoPanel.Controls | Where-Object { $_ -ne $systemInfoTitle }
+
     foreach ($control in $controlsToRemove) {
         $systemInfoPanel.Controls.Remove($control)
         $control.Dispose()
     }
 
-    # Temporären Lade-Label hinzufügen
     $loadingLabel = New-Object System.Windows.Forms.Label
     $loadingLabel.Text = "Loading system information, please wait..."
     $loadingLabel.AutoSize = $true
     $loadingLabel.Location = New-Object System.Drawing.Point(10, 40)
-    $loadingLabel.ForeColor = [System.Drawing.Color]::Gray
     $systemInfoPanel.Controls.Add($loadingLabel)
-
-    # Das Formular aktualisieren, damit der Lade-Text sofort sichtbar wird
     $form.Refresh()
 
-    # Job-Definition für das Laden der Systeminformationen im Hintergrund
     $job = Start-Job -ScriptBlock {
-        # Lokale Funktionen für den Job-Kontext mit Try/Catch-Blöcken
         function Get-OsInfo {
             try {
                 $os = Get-CimInstance Win32_OperatingSystem -ErrorAction Stop
                 return "OS: $($os.Caption) Version $($os.Version) (Build $($os.BuildNumber))"
             }
-            catch {
-                return "OS: Error retrieving info ($($_.Exception.Message))"
-            }
+            catch { return "OS: Error retrieving info ($($_.Exception.Message))" }
         }
 
         function Get-CpuInfo {
@@ -270,9 +222,7 @@ function Initialize-HomeTabContent {
                 $cpu = Get-CimInstance Win32_Processor -ErrorAction Stop
                 return "CPU: $($cpu.Name) ($($cpu.NumberOfCores) Cores, $($cpu.NumberOfLogicalProcessors) Threads)"
             }
-            catch {
-                return "CPU: Error retrieving info ($($_.Exception.Message))"
-            }
+            catch { return "CPU: Error retrieving info ($($_.Exception.Message))" }
         }
 
         function Get-RamInfo {
@@ -283,9 +233,7 @@ function Initialize-HomeTabContent {
                 $freeMemoryGB = [Math]::Round(($os.FreePhysicalMemory / (1024 * 1024)), 2)
                 return "RAM: ${totalMemoryGB}GB Total / ${freeMemoryGB}GB Available"
             }
-            catch {
-                return "RAM: Error retrieving info ($($_.Exception.Message))"
-            }
+            catch { return "RAM: Error retrieving info ($($_.Exception.Message))" }
         }
 
         function Get-GpuInfo {
@@ -295,9 +243,7 @@ function Initialize-HomeTabContent {
                 foreach ($gpu in $gpus) { $gpuStrings += "$($gpu.Name)" }
                 if ($gpuStrings.Count -gt 0) { return "GPU: " + ($gpuStrings -join ", ") } else { return "GPU: Not found" }
             }
-            catch {
-                return "GPU: Error retrieving info ($($_.Exception.Message))"
-            }
+            catch { return "GPU: Error retrieving info ($($_.Exception.Message))" }
         }
 
         function Get-MotherboardInfo {
@@ -305,9 +251,7 @@ function Initialize-HomeTabContent {
                 $board = Get-CimInstance Win32_BaseBoard -ErrorAction Stop
                 return "Motherboard: $($board.Manufacturer) $($board.Product)"
             }
-            catch {
-                return "Motherboard: Error retrieving info ($($_.Exception.Message))"
-            }
+            catch { return "Motherboard: Error retrieving info ($($_.Exception.Message))" }
         }
 
         function Get-BiosInfo {
@@ -315,56 +259,33 @@ function Initialize-HomeTabContent {
                 $bios = Get-CimInstance Win32_BIOS -ErrorAction Stop
                 return "BIOS: $($bios.Caption) Version $($bios.SMBIOSBIOSVersion) (Date: $($bios.ReleaseDate))"
             }
-            catch {
-                return "BIOS: Error retrieving info ($($_.Exception.Message))"
-            }
+            catch { return "BIOS: Error retrieving info ($($_.Exception.Message))" }
         }
 
         function Get-NetworkInfo {
             try {
-                $computerName = $env:COMPUTERNAME
-                return "Device Name: $computerName"
+                return "Device Name: $env:COMPUTERNAME"
             }
-            catch {
-                return "Network: Error retrieving info ($($_.Exception.Message))"
-            }
+            catch { return "Network: Error retrieving info ($($_.Exception.Message))" }
         }
 
-        # Hauptfunktion zum Abrufen aller Systeminformationen innerhalb des Jobs
-        function Get-SystemInformation {
-            @(
-                (Get-OsInfo),
-                (Get-CpuInfo),
-                (Get-RamInfo),
-                (Get-GpuInfo),
-                (Get-MotherboardInfo),
-                (Get-BiosInfo),
-                (Get-NetworkInfo)
-            )
+        function Get-SystemInformation { 
+            @((Get-OsInfo), (Get-CpuInfo), (Get-RamInfo), (Get-GpuInfo), (Get-MotherboardInfo), (Get-BiosInfo), (Get-NetworkInfo)) 
         }
-
-        # Daten abrufen und an den übergeordneten Scope zurückgeben
         Get-SystemInformation
     }
 
-    # Neuer Ansatz: Timer zur Überwachung des Jobs
     $jobMonitorTimer = New-Object System.Windows.Forms.Timer
-    $jobMonitorTimer.Interval = 500 # Überprüfe alle 500ms (0.5 Sekunden)
-    
-    # Store relevant variables in the Timer's Tag property for access in the Tick event
+    $jobMonitorTimer.Interval = 500
     $jobMonitorTimer.Tag = @{
         Job             = $job;
         LoadingLabel    = $loadingLabel;
         SystemInfoPanel = $systemInfoPanel;
         Form            = $form;
-        SystemInfoTitle = $systemInfoTitle # Keep this for removing other controls
+        SystemInfoTitle = $systemInfoTitle
     }
-
-    # Der Tick-Event-Handler des Timers
     $jobMonitorTimer.Add_Tick({
             param($sender, $eventArgs) # $sender is the timer itself
-
-            # Retrieve variables from the Timer's Tag property
             $data = $sender.Tag
             $currentJob = $data.Job
             $loadingLabel = $data.LoadingLabel
@@ -372,7 +293,6 @@ function Initialize-HomeTabContent {
             $form = $data.Form
             $systemInfoTitle = $data.SystemInfoTitle
 
-            # Perform null checks for critical variables
             if ($currentJob -eq $null -or $systemInfoPanel -eq $null -or $loadingLabel -eq $null -or $form -eq $null) {
                 $sender.Stop()
                 $sender.Dispose()
@@ -385,21 +305,14 @@ function Initialize-HomeTabContent {
             }
 
             if ($currentJob.State -eq 'Completed') {
-                # Job ist abgeschlossen - Timer stoppen und UI aktualisieren
                 $sender.Stop()
                 $sender.Dispose() # Dispose the timer itself
-
-                # Lade-Label entfernen
                 if ($systemInfoPanel.Controls.Contains($loadingLabel)) {
                     $systemInfoPanel.Controls.Remove($loadingLabel)
                     $loadingLabel.Dispose()
                 }
-
-                # Ergebnisse aus dem Job abrufen
                 $systemInfoLabels = Receive-Job $currentJob
-
-                # Systeminformationen auf dem UI anzeigen
-                $yPos = 40 # Startposition der ersten Info (relative to the panel)
+                $yPos = 40
                 foreach ($line in $systemInfoLabels) {
                     if ($line -is [array]) {
                         foreach ($subLine in $line) {
@@ -420,23 +333,16 @@ function Initialize-HomeTabContent {
                         $yPos += 25
                     }
                 }
-                $systemInfoPanel.Refresh() # Panel aktualisieren
-
-                # Job aufräumen
+                $systemInfoPanel.Refresh()
                 Remove-Job $currentJob -Force
-
             }
             elseif ($currentJob.State -eq 'Failed' -or $currentJob.State -eq 'Stopped') {
-                # Job ist fehlgeschlagen oder gestoppt - Timer stoppen und Fehlermeldung anzeigen
                 $sender.Stop()
                 $sender.Dispose() # Dispose the timer itself
-
-                # Lade-Label entfernen
                 if ($systemInfoPanel.Controls.Contains($loadingLabel)) {
                     $systemInfoPanel.Controls.Remove($loadingLabel)
                     $loadingLabel.Dispose()
                 }
-
                 $jobError = Receive-Job $currentJob -ErrorAction SilentlyContinue | Out-String
                 [System.Windows.Forms.MessageBox]::Show(
                     "Error loading system information: $($currentJob.JobStateInfo.Reason)`n`nDetails: $($jobError)",
@@ -447,8 +353,6 @@ function Initialize-HomeTabContent {
                 Remove-Job $currentJob -Force
             }
         })
-
-    # Timer starten
     $jobMonitorTimer.Start()
 }
 
@@ -498,8 +402,7 @@ foreach ($link in $quickLinks) {
     $button.Text = $link.Text
     $button.Size = New-Object System.Drawing.Size(180, 30)
     $button.Location = New-Object System.Drawing.Point(10, $buttonYPos)
-    $button.BackColor = $accentColor
-    $button.ForeColor = [System.Drawing.Color]::White
+    $button.BackColor = [System.Drawing.Color]::DodgerBlue
     $button.Add_Click($link.Action)
     $quickLinksPanel.Controls.Add($button)
     $buttonYPos += 35
@@ -559,13 +462,11 @@ $contactYPos += 25
 
 #region 5. Tab: General
 $tabGeneral = New-Object System.Windows.Forms.TabPage "Tweaks"
-$tabGeneral.BackColor = $darkBackColor
-$tabGeneral.ForeColor = $darkForeColor
 $tabControl.TabPages.Add($tabGeneral)
 
 #region Tweak functions
-# Function to get current registry value
 function Get-RegistryValue {
+    # Function to get current registry value
     param([string]$Path, [string]$Name)
     try {
         $value = Get-ItemProperty -Path $Path -Name $Name -ErrorAction SilentlyContinue
@@ -580,8 +481,8 @@ function Get-RegistryValue {
     }
 }
 
-# Function to set registry value
 function Set-RegistryValue {
+    # Function to set registry value
     param([string]$Path, [string]$Name, $Value, [string]$Type)
     try {
         if (-not (Test-Path $Path)) {
@@ -597,13 +498,12 @@ function Set-RegistryValue {
     }
 }
 
-# Function to get service start type
 function Get-ServiceStatus {
+    # Function to get service start type
     param([string]$ServiceName)
     try {
         $service = Get-Service -Name $ServiceName -ErrorAction SilentlyContinue
         if ($service) {
-            # Convert start type to a comparable number
             switch ($service.StartType) {
                 "Boot" { return 0 }
                 "System" { return 1 }
@@ -621,8 +521,8 @@ function Get-ServiceStatus {
     }
 }
 
-# Function to set service start type
 function Set-ServiceStartType {
+    # Function to set service start type
     param([string]$ServiceName, [int]$StartType)
     try {
         Set-Service -Name $ServiceName -StartupType ([System.ServiceProcess.ServiceStartMode]$StartType) -ErrorAction Stop
@@ -712,31 +612,26 @@ $generalTweaks = @(
 
 #region GUI Elements
 $treeView = New-Object System.Windows.Forms.TreeView
-$treeView.Size = New-Object System.Drawing.Size(650, 550) # Anpassung der Größe
+$treeView.Size = New-Object System.Drawing.Size(650, 550)
 $treeView.Location = New-Object System.Drawing.Point(15, 15)
-$treeView.BackColor = $darkBackColor
-$treeView.ForeColor = $darkForeColor
 $treeView.HideSelection = $false
 $treeView.CheckBoxes = $true
 $treeView.ShowNodeToolTips = $true
 #$treeView.ItemHeight = 20
 $tabGeneral.Controls.Add($treeView)
-
-# Global list to hold all tweak nodes for easier access
 $allTweakNodes = @()
 
-# Populate TreeView with categories and tweaks
 function GeneralTreeView {
+    # Populate TreeView with categories and tweaks
     param([Parameter(Mandatory = $true)][System.Windows.Forms.TreeView]$treeViewToPopulate)
     $treeViewToPopulate.Nodes.Clear()
-
     $tempTweakNodes = [System.Collections.Generic.List[System.Windows.Forms.TreeNode]]::new()
     $categories = [System.Collections.Generic.Dictionary[string, System.Collections.Generic.List[PSObject]]]::new()
 
     foreach ($tweak in $generalTweaks) {
         $categoryName = $tweak.Category
         if ([string]::IsNullOrEmpty($categoryName)) {
-            $categoryName = "Unkategorisiert" # Fallback für den unwahrscheinlichen Fall, dass eine Kategorie doch leer ist
+            $categoryName = "Uncategorized"
         }
         if (-not $categories.ContainsKey($categoryName)) {
             $categories.Add($categoryName, [System.Collections.Generic.List[PSObject]]::new())
@@ -744,18 +639,14 @@ function GeneralTreeView {
         $categories[$categoryName].Add($tweak)
     }
 
-    # Jetzt iterieren wir über die manuell erstellten Kategorien
     foreach ($categoryEntry in $categories.GetEnumerator() | Sort-Object Name) {
         $categoryName = $categoryEntry.Key
         $tweaksInThisCategory = $categoryEntry.Value
-
         $parentNode = New-Object System.Windows.Forms.TreeNode $categoryName
-        $parentNode.ForeColor = $accentColor
-        $parentNode.NodeFont = New-Object System.Drawing.Font($treeViewToPopulate.Font, [System.Drawing.FontStyle]::Bold)
-        #$parentNode.NodeFont = New-Object System.Drawing.Font($treeViewToPopulate.Font.FontFamily, 10, [System.Drawing.FontStyle]::Bold)
+        $parentNode.ForeColor = [System.Drawing.Color]::RoyalBlue
+        #$parentNode.NodeFont = New-Object System.Drawing.Font($treeViewToPopulate.Font, [System.Drawing.FontStyle]::Bold)
+        $parentNode.NodeFont = New-Object System.Drawing.Font($treeViewToPopulate.Font.FontFamily, 10, [System.Drawing.FontStyle]::Bold)
         $treeViewToPopulate.Nodes.Add($parentNode) | Out-Null
-        
-        # Erweitert den übergeordneten Knoten, damit die Unterelemente sichtbar sind
         $parentNode.Expand() 
         
         foreach ($tweak in $tweaksInThisCategory | Sort-Object Name) {
@@ -766,62 +657,49 @@ function GeneralTreeView {
             $tempTweakNodes.Add($childNode)
         }
     }
-
     $global:allTweakNodes = $tempTweakNodes.ToArray()
 }
 
-# Function to update the visual status of tweaks in the TreeView
 function Update-GeneralTweaksStatus {
+    # Function to update the visual status of tweaks in the TreeView
     foreach ($node in $global:allTweakNodes) {
-        # Defensive Prüfung: Sicherstellen, dass $node ein gültiges TreeNode-Objekt ist und Tag-Daten hat
         if (-not ($node -is [System.Windows.Forms.TreeNode]) -or -not $node.Tag) {
             Write-Warning "Überspringe ungültigen Knoten oder Knoten ohne Tweak-Daten in allTweakNodes. Knoten: $($node | Out-String)"
-            continue # Diesen ungültigen Knoten überspringen
+            continue
         }
 
         $tweak = $node.Tag
         $currentValue = $null
 
-        # Überprüfen, ob RegistryPath oder Service-Name für Get-RegistryValue gültig ist
         if (($tweak.RegistryPath -ne $null -and $tweak.RegistryPath -ne "") -or `
             ($tweak.Action -eq "Service" -and $tweak.Service -ne $null -and $tweak.Service -ne "")) {
-            
-            # Überprüfe, ob es sich um einen Dienst-Tweak handelt und rufe Get-ServiceStatus auf
             if ($tweak.Action -eq "Service") {
                 $currentValue = Get-ServiceStatus -serviceName $tweak.Service
             }
             else {
-                # Überprüfe, ob der Registry-Pfad existiert, bevor versucht wird, den Wert zu lesen
                 if (-not (Test-Path $tweak.RegistryPath)) {
                     Write-Warning "Registry-Pfad existiert nicht: $($tweak.RegistryPath). Kann Wert für $($tweak.Name) nicht lesen."
-                    $node.Checked = $false # Standardmäßig nicht ausgewählt, wenn Pfad ungültig
-                    $node.NodeFont = New-Object System.Drawing.Font($treeView.Font, [System.Drawing.FontStyle]::Regular)
-                    $node.ForeColor = $darkForeColor
-                    continue # Überspringe diesen Knoten
+                    $node.Checked = $false
+                    #$node.NodeFont = New-Object System.Drawing.Font($treeView.Font, [System.Drawing.FontStyle]::Regular)
+                    continue
                 }
                 $currentValue = Get-RegistryValue -path $tweak.RegistryPath -name $tweak.ValueName -type $tweak.ValueType
             }
-
-            # Nachdem currentValue erfolgreich abgerufen wurde, Checked, NodeFont, ForeColor anwenden
             if (($currentValue -eq $tweak.TweakValue) -or ($tweak.Action -eq "Service" -and $currentValue -eq $tweak.TweakValue)) {
                 $node.Checked = $true
-                $node.NodeFont = New-Object System.Drawing.Font($treeView.Font, [System.Drawing.FontStyle]::Bold)
+                #$node.NodeFont = New-Object System.Drawing.Font($treeView.Font, [System.Drawing.FontStyle]::Bold)
                 #$node.NodeFont = New-Object System.Drawing.Font($treeView.Font.FontFamily, 11, [System.Drawing.FontStyle]::Bold)
-                #$node.ForeColor = $accentColor
-                $node.ForeColor = [System.Drawing.Color]::Lime
+                $node.ForeColor = [System.Drawing.Color]::Green
             }
             else {
                 $node.Checked = $false
-                $node.NodeFont = New-Object System.Drawing.Font($treeView.Font, [System.Drawing.FontStyle]::Regular)
-                $node.ForeColor = $darkForeColor
+                #$node.NodeFont = New-Object System.Drawing.Font($treeView.Font, [System.Drawing.FontStyle]::Regular)
             }
         }
         else {
-            # Fälle behandeln, in denen $tweak oder sein Pfad/Dienstname ungültig/fehlt
             Write-Warning "Tweak-Daten fehlen oder sind ungültig für Knoten $($node.Text): $($tweak | Out-String). Status kann nicht bestimmt werden."
             $node.Checked = $false # Standardmäßig nicht ausgewählt
-            $node.NodeFont = New-Object System.Drawing.Font($treeView.Font, [System.Drawing.FontStyle]::Regular)
-            $node.ForeColor = $darkForeColor
+            #$node.NodeFont = New-Object System.Drawing.Font($treeView.Font, [System.Drawing.FontStyle]::Regular)
         }
     }
 }
@@ -832,58 +710,47 @@ $statusLabel.Size = New-Object System.Drawing.Size(650, 30)
 $statusLabel.Location = New-Object System.Drawing.Point(15, ($treeView.Location.Y + $treeView.Size.Height + 10))
 $statusLabel.TextAlign = 'MiddleLeft'
 $statusLabel.Text = "Status: Ready"
-$statusLabel.ForeColor = $darkForeColor
-$statusLabel.BackColor = $footerBackColor
+$statusLabel.BackColor = [System.Drawing.Color]::LightGray
 $tabGeneral.Controls.Add($statusLabel)
-
 # Progress Bar
 $progressBar = New-Object System.Windows.Forms.ProgressBar
 $progressBar.Size = New-Object System.Drawing.Size(650, 20)
 $progressBar.Location = New-Object System.Drawing.Point(15, ($statusLabel.Location.Y + $statusLabel.Size.Height + 5))
 $progressBar.Visible = $false
 $tabGeneral.Controls.Add($progressBar)
-
 # Buttons Panel
 $buttonPanel = New-Object System.Windows.Forms.Panel
 $buttonPanel.Size = New-Object System.Drawing.Size(650, 50)
 $buttonPanel.Location = New-Object System.Drawing.Point(15, ($progressBar.Location.Y + $progressBar.Size.Height + 5))
-$buttonPanel.BackColor = $darkBackColor
 $tabGeneral.Controls.Add($buttonPanel)
-
 # Apply Button
 $applyButton = New-Object System.Windows.Forms.Button
-$applyButton.Text = "Apply Selected Tweaks"
-$applyButton.Size = New-Object System.Drawing.Size(180, 30)
+$applyButton.Text = "Apply tweaks"
+$applyButton.Size = New-Object System.Drawing.Size(100, 30)
 $applyButton.Location = New-Object System.Drawing.Point(0, 10)
-$applyButton.BackColor = $accentColor
-$applyButton.ForeColor = [System.Drawing.Color]::White
+$applyButton.BackColor = [System.Drawing.Color]::LimeGreen
 $applyButton.Enabled = $false # Initially disabled
 $buttonPanel.Controls.Add($applyButton)
-
 # Reset Button
 $resetButton = New-Object System.Windows.Forms.Button
 $resetButton.Text = "Reset Selected to Default"
-$resetButton.Size = New-Object System.Drawing.Size(180, 30)
-$resetButton.Location = New-Object System.Drawing.Point(190, 10)
-$resetButton.BackColor = $accentColor
-$resetButton.ForeColor = [System.Drawing.Color]::White
+$resetButton.AutoSize = New-Object System.Drawing.Size(180, 30)
+$resetButton.Location = New-Object System.Drawing.Point(120, 10)
+$resetButton.BackColor = [System.Drawing.Color]::DarkOrange
 $resetButton.Enabled = $false # Initially disabled
 $buttonPanel.Controls.Add($resetButton)
-
 # Uncheck All Button for General Tab
 $generalUncheckAllButton = New-Object System.Windows.Forms.Button
 $generalUncheckAllButton.Text = "Uncheck All"
 $generalUncheckAllButton.Size = New-Object System.Drawing.Size(100, 30)
-$generalUncheckAllButton.Location = New-Object System.Drawing.Point(380, 10)
-$generalUncheckAllButton.BackColor = $accentColor
-$generalUncheckAllButton.ForeColor = [System.Drawing.Color]::White
+$generalUncheckAllButton.Location = New-Object System.Drawing.Point(320, 10)
+$generalUncheckAllButton.BackColor = [System.Drawing.Color]::SlateGray
 $buttonPanel.Controls.Add($generalUncheckAllButton)
 #endregion
 
 #region Event Handlers
 $treeView.Add_AfterCheck({
         param($sender, $e)
-
         if ($global:IgnoreCheckEvent) { return }
         $global:IgnoreCheckEvent = $true
 
@@ -905,15 +772,12 @@ $treeView.Add_AfterCheck({
         # Enable/Disable Apply/Reset buttons based on selections
         $checkedTweaks = $global:allTweakNodes | Where-Object { $_.Checked }
         $uncheckedTweaks = $global:allTweakNodes | Where-Object { -not $_.Checked }
-
         $applyButton.Enabled = $checkedTweaks.Count -gt 0
         $resetButton.Enabled = $uncheckedTweaks.Count -gt 0 # Reset enabled if any are unchecked (implying they are currently tweaked or could be reset)
-
         $global:IgnoreCheckEvent = $false
     })
 
-# Apply Button Click for General Tab
-$applyButton.Add_Click({
+$applyButton.Add_Click({ # Apply Button Click for General Tab
         $checkedTweaks = $global:allTweakNodes | Where-Object { $_.Checked }
         if ($checkedTweaks.Count -eq 0) {
             [System.Windows.Forms.MessageBox]::Show("Please select at least one tweak to apply.", "No Tweaks Selected", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
@@ -979,8 +843,7 @@ $applyButton.Add_Click({
         }
     })
 
-# Reset Button Click for General Tab
-$resetButton.Add_Click({
+$resetButton.Add_Click({ # Reset Button Click for General Tab
         # Get all tweaks that are NOT checked (meaning we want to reset them to default)
         $toResetTweaks = $global:allTweakNodes | Where-Object { -not $_.Checked }
 
@@ -1004,7 +867,6 @@ $resetButton.Add_Click({
             $progressBar.Value = 0
             $progressBar.Visible = $true
             $form.Refresh()
-
             $global:hasChanges = $false
             $global:restartNeeded = $false
 
@@ -1012,15 +874,14 @@ $resetButton.Add_Click({
                 $tweak = $node.Tag
                 $statusLabel.Text = "Resetting: $($tweak.Name)..."
                 $form.Refresh()
-
                 $success = $false
+
                 if ($tweak.Action -eq "Service") {
                     $success = Set-ServiceStartType -ServiceName $tweak.Service -StartType $tweak.DefaultValue
                 }
                 else {
                     $success = Set-RegistryValue -Path $tweak.RegistryPath -Name $tweak.ValueName -Value $tweak.DefaultValue -Type $tweak.ValueType
                 }
-
                 if ($success) {
                     $progressBar.Value++
                 }
@@ -1048,8 +909,7 @@ $resetButton.Add_Click({
         }
     })
 
-# Uncheck All Button Click for General Tab
-$generalUncheckAllButton.Add_Click({
+$generalUncheckAllButton.Add_Click({ # Uncheck All Button Click for General Tab
         $global:IgnoreCheckEvent = $true
 
         foreach ($parentNode in $treeView.Nodes) {
@@ -1059,19 +919,226 @@ $generalUncheckAllButton.Add_Click({
 
         $applyButton.Enabled = $false
         $resetButton.Enabled = $false
-
         $statusLabel.Text = "All selections cleared."
         $global:IgnoreCheckEvent = $false
     })
 #endregion
 
 #region 6. Tab: Downloads
+if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+    #region Winget Installation/Check
+    [System.Windows.Forms.MessageBox]::Show("winget was not found. Attempting to install the app installer (using winget) from the Microsoft Store.", "winget not found", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+    try {
+        $process = Start-Process -FilePath "ms-windows-store://pdp/?ProductId=9NBLGGH4NNS1" -PassThru -NoNewWindow -ErrorAction Stop
+        [System.Windows.Forms.MessageBox]::Show("Please install the 'App Installer' (Package ID: 9NBLGGH4NNS1) from the Microsoft Store window that opens. Then click 'OK' here when the installation is complete.", "Installing winget", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+        Start-Sleep -Seconds 5
+        if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+            [System.Windows.Forms.MessageBox]::Show("winget could not be found after installation. Please restart the script or make sure winget is installed correctly.", "Error in winget", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+            exit
+        }
+        else {
+            [System.Windows.Forms.MessageBox]::Show("winget was successfully detected. The script will continue.", "winget found", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+        }
+    }
+    catch {
+        [System.Windows.Forms.MessageBox]::Show("An error occurred while attempting to open the Microsoft Store for winget installation: $_. Please install winget manually.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+        exit
+    }
+}
+
+$global:installedPackageIds = @{}
+#endregion
+
+#region Winget Related Functions
+function Update-InstalledPackageIds {
+    # Function to update the list of installed Winget packages
+    param([System.Windows.Forms.Form]$parentForm, [System.Windows.Forms.ProgressBar]$progressBar, [System.Windows.Forms.Label]$statusLabel)
+    $progressBar.Style = 'Marquee'
+    $progressBar.Visible = $true
+    $statusLabel.Text = "Loading installed Winget packages (may take some time)..."
+    $parentForm.Refresh()
+    $global:installedPackageIds.Clear()
+    try {
+        $wingetResult = Invoke-WingetCommand -arguments "list --source winget" -timeoutSeconds 60
+        if ($wingetResult.TimedOut) {
+            [System.Windows.Forms.MessageBox]::Show($wingetResult.Errors, "Winget timeout", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+            $statusLabel.Text = "Status: Loading failed (timeout)."
+            return
+        }
+        if ($wingetResult.ExitCode -ne 0) {
+            $errorMessage = "Winget 'list' command failed with error code $($wingetResult.ExitCode). "
+            if (![string]::IsNullOrEmpty($wingetResult.Errors)) { $errorMessage += "Error: $($wingetResult.Errors)." }
+            $errorMessage += "`n`nDetails in: $($wingetResult.ErrorFile)"
+            [System.Windows.Forms.MessageBox]::Show($errorMessage, "Winget error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+            $statusLabel.Text = "Status: Loading failed."
+            return
+        }
+        if ([string]::IsNullOrEmpty($wingetResult.Output)) {
+            [System.Windows.Forms.MessageBox]::Show("The winget 'list' command returned no output. Possibly a configuration issue.", "Winget warning", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)
+            $statusLabel.Text = "Status: Loading failed."
+            return
+        }
+        $installedPackagesRaw = $wingetResult.Output -split "`n"
+        $global:installedPackageIds.Clear()
+        foreach ($line in $installedPackagesRaw) {
+            if ($line -match '^\s*Name\s+Id\s+Version') { continue }
+            if ($line -match '^\s*---\s+---\s+---') { continue }
+            if ($line -match '^\s*$') { continue }
+            $cols = ($line.Trim() -split '\s{2,}')
+            if ($cols.Length -ge 2) { $global:installedPackageIds[$cols[1].Trim()] = $true }
+        }
+        $statusLabel.Text = "Status: Winget packages loaded."
+    }
+    catch {
+        [System.Windows.Forms.MessageBox]::Show("An unexpected error occurred while retrieving the winget package list: $_", "Winget error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+        $statusLabel.Text = "Status: Loading failed."
+    }
+    finally {
+        $progressBar.Visible = $false
+        $progressBar.Style = 'Blocks'
+        $parentForm.Refresh()
+    }
+}
+
+function Test-WingetPackageInstalled {
+    # Function to test if a Winget package is installed
+    param([string]$packageId)
+    return $global:installedPackageIds.ContainsKey($packageId)
+}
+
+function Update-InstalledProgramsStatus {
+    # Function to update the visual status of programs in the TreeView
+    Update-InstalledPackageIds -parentForm $form -progressBar $downloadProgressBar -statusLabel $statusDownloadLabel
+
+    foreach ($node in $allProgramNodes) {
+        $pkgId = $node.Tag
+        if (Test-WingetPackageInstalled -packageId $pkgId) {
+            #$node.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font.FontFamily, 11, [System.Drawing.FontStyle]::Bold)
+            #$node.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font, [System.Drawing.FontStyle]::Bold)
+            $node.ForeColor = [System.Drawing.Color]::Green
+        }
+        else {
+            #$node.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font.FontFamily, 11, [System.Drawing.FontStyle]::Regular)
+            #$node.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font, [System.Drawing.FontStyle]::Regular)
+        }
+    }
+}
+
+function Get-SelectedInstallStatus {
+    # Function to get selected installation status
+    $selected = $allProgramNodes | Where-Object { $_.Checked }
+    $installed = @()
+    $notInstalled = @()
+
+    foreach ($node in $selected) {
+        if (Test-WingetPackageInstalled -packageId $node.Tag) { 
+            $installed += $node 
+        }
+        else { $notInstalled += $node }
+    }
+    return [PSCustomObject]@{
+        Installed    = $installed
+        NotInstalled = $notInstalled
+        AllSelected  = $selected
+    }
+}
+
+function Install-WingetProgram {
+    # Function to install/update programs via winget
+    param([string]$packageId)
+    $statusDownloadLabel.Text = "Status: Install/Update $($packageId)..."
+    $downloadProgressBar.Visible = $true
+    $downloadProgressBar.Style = 'Marquee'
+    $form.Refresh()
+    $timeoutSeconds = 180
+    $wingetResult = Invoke-WingetCommand -arguments "install --id $($packageId) --source winget --accept-package-agreements --accept-source-agreements" -timeoutSeconds $timeoutSeconds
+    $downloadProgressBar.Visible = $false
+
+    if ($wingetResult.TimedOut) {
+        [System.Windows.Forms.MessageBox]::Show("The installation of $($packageId) has exceeded the time limit.", "Winget Timeout", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+        return $false
+    }
+    elseif ($wingetResult.ExitCode -ne 0) {
+        $errorMessage = "Error installing/updating $($packageId). Exit Code: $($wingetResult.ExitCode). "
+        if (![string]::IsNullOrEmpty($wingetResult.Errors)) { $errorMessage += "Fehler: $($wingetResult.Errors)." }
+        $errorMessage += "`n`nDetails in: $($wingetResult.ErrorFile)"
+        [System.Windows.Forms.MessageBox]::Show($errorMessage, "Winget installation/update error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+        return $false
+    }
+    else {
+        $statusDownloadLabel.Text = "$($packageId) installed/updated."
+        return $true
+    }
+}
+
+function Install-OrUpdate {
+    # Function to install or update selected nodes
+    param([System.Windows.Forms.TreeNode[]]$nodes)
+    $downloadProgressBar.Style = 'Continuous'
+    $downloadProgressBar.Minimum = 0
+    $downloadProgressBar.Maximum = $nodes.Count
+    $downloadProgressBar.Value = 0
+    $downloadProgressBar.Visible = $true
+
+    foreach ($node in $nodes) {
+        $pkgId = $node.Tag
+        $statusDownloadLabel.Text = "Installing/Updating $($node.Text)..."
+        $form.Refresh()
+        $result = Install-WingetProgram -packageId $pkgId
+        if (-not $result) {
+            [System.Windows.Forms.MessageBox]::Show("Installation/Update of $($node.Text) failed. Aborting.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+            break
+        }
+        $downloadProgressBar.Value++
+    }
+    $downloadProgressBar.Visible = $false
+    $statusDownloadLabel.Text = "Install/Update process completed."
+    Update-InstalledProgramsStatus
+}
+
+function Uninstall-Programs {
+    # Function to uninstall programs
+    param([System.Windows.Forms.TreeNode[]]$nodes)
+
+    $downloadProgressBar.Style = 'Continuous'
+    $downloadProgressBar.Minimum = 0
+    $downloadProgressBar.Maximum = $nodes.Count
+    $downloadProgressBar.Value = 0
+    $downloadProgressBar.Visible = $true
+    $timeoutSeconds = 180
+
+    foreach ($node in $nodes) {
+        $pkgId = $node.Tag
+        $statusDownloadLabel.Text = "Status: Uninstall $($node.Text) (ID: $($pkgId))..."
+        $form.Refresh()
+        $wingetResult = Invoke-WingetCommand -arguments "uninstall --id $($pkgId) --accept-source-agreements" -timeoutSeconds $timeoutSeconds
+        
+        if ($wingetResult.TimedOut) {
+            [System.Windows.Forms.MessageBox]::Show("Uninstalling $($node.Text) has exceeded the time limit.", "Winget Timeout", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+            break
+        }
+        elseif ($wingetResult.ExitCode -ne 0) {
+            $errorMessage = "Error uninstalling $($node.Text). Exit Code: $($wingetResult.ExitCode). "
+            if (![string]::IsNullOrEmpty($wingetResult.Errors)) { $errorMessage += "Error: $($wingetResult.Errors)." }
+            $errorMessage += "`n`nDetails in: $($wingetResult.ErrorFile)"
+            [System.Windows.Forms.MessageBox]::Show($errorMessage, "Winget uninstallation error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+            break
+        }
+        else {
+            $statusDownloadLabel.Text = "$($node.Text) uninstalled."
+        }
+        $downloadProgressBar.Value++
+    }
+    $downloadProgressBar.Visible = $false
+    $statusDownloadLabel.Text = "Uninstallation process completed."
+    Update-InstalledProgramsStatus
+}
+#endregion
+
 $tabDownloads = New-Object System.Windows.Forms.TabPage "Downloads"
-$tabDownloads.BackColor = $darkBackColor
-$tabDownloads.ForeColor = $darkForeColor
 $tabControl.TabPages.Add($tabDownloads)
 
-#region Downloads Tab - Program Data
+#region Program Data
 $programCategories = @{
     "Benchmarks"            = @(
         @{Name = "AIDA64 Extreme"; Id = "FinalWire.AIDA64.Extreme" },
@@ -1187,249 +1254,18 @@ $programCategories = @{
 }
 #endregion
 
-#region Downloads Tab - Winget Installation/Check
-# Check/Auto install winget
-if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-    [System.Windows.Forms.MessageBox]::Show("winget was not found. Attempting to install the app installer (using winget) from the Microsoft Store.", "winget not found", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
-    try {
-        $process = Start-Process -FilePath "ms-windows-store://pdp/?ProductId=9NBLGGH4NNS1" -PassThru -NoNewWindow -ErrorAction Stop
-        [System.Windows.Forms.MessageBox]::Show("Please install the 'App Installer' (Package ID: 9NBLGGH4NNS1) from the Microsoft Store window that opens. Then click 'OK' here when the installation is complete.", "Installing winget", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
-        Start-Sleep -Seconds 5
-        if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-            [System.Windows.Forms.MessageBox]::Show("winget could not be found after installation. Please restart the script or make sure winget is installed correctly.", "Error in winget", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-            exit
-        }
-        else {
-            [System.Windows.Forms.MessageBox]::Show("winget was successfully detected. The script will continue.", "winget found", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
-        }
-    }
-    catch {
-        [System.Windows.Forms.MessageBox]::Show("An error occurred while attempting to open the Microsoft Store for winget installation: $_. Please install winget manually.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-        exit
-    }
-}
-
-$global:installedPackageIds = @{}
-#endregion
-
-#region Downloads Tab - Winget Related Functions
-# Function to update the list of installed Winget packages
-function Update-InstalledPackageIds {
-    param(
-        [System.Windows.Forms.Form]$parentForm,
-        [System.Windows.Forms.ProgressBar]$progressBar,
-        [System.Windows.Forms.Label]$statusLabel
-    )
-
-    $progressBar.Style = 'Marquee'
-    $progressBar.Visible = $true
-    $statusLabel.Text = "Loading installed Winget packages (may take some time)..."
-    $parentForm.Refresh()
-
-    $global:installedPackageIds.Clear()
-    
-    try {
-        $wingetResult = Invoke-WingetCommand -arguments "list --source winget" -timeoutSeconds 60
-
-        if ($wingetResult.TimedOut) {
-            [System.Windows.Forms.MessageBox]::Show($wingetResult.Errors, "Winget timeout", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-            $statusLabel.Text = "Status: Loading failed (timeout)."
-            return
-        }
-        if ($wingetResult.ExitCode -ne 0) {
-            $errorMessage = "Winget 'list' command failed with error code $($wingetResult.ExitCode). "
-            if (![string]::IsNullOrEmpty($wingetResult.Errors)) { $errorMessage += "Error: $($wingetResult.Errors)." }
-            $errorMessage += "`n`nDetails in: $($wingetResult.ErrorFile)"
-            [System.Windows.Forms.MessageBox]::Show($errorMessage, "Winget error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-            $statusLabel.Text = "Status: Loading failed."
-            return
-        }
-        if ([string]::IsNullOrEmpty($wingetResult.Output)) {
-            [System.Windows.Forms.MessageBox]::Show("The winget 'list' command returned no output. Possibly a configuration issue.", "Winget warning", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)
-            $statusLabel.Text = "Status: Loading failed."
-            return
-        }
-
-        $installedPackagesRaw = $wingetResult.Output -split "`n"
-        $global:installedPackageIds.Clear()
-        
-        foreach ($line in $installedPackagesRaw) {
-            if ($line -match '^\s*Name\s+Id\s+Version') { continue }
-            if ($line -match '^\s*---\s+---\s+---') { continue }
-            if ($line -match '^\s*$') { continue }
-
-            $cols = ($line.Trim() -split '\s{2,}')
-            if ($cols.Length -ge 2) { $global:installedPackageIds[$cols[1].Trim()] = $true }
-        }
-        $statusLabel.Text = "Status: Winget packages loaded."
-    }
-    catch {
-        [System.Windows.Forms.MessageBox]::Show("An unexpected error occurred while retrieving the winget package list: $_", "Winget error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-        $statusLabel.Text = "Status: Loading failed."
-    }
-    finally {
-        $progressBar.Visible = $false
-        $progressBar.Style = 'Blocks'
-        $parentForm.Refresh()
-    }
-}
-
-# Function to test if a Winget package is installed
-function Test-WingetPackageInstalled {
-    param([string]$packageId)
-    return $global:installedPackageIds.ContainsKey($packageId)
-}
-
-# Function to update the visual status of programs in the TreeView
-function Update-InstalledProgramsStatus {
-    Update-InstalledPackageIds -parentForm $form -progressBar $downloadProgressBar -statusLabel $statusDownloadLabel
-
-    foreach ($node in $allProgramNodes) {
-        $pkgId = $node.Tag
-        if (Test-WingetPackageInstalled -packageId $pkgId) {
-            #$node.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font.FontFamily, 11, [System.Drawing.FontStyle]::Bold)
-            $node.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font, [System.Drawing.FontStyle]::Bold)
-            $node.ForeColor = [System.Drawing.Color]::Green
-        }
-        else {
-            #$node.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font.FontFamily, 11, [System.Drawing.FontStyle]::Regular)
-            $node.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font, [System.Drawing.FontStyle]::Regular)
-            $node.ForeColor = $darkForeColor
-        }
-    }
-}
-
-# Function to get selected installation status
-function Get-SelectedInstallStatus {
-    $selected = $allProgramNodes | Where-Object { $_.Checked }
-    $installed = @()
-    $notInstalled = @()
-
-    foreach ($node in $selected) {
-        if (Test-WingetPackageInstalled -packageId $node.Tag) { $installed += $node }
-        else { $notInstalled += $node }
-    }
-    return [PSCustomObject]@{
-        Installed    = $installed
-        NotInstalled = $notInstalled
-        AllSelected  = $selected
-    }
-}
-
-# Function to install/update programs via winget
-function Install-WingetProgram {
-    param([string]$packageId)
-
-    $statusDownloadLabel.Text = "Status: Install/Update $($packageId)..."
-    $downloadProgressBar.Visible = $true
-    $downloadProgressBar.Style = 'Marquee'
-    $form.Refresh()
-
-    $timeoutSeconds = 180
-
-    $wingetResult = Invoke-WingetCommand -arguments "install --id $($packageId) --source winget --accept-package-agreements --accept-source-agreements" -timeoutSeconds $timeoutSeconds
-
-    $downloadProgressBar.Visible = $false
-
-    if ($wingetResult.TimedOut) {
-        [System.Windows.Forms.MessageBox]::Show("The installation of $($packageId) has exceeded the time limit.", "Winget Timeout", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-        return $false
-    }
-    elseif ($wingetResult.ExitCode -ne 0) {
-        $errorMessage = "Error installing/updating $($packageId). Exit Code: $($wingetResult.ExitCode). "
-        if (![string]::IsNullOrEmpty($wingetResult.Errors)) { $errorMessage += "Fehler: $($wingetResult.Errors)." }
-        $errorMessage += "`n`nDetails in: $($wingetResult.ErrorFile)"
-        [System.Windows.Forms.MessageBox]::Show($errorMessage, "Winget installation/update error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-        return $false
-    }
-    else {
-        $statusDownloadLabel.Text = "$($packageId) installed/updated."
-        return $true
-    }
-}
-
-# Function to install or update selected nodes
-function Install-OrUpdate {
-    param([System.Windows.Forms.TreeNode[]]$nodes)
-
-    $downloadProgressBar.Style = 'Continuous'
-    $downloadProgressBar.Minimum = 0
-    $downloadProgressBar.Maximum = $nodes.Count
-    $downloadProgressBar.Value = 0
-    $downloadProgressBar.Visible = $true
-
-    foreach ($node in $nodes) {
-        $pkgId = $node.Tag
-        $statusDownloadLabel.Text = "Installing/Updating $($node.Text)..."
-        $form.Refresh()
-        $result = Install-WingetProgram -packageId $pkgId
-        if (-not $result) {
-            [System.Windows.Forms.MessageBox]::Show("Installation/Update of $($node.Text) failed. Aborting.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-            break
-        }
-        $downloadProgressBar.Value++
-    }
-    $downloadProgressBar.Visible = $false
-    $statusDownloadLabel.Text = "Install/Update process completed."
-    Update-InstalledProgramsStatus
-}
-
-# Function to uninstall programs
-function Uninstall-Programs {
-    param([System.Windows.Forms.TreeNode[]]$nodes)
-
-    $downloadProgressBar.Style = 'Continuous'
-    $downloadProgressBar.Minimum = 0
-    $downloadProgressBar.Maximum = $nodes.Count
-    $downloadProgressBar.Value = 0
-    $downloadProgressBar.Visible = $true
-
-    $timeoutSeconds = 180
-
-    foreach ($node in $nodes) {
-        $pkgId = $node.Tag
-        $statusDownloadLabel.Text = "Status: Uninstall $($node.Text) (ID: $($pkgId))..."
-        $form.Refresh()
-
-        $wingetResult = Invoke-WingetCommand -arguments "uninstall --id $($pkgId) --accept-source-agreements" -timeoutSeconds $timeoutSeconds
-        
-        if ($wingetResult.TimedOut) {
-            [System.Windows.Forms.MessageBox]::Show("Uninstalling $($node.Text) has exceeded the time limit.", "Winget Timeout", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-            break
-        }
-        elseif ($wingetResult.ExitCode -ne 0) {
-            $errorMessage = "Error uninstalling $($node.Text). Exit Code: $($wingetResult.ExitCode). "
-            if (![string]::IsNullOrEmpty($wingetResult.Errors)) { $errorMessage += "Error: $($wingetResult.Errors)." }
-            $errorMessage += "`n`nDetails in: $($wingetResult.ErrorFile)"
-            [System.Windows.Forms.MessageBox]::Show($errorMessage, "Winget uninstallation error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-            break
-        }
-        else {
-            $statusDownloadLabel.Text = "$($node.Text) uninstalled."
-        }
-        $downloadProgressBar.Value++
-    }
-    $downloadProgressBar.Visible = $false
-    $statusDownloadLabel.Text = "Uninstallation process completed."
-    Update-InstalledProgramsStatus
-}
-#endregion
-
-#region Downloads Tab - GUI Elements
+#region GUI Elements
 # Label top
 $downloadsLabel = New-Object System.Windows.Forms.Label
 $downloadsLabel.Text = "Select the programs to install via winget:"
 $downloadsLabel.AutoSize = $true
 $downloadsLabel.Location = New-Object System.Drawing.Point(15, 15)
-$downloadsLabel.ForeColor = $darkForeColor
 $tabDownloads.Controls.Add($downloadsLabel)
 
 # TreeView with Checkboxes and Categories
 $downloadTreeView = New-Object System.Windows.Forms.TreeView
 $downloadTreeView.Size = New-Object System.Drawing.Size(650, 600)
 $downloadTreeView.Location = New-Object System.Drawing.Point(15, 50)
-$downloadTreeView.BackColor = $darkBackColor
-$downloadTreeView.ForeColor = $darkForeColor
 $downloadTreeView.HideSelection = $false
 $downloadTreeView.CheckBoxes = $true
 $tabDownloads.Controls.Add($downloadTreeView)
@@ -1440,7 +1276,6 @@ $allProgramNodes = @()
 # Populate TreeView with categories and programs
 foreach ($category in $programCategories.Keys) {
     $parentNode = New-Object System.Windows.Forms.TreeNode $category
-    $parentNode.ForeColor = $accentColor
 
     foreach ($prog in $programCategories[$category]) {
         $childNode = New-Object System.Windows.Forms.TreeNode $prog.Name
@@ -1449,7 +1284,7 @@ foreach ($category in $programCategories.Keys) {
         # Highlight installed programs (bold + green)
         if (Test-WingetPackageInstalled -packageId $prog.Id) {
             #$childNode.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font.FontFamily, 11, [System.Drawing.FontStyle]::Bold)
-            $childNode.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font, [System.Drawing.FontStyle]::Bold)
+            #$childNode.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font, [System.Drawing.FontStyle]::Bold)
             $childNode.ForeColor = [System.Drawing.Color]::Green
         }
 
@@ -1464,8 +1299,7 @@ $installButton = New-Object System.Windows.Forms.Button
 $installButton.Text = "Install"
 $installButton.Size = New-Object System.Drawing.Size(100, 30)
 $installButton.Location = New-Object System.Drawing.Point(15, 660)
-$installButton.BackColor = $accentColor
-$installButton.ForeColor = [System.Drawing.Color]::Lime
+$installButton.BackColor = [System.Drawing.Color]::LimeGreen
 $installButton.Enabled = $false
 $tabDownloads.Controls.Add($installButton)
 
@@ -1474,8 +1308,7 @@ $uninstallButton = New-Object System.Windows.Forms.Button
 $uninstallButton.Text = "Uninstall"
 $uninstallButton.Size = New-Object System.Drawing.Size(100, 30)
 $uninstallButton.Location = New-Object System.Drawing.Point(245, 660)
-$uninstallButton.BackColor = $accentColor
-$uninstallButton.ForeColor = [System.Drawing.Color]::Red
+$uninstallButton.BackColor = [System.Drawing.Color]::Red
 $uninstallButton.Enabled = $false
 $tabDownloads.Controls.Add($uninstallButton)
 
@@ -1484,8 +1317,7 @@ $updateButton = New-Object System.Windows.Forms.Button
 $updateButton.Text = "Update all"
 $updateButton.Size = New-Object System.Drawing.Size(100, 30)
 $updateButton.Location = New-Object System.Drawing.Point(130, 660)
-$updateButton.BackColor = $accentColor
-$updateButton.ForeColor = [System.Drawing.Color]::Lime
+$updateButton.BackColor = [System.Drawing.Color]::LimeGreen
 $updateButton.Enabled = $true
 $tabDownloads.Controls.Add($updateButton)
 
@@ -1494,15 +1326,13 @@ $uncheckAllButton = New-Object System.Windows.Forms.Button
 $uncheckAllButton.Text = "Uncheck all"
 $uncheckAllButton.Size = New-Object System.Drawing.Size(100, 30)
 $uncheckAllButton.Location = New-Object System.Drawing.Point(360, 660)
-$uncheckAllButton.BackColor = $accentColor
-$uncheckAllButton.ForeColor = [System.Drawing.Color]::White
+$uncheckAllButton.BackColor = [System.Drawing.Color]::SlateGray
 $tabDownloads.Controls.Add($uncheckAllButton)
 
 # Status Label
 $statusDownloadLabel = New-Object System.Windows.Forms.Label
 $statusDownloadLabel.Size = New-Object System.Drawing.Size(600, 30)
 $statusDownloadLabel.Location = New-Object System.Drawing.Point(15, 700)
-$statusDownloadLabel.ForeColor = $darkForeColor
 $tabDownloads.Controls.Add($statusDownloadLabel)
 
 # Progress Bar
@@ -1513,12 +1343,15 @@ $downloadProgressBar.Visible = $false
 $tabDownloads.Controls.Add($downloadProgressBar)
 #endregion
 
-#region Downloads Tab - Event Handlers
+#region Event Handlers
 # TreeView AfterCheck event
 $downloadTreeView.Add_AfterCheck({
         param($sender, $e)
 
-        if ($global:IgnoreCheckEventDownloads) { return }
+        if ($global:IgnoreCheckEventDownloads) { 
+            return 
+        }
+        
         $global:IgnoreCheckEventDownloads = $true
 
         if ($e.Node.Nodes.Count -gt 0) {
@@ -1540,7 +1373,6 @@ $downloadTreeView.Add_AfterCheck({
         $countInstalled = $status.Installed.Count
         $countNotInstalled = $status.NotInstalled.Count
         $countTotal = $status.AllSelected.Count
-
         $installButton.Visible = $true
         $updateButton.Visible = $true
         $uninstallButton.Visible = $true
@@ -1666,46 +1498,23 @@ $uncheckAllButton.Add_Click({
         $installButton.Enabled = $false
         $updateButton.Enabled = $true
         $uninstallButton.Enabled = $false
-    
         $statusDownloadLabel.Text = "All selections cleared."
         $global:IgnoreCheckEventDownloads = $false
     })
 
-# Initial load for Downloads tab
-#$form.Add_Shown({
-# Only run this once, when the form is shown (e.g., after initial GUI setup)
-# Check if this has already been run to prevent re-execution on every tab switch if not desired
-#if (-not $script:downloadsTabInitialized) {
-#    $statusDownloadLabel.Text = "Status: Initializing Winget data..."
-#    $downloadProgressBar.Visible = $true
-#    $downloadProgressBar.Style = 'Marquee'
-#    $form.Refresh()
-#    Update-InstalledProgramsStatus -parentForm $form -progressBar $downloadProgressBar -statusLabel $statusDownloadLabel
-#    $script:downloadsTabInitialized = $true
-#}
-#})
-#endregion
-#endregion
-
 #region 7. Tab: Untested
 $tabUntested = New-Object System.Windows.Forms.TabPage "Untested"
-$tabUntested.BackColor = $darkBackColor
-$tabUntested.ForeColor = $darkForeColor
 $tabControl.TabPages.Add($tabUntested)
-
 # Example Label in Untested Tab
 $untestedLabel = New-Object System.Windows.Forms.Label
 $untestedLabel.Text = "These tweaks are untested and experimental."
 $untestedLabel.AutoSize = $true
 $untestedLabel.Location = New-Object System.Drawing.Point(15, 15)
-$untestedLabel.ForeColor = $darkForeColor
 $tabUntested.Controls.Add($untestedLabel)
 #endregion
 
 #region 9. Tab: About
 $tabAbout = New-Object System.Windows.Forms.TabPage "About"
-$tabAbout.BackColor = $darkBackColor
-$tabAbout.ForeColor = $darkForeColor
 $tabControl.TabPages.Add($tabAbout)
 
 # About Text Labels
@@ -1737,8 +1546,7 @@ $discordButton = New-Object System.Windows.Forms.Button
 $discordButton.Text = "Discord"
 $discordButton.Size = New-Object System.Drawing.Size(150, 30)
 $discordButton.Location = New-Object System.Drawing.Point(15, $aboutButtonYPos)
-$discordButton.BackColor = $accentColor
-$discordButton.ForeColor = [System.Drawing.Color]::White
+$discordButton.BackColor = [System.Drawing.Color]::DodgerBlue
 $discordButton.Add_Click({ Start-Process "https://discord.gg/gDmjYgydb3" })
 $tabAbout.Controls.Add($discordButton)
 $aboutButtonYPos += 35
@@ -1747,8 +1555,7 @@ $botButton = New-Object System.Windows.Forms.Button
 $botButton.Text = "Discord-bot"
 $botButton.Size = New-Object System.Drawing.Size(150, 30)
 $botButton.Location = New-Object System.Drawing.Point(15, $aboutButtonYPos)
-$botButton.BackColor = $accentColor
-$botButton.ForeColor = [System.Drawing.Color]::White
+$botButton.BackColor = [System.Drawing.Color]::YellowGreen
 $botButton.Add_Click({ Start-Process "https://shag.gg" })
 $tabAbout.Controls.Add($botButton)
 $aboutButtonYPos += 35
@@ -1757,8 +1564,7 @@ $botDcButton = New-Object System.Windows.Forms.Button
 $botDcButton.Text = "Bot web > shag.gg"
 $botDcButton.Size = New-Object System.Drawing.Size(150, 30)
 $botDcButton.Location = New-Object System.Drawing.Point(15, $aboutButtonYPos)
-$botDcButton.BackColor = $accentColor
-$botDcButton.ForeColor = [System.Drawing.Color]::White
+$botDcButton.BackColor = [System.Drawing.Color]::YellowGreen
 $botDcButton.Add_Click({ Start-Process "https://discord.gg/qxPNcgtTqn" })
 $tabAbout.Controls.Add($botDcButton)
 $aboutButtonYPos += 35
@@ -1767,8 +1573,7 @@ $githubProjectButton = New-Object System.Windows.Forms.Button
 $githubProjectButton.Text = "GitHub"
 $githubProjectButton.Size = New-Object System.Drawing.Size(150, 30)
 $githubProjectButton.Location = New-Object System.Drawing.Point(15, $aboutButtonYPos)
-$githubProjectButton.BackColor = $accentColor
-$githubProjectButton.ForeColor = [System.Drawing.Color]::White
+$githubProjectButton.BackColor = [System.Drawing.Color]::DodgerBlue
 $githubProjectButton.Add_Click({ Start-Process "https://github.com/leeshhi" })
 $tabAbout.Controls.Add($githubProjectButton)
 #endregion

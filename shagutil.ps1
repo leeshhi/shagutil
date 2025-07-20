@@ -327,7 +327,7 @@ function Initialize-HomeTabContent {
     $form.Refresh()
 
     # Eine kurze Pause, damit der Benutzer den Lade-Text sehen kann
-    Start-Sleep -Milliseconds 1000 # Dies kann angepasst werden (z.B. 100 für längere Anzeige)
+    #Start-Sleep -Milliseconds 1000 # Dies kann angepasst werden (z.B. 100 für längere Anzeige)
 
     # Lade-Label wieder entfernen
     $systemInfoPanel.Controls.Remove($loadingLabel)

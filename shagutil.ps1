@@ -27,7 +27,6 @@ Write-Host ""
 function CheckUpdates {
     # Function: Check for script updates
     param([string]$currentVersion = $scriptVersion, [string]$githubRawUrl = "https://raw.githubusercontent.com/leeshhi/shagutil/main/version.txt")
-
     try {
         $remoteVersionText = Invoke-RestMethod -Uri $githubRawUrl -ErrorAction Stop
         $remoteVersion = $remoteVersionText.Trim()
@@ -53,11 +52,9 @@ function CheckUpdates {
         }
     }
 }
-
 function Invoke-WingetCommand {
     # Function: Invoke Winget Commands and Log Output
     param([string]$arguments, [int]$timeoutSeconds = 60)
-
     $tempDir = [System.IO.Path]::GetTempPath()
     $outputFile = [System.IO.Path]::Combine($tempDir, "winget_output_$(Get-Date -Format 'yyyyMMdd_HHmmss').log")
     $errorFile = [System.IO.Path]::Combine($tempDir, "winget_error_$(Get-Date -Format 'yyyyMMdd_HHmmss').log")
@@ -1784,102 +1781,20 @@ function Test-WingetPackageInstalled {
 }
 
 function Update-InstalledProgramsStatus {
-    param(
-        [Parameter(Mandatory = $true)][System.Windows.Forms.Form]$parentForm,
-        [Parameter(Mandatory = $true)][System.Windows.Forms.ProgressBar]$progressBar,
-        [Parameter(Mandatory = $true)][System.Windows.Forms.Label]$statusLabel
-    )
+    # Function to update the visual status of programs in the TreeView
+    Update-InstalledPackageIds -parentForm $form -progressBar $downloadProgressBar -statusLabel $statusDownloadLabel
 
-    $statusLabel.Text = "Status: Initializing Winget data..."
-    $progressBar.Visible = $true
-    $progressBar.Style = 'Marquee' # Set to marquee for indefinite progress during data fetching
-    $parentForm.Refresh()
-
-    $installedApps = @()
-    $script:downloadsTabInitialized = $false # Reset initialization status
-
-    try {
-        # --- Start of Winget Invocation Fix ---
-        # 1. Try to find winget.exe via Get-Command (preferred way if in PATH)
-        $wingetPath = (Get-Command winget.exe -ErrorAction SilentlyContinue).Source
-        
-        # 2. Fallback to common Winget installation path if not found in PATH
-        if (-not $wingetPath) {
-            $localAppData = [System.Environment]::GetFolderPath('LocalApplicationData')
-            $wingetPathCandidate = Join-Path $localAppData 'Microsoft\WindowsApps\winget.exe'
-            if (Test-Path $wingetPathCandidate) {
-                $wingetPath = $wingetPathCandidate
-            }
-            else {
-                throw "Winget executable not found. Please ensure Winget is installed and accessible."
-            }
-        }
-
-        # 3. Execute winget via Start-Process for robust execution in scripting contexts
-        # Redirect StandardOutput to a temporary file to reliably capture JSON output
-        $tempOutputFile = [System.IO.Path]::GetTempFileName()
-        
-        Write-Host "DEBUG: Attempting to run winget from: $wingetPath" -ForegroundColor DarkGray
-        Write-Host "DEBUG: Output will be redirected to: $tempOutputFile" -ForegroundColor DarkGray
-
-        $processInfo = New-Object System.Diagnostics.ProcessStartInfo
-        $processInfo.FileName = $wingetPath
-        $processInfo.Arguments = 'list --source winget --accept-source-agreements --disable-interactivity --output json'
-        $processInfo.UseShellExecute = $false
-        $processInfo.RedirectStandardOutput = $true
-        $processInfo.CreateNoWindow = $true
-
-        $process = New-Object System.Diagnostics.Process
-        $process.StartInfo = $processInfo
-        
-        $process.Start() | Out-Null
-        $process.WaitForExit()
-
-        $jsonOutput = $process.StandardOutput.ReadToEnd()
-
-        # Check for errors from winget itself (e.g., if winget exited with an error code)
-        if ($process.ExitCode -ne 0) {
-            $errorMessage = "Winget process exited with error code $($process.ExitCode)."
-            if ($jsonOutput) {
-                $errorMessage += " Winget Output: $($jsonOutput)"
-            }
-            throw $errorMessage
-        }
-        
-        # Parse JSON output
-        $wingetData = $jsonOutput | ConvertFrom-Json -ErrorAction Stop
-        
-        # --- End of Winget Invocation Fix ---
-
-        if ($wingetData -and $wingetData.Installers -and $wingetData.Installers.Packages) {
-            $installedApps = $wingetData.Installers.Packages
-            $script:downloadsTabInitialized = $true
-            Write-Host "DEBUG: Successfully retrieved $($installedApps.Count) installed apps from winget." -ForegroundColor Green
+    foreach ($node in $allProgramNodes) {
+        $pkgId = $node.Tag
+        if (Test-WingetPackageInstalled -packageId $pkgId) {
+            #$node.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font.FontFamily, 11, [System.Drawing.FontStyle]::Bold)
+            #$node.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font, [System.Drawing.FontStyle]::Bold)
+            $node.ForeColor = [System.Drawing.Color]::Green
         }
         else {
-            Write-Host "DEBUG: Winget returned no packages or an unexpected format." -ForegroundColor Yellow
+            #$node.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font.FontFamily, 11, [System.Drawing.FontStyle]::Regular)
+            #$node.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font, [System.Drawing.FontStyle]::Regular)
         }
-    }
-    catch {
-        Write-Error "Error in Update-InstalledProgramsStatus (Winget): $($_.Exception.Message)"
-        if ($_.Exception.InnerException) {
-            Write-Error "Inner Exception: $($_.Exception.InnerException.Message)"
-        }
-        [System.Windows.Forms.MessageBox]::Show("Failed to load installed applications from Winget. Please ensure Winget is installed and updated. Error: $($_.Exception.Message)", "Winget Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-        $statusLabel.Text = "Status: Winget data load failed!"
-        $installedApps = @() # Ensure empty list on error
-    }
-    finally {
-        $progressBar.Visible = $false
-        $statusLabel.Text = "Status: Winget data loaded."
-        # Clean up temporary output file if it was created
-        if (Test-Path $tempOutputFile) {
-            Remove-Item $tempOutputFile -ErrorAction SilentlyContinue
-        }
-        
-        # Continue with populating the TreeView for the downloads tab
-        Populate-DownloadsTreeView -installedApps $installedApps -availableApps $script:availableApps
-        $parentForm.Refresh()
     }
 }
 

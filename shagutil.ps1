@@ -809,7 +809,7 @@ $generalTweaks = @(
         Category     = "Visuals"
         Name         = "Disable Visual Effects (Adjust for best performance)"
         Description  = "Adjusts visual effects for best performance (disables animations, shadows etc.). This typically applies multiple settings, so we'll treat it as a group or a specific set of registry changes."
-        RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects"
+        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects"
         ValueName    = "VisualFXSetting"
         TweakValue   = 2 # 2 = Adjust for best performance
         DefaultValue = 0 # 0 = Let Windows choose what's best, or a specific default
@@ -851,14 +851,14 @@ $generalTweaks = @(
         Description      = "Deaktiviert das Benachrichtigungscenter, den Kalender und alle Push-Benachrichtigungen (Toast-Benachrichtigungen)."
         RegistrySettings = @(
             @{
-                Path          = "HKCU:\Software\Policies\Microsoft\Windows\Explorer"
+                Path          = "HKCU\Software\Policies\Microsoft\Windows\Explorer"
                 Name          = "DisableNotificationCenter"
                 Value         = 1
                 OriginalValue = "<RemoveEntry>"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\Software\Microsoft\Windows\CurrentVersion\PushNotifications"
+                Path          = "HKCU\Software\Microsoft\Windows\CurrentVersion\PushNotifications"
                 Name          = "ToastEnabled"
                 Value         = 0
                 OriginalValue = 1
@@ -872,28 +872,28 @@ $generalTweaks = @(
         Description      = "Deaktiviert GameDVR-Funktionen in Windows."
         RegistrySettings = @(
             @{
-                Path          = "HKCU:\System\GameConfigStore"
+                Path          = "HKCU\System\GameConfigStore"
                 Name          = "GameDVR_FSEBehavior"
                 Value         = "2"
                 OriginalValue = "1"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\System\GameConfigStore"
+                Path          = "HKCU\System\GameConfigStore"
                 Name          = "GameDVR_Enabled"
                 Value         = "0"
                 OriginalValue = "1"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\System\GameConfigStore"
+                Path          = "HKCU\System\GameConfigStore"
                 Name          = "GameDVR_HonorUserFSEBehaviorMode"
                 Value         = "1"
                 OriginalValue = "0"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\System\GameConfigStore"
+                Path          = "HKCU\System\GameConfigStore"
                 Name          = "GameDVR_EFSEFeatureFlags"
                 Value         = "0"
                 OriginalValue = "1"
@@ -1036,77 +1036,77 @@ $generalTweaks = @(
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
                 Name          = "ContentDeliveryAllowed"
                 Value         = 0
                 OriginalValue = 1
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
                 Name          = "OemPreInstalledAppsEnabled"
                 Value         = 0
                 OriginalValue = 1
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
                 Name          = "PreInstalledAppsEnabled"
                 Value         = 0
                 OriginalValue = 1
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
                 Name          = "PreInstalledAppsEverEnabled"
                 Value         = 0
                 OriginalValue = 1
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
                 Name          = "SilentInstalledAppsEnabled"
                 Value         = 0
                 OriginalValue = 1
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
                 Name          = "SubscribedContent-338387Enabled"
                 Value         = 0
                 OriginalValue = 1
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
                 Name          = "SubscribedContent-338388Enabled"
                 Value         = 0
                 OriginalValue = 1
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
                 Name          = "SubscribedContent-338389Enabled"
                 Value         = 0
                 OriginalValue = 1
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
                 Name          = "SubscribedContent-353698Enabled"
                 Value         = 0
                 OriginalValue = 1
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
                 Name          = "SystemPaneSuggestionsEnabled"
                 Value         = 0
                 OriginalValue = 1
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\SOFTWARE\Microsoft\Siuf\Rules"
+                Path          = "HKCU\SOFTWARE\Microsoft\Siuf\Rules"
                 Name          = "NumberOfSIUFInPeriod"
                 Value         = 0
                 OriginalValue = 0 # Annahme: Default ist 0 oder nicht vorhanden
@@ -1120,7 +1120,7 @@ $generalTweaks = @(
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\SOFTWARE\Policies\Microsoft\Windows\CloudContent"
+                Path          = "HKCU\SOFTWARE\Policies\Microsoft\Windows\CloudContent"
                 Name          = "DisableTailoredExperiencesWithDiagnosticData"
                 Value         = 1
                 OriginalValue = "<RemoveEntry>"
@@ -1155,28 +1155,28 @@ $generalTweaks = @(
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\OperationStatusManager"
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\OperationStatusManager"
                 Name          = "EnthusiastMode"
                 Value         = 1
                 OriginalValue = 0
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
                 Name          = "ShowTaskViewButton"
                 Value         = 0
                 OriginalValue = 1
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\People"
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\People"
                 Name          = "PeopleBand"
                 Value         = 0
                 OriginalValue = 1
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
                 Name          = "LaunchTo"
                 Value         = 1 # Startet im Datei-Explorer auf 'Dieser PC'
                 OriginalValue = 1 # Standardwert, wenn nicht geändert
@@ -1212,7 +1212,7 @@ $generalTweaks = @(
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\Control Panel\Desktop"
+                Path          = "HKCU\Control Panel\Desktop"
                 Name          = "AutoEndTasks"
                 Value         = 1 # Task beenden, wenn nicht reagiert
                 OriginalValue = 0 # Standardwert
@@ -1240,28 +1240,28 @@ $generalTweaks = @(
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds"
+                Path          = "HKCU\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds"
                 Name          = "EnableFeeds"
                 Value         = 0
                 OriginalValue = "<RemoveEntry>"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Feeds"
+                Path          = "HKCU\Software\Microsoft\Windows\CurrentVersion\Feeds"
                 Name          = "ShellFeedsTaskbarViewMode"
                 Value         = 2 # Ausblenden des News and Interests-Buttons
                 OriginalValue = 1 # Standardwert
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer"
+                Path          = "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer"
                 Name          = "HideSCAMeetNow"
                 Value         = 1
                 OriginalValue = "<RemoveEntry>"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\Software\Microsoft\Windows\CurrentVersion\UserProfileEngagement"
+                Path          = "HKCU\Software\Microsoft\Windows\CurrentVersion\UserProfileEngagement"
                 Name          = "ScoobeSystemSettingEnabled"
                 Value         = 0
                 OriginalValue = 1
@@ -1275,11 +1275,11 @@ $generalTweaks = @(
         $taskmgr = Start-Process -WindowStyle Hidden -FilePath taskmgr.exe -PassThru
         Do {
             Start-Sleep -Milliseconds 100
-            $preferences = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\TaskManager" -Name "Preferences" -ErrorAction SilentlyContinue
+            $preferences = Get-ItemProperty -Path "HKCU\Software\Microsoft\Windows\CurrentVersion\TaskManager" -Name "Preferences" -ErrorAction SilentlyContinue
         } Until ($preferences)
         Stop-Process $taskmgr
         $preferences.Preferences[28] = 0
-        Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\TaskManager" -Name "Preferences" -Type Binary -Value $preferences.Preferences
+        Set-ItemProperty -Path "HKCU\Software\Microsoft\Windows\CurrentVersion\TaskManager" -Name "Preferences" -Type Binary -Value $preferences.Preferences
     }
     Remove-Item -Path "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{0DB7E03F-FC29-4DC6-9020-FF41B59E513A}" -Recurse -ErrorAction SilentlyContinue
     If (Test-Path "HKLM\SOFTWARE\Policies\Microsoft\Edge") {
@@ -1313,10 +1313,10 @@ $generalTweaks = @(
             "bcdedit /set {current} bootmenupolicy Standard | Out-Null",
     @"
     If ((get-ItemProperty -Path "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" -Name CurrentBuild).CurrentBuild -lt 22557) {
-        $preferences = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\TaskManager" -Name "Preferences" -ErrorAction SilentlyContinue
+        $preferences = Get-ItemProperty -Path "HKCU\Software\Microsoft\Windows\CurrentVersion\TaskManager" -Name "Preferences" -ErrorAction SilentlyContinue
         if ($preferences) {
             $preferences.Preferences[28] = 1 # Setzt den Wert auf den Standard zurück
-            Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\TaskManager" -Name "Preferences" -Type Binary -Value $preferences.Preferences -Force
+            Set-ItemProperty -Path "HKCU\Software\Microsoft\Windows\CurrentVersion\TaskManager" -Name "Preferences" -Type Binary -Value $preferences.Preferences -Force
         }
     }
 "@,
@@ -1334,91 +1334,91 @@ $generalTweaks = @(
         Description      = "Sets the system preferences to performance. You can do this manually with sysdm.cpl as well."
         RegistrySettings = @(
             @{
-                Path          = "HKCU:\Control Panel\Desktop"
+                Path          = "HKCU\Control Panel\Desktop"
                 Name          = "DragFullWindows"
                 Value         = "0"
                 OriginalValue = "1"
                 Type          = "String"
             },
             @{
-                Path          = "HKCU:\Control Panel\Desktop"
+                Path          = "HKCU\Control Panel\Desktop"
                 Name          = "MenuShowDelay"
                 Value         = "200"
                 OriginalValue = "400"
                 Type          = "String"
             },
             @{
-                Path          = "HKCU:\Control Panel\Desktop\WindowMetrics"
+                Path          = "HKCU\Control Panel\Desktop\WindowMetrics"
                 Name          = "MinAnimate"
                 Value         = "0"
                 OriginalValue = "1"
                 Type          = "String"
             },
             @{
-                Path          = "HKCU:\Control Panel\Keyboard"
+                Path          = "HKCU\Control Panel\Keyboard"
                 Name          = "KeyboardDelay"
                 Value         = "0"
                 OriginalValue = "1"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+                Path          = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
                 Name          = "ListviewAlphaSelect"
                 Value         = "0"
                 OriginalValue = "1"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+                Path          = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
                 Name          = "ListviewShadow"
                 Value         = "0"
                 OriginalValue = "1"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+                Path          = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
                 Name          = "TaskbarAnimations"
                 Value         = "0"
                 OriginalValue = "1"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects"
+                Path          = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects"
                 Name          = "VisualFXSetting"
                 Value         = "3" # 3 = Adjust for best performance
                 OriginalValue = "1" # 1 = Let Windows choose what's best
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\Software\Microsoft\Windows\DWM"
+                Path          = "HKCU\Software\Microsoft\Windows\DWM"
                 Name          = "EnableAeroPeek"
                 Value         = "0"
                 OriginalValue = "1"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+                Path          = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
                 Name          = "TaskbarMn" # Taskbar Multiple Monitors (vermutlich)
                 Value         = "0"
                 OriginalValue = "1"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+                Path          = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
                 Name          = "TaskbarDa" # Taskbar Desktop Apps (vermutlich)
                 Value         = "0"
                 OriginalValue = "1"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+                Path          = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
                 Name          = "ShowTaskViewButton"
                 Value         = "0"
                 OriginalValue = "1"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search"
+                Path          = "HKCU\Software\Microsoft\Windows\CurrentVersion\Search"
                 Name          = "SearchboxTaskbarMode"
                 Value         = "0" # 0 = Hidden
                 OriginalValue = "1" # 1 = Icon only, 2 = Search box
@@ -1427,12 +1427,12 @@ $generalTweaks = @(
         )
         InvokeScript     = @(
             @"
-    Set-ItemProperty -Path "HKCU:\Control Panel\Desktop" -Name "UserPreferencesMask" -Type Binary -Value ([byte[]](144,18,3,128,16,0,0,0))
+    Set-ItemProperty -Path "HKCU\Control Panel\Desktop" -Name "UserPreferencesMask" -Type Binary -Value ([byte[]](144,18,3,128,16,0,0,0))
 "@
         )
         UndoScript       = @(
             @"
-    Remove-ItemProperty -Path "HKCU:\Control Panel\Desktop" -Name "UserPreferencesMask"
+    Remove-ItemProperty -Path "HKCU\Control Panel\Desktop" -Name "UserPreferencesMask"
 "@
         )
     },
@@ -1440,7 +1440,7 @@ $generalTweaks = @(
         Category     = "Features"
         Name         = "Enable End Task With Right Click"
         Description  = "Enables a new 'End Task' option in the right-click context menu for apps on the taskbar."
-        RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" # Corrected Path
+        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" # Corrected Path
         ValueName    = "TaskbarEndTask"
         TweakValue   = 1 # Value to set when enabled
         DefaultValue = 0 # Value to set when reset/disabled (assuming 0 is default or missing)
@@ -1452,12 +1452,12 @@ $generalTweaks = @(
         Description  = "Storage Sense deletes temp files automatically."
         InvokeScript = @(
             @"
-    Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy" -Name "01" -Value 0 -Type Dword -Force
+    Set-ItemProperty -Path "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy" -Name "01" -Value 0 -Type Dword -Force
 "@
         )
         UndoScript   = @(
             @"
-    Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy" -Name "01" -Value 1 -Type Dword -Force
+    Set-ItemProperty -Path "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy" -Name "01" -Value 1 -Type Dword -Force
 "@
         )
     },
@@ -1474,14 +1474,14 @@ $generalTweaks = @(
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\Software\Policies\Microsoft\Windows\WindowsCopilot"
+                Path          = "HKCU\Software\Policies\Microsoft\Windows\WindowsCopilot"
                 Name          = "TurnOffWindowsCopilot"
                 Value         = 1
                 OriginalValue = "<RemoveEntry>"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+                Path          = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
                 Name          = "ShowCopilotButton"
                 Value         = 0
                 OriginalValue = 1
@@ -1502,7 +1502,7 @@ $generalTweaks = @(
                 Type          = "String"
             },
             @{
-                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsCopilot"
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsCopilot"
                 Name          = "AllowCopilotRuntime"
                 Value         = 0
                 OriginalValue = "<RemoveEntry>"
@@ -1606,14 +1606,14 @@ $generalTweaks = @(
         Description  = "Great Windows 11 tweak to bring back good context menus when right clicking things in explorer."
         InvokeScript = @(
             @"
-    New-Item -Path "HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}" -Name "InprocServer32" -force -value ""
+    New-Item -Path "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}" -Name "InprocServer32" -force -value ""
     Write-Host "Restarting explorer.exe ..."
     Stop-Process -Name "explorer" -Force
 "@
         )
         UndoScript   = @(
             @"
-    Remove-Item -Path "HKCU:\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}" -Recurse -Confirm:$false -Force
+    Remove-Item -Path "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}" -Recurse -Confirm:$false -Force
     # Restarting Explorer in the Undo Script might not be necessary, as the Registry change without restarting Explorer does work, but just to make sure.
     Write-Host "Restarting explorer.exe ..."
     Stop-Process -Name "explorer" -Force
@@ -1693,7 +1693,7 @@ $generalTweaks = @(
         Category     = "Performance"
         Name         = "Disable Background Apps"
         Description  = "Disables all Microsoft Store apps from running in the background, which has to be done individually since Win11"
-        RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications"
+        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications"
         ValueName    = "GlobalUserDisabled"
         TweakValue   = "1"
         DefaultValue = "0"
@@ -1703,7 +1703,7 @@ $generalTweaks = @(
         Category     = "Gaming"
         Name         = "Disable Fullscreen Optimizations"
         Description  = "Disables FSO in all applications. NOTE: This will disable Color Management in Exclusive Fullscreen"
-        RegistryPath = "HKCU:\System\GameConfigStore"
+        RegistryPath = "HKCU\System\GameConfigStore"
         ValueName    = "GameDVR_DXGIHonorFSEWindowsCompatible"
         TweakValue   = "1"
         DefaultValue = "0"
@@ -1713,7 +1713,7 @@ $generalTweaks = @(
         Category     = "Privacy"
         Name         = "Bing Search in Start Menu"
         Description  = "If enabled, includes web search results from Bing in your Start Menu search."
-        RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search"
+        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Search"
         ValueName    = "BingSearchEnabled"
         TweakValue   = "1"
         DefaultValue = "0" # OriginalValue aus deiner Angabe
@@ -1725,14 +1725,14 @@ $generalTweaks = @(
         Description      = "Toggle the Num Lock key state when your computer starts."
         RegistrySettings = @(
             @{
-                Path          = "HKU:\.Default\Control Panel\Keyboard"
+                Path          = "HKU\.Default\Control Panel\Keyboard"
                 Name          = "InitialKeyboardIndicators"
                 Value         = "2"
                 OriginalValue = "0"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\Control Panel\Keyboard"
+                Path          = "HKCU\Control Panel\Keyboard"
                 Name          = "InitialKeyboardIndicators"
                 Value         = "2"
                 OriginalValue = "0"
@@ -1782,7 +1782,7 @@ $generalTweaks = @(
         Category     = "Visuals"
         Name         = "Remove Settings Home Page"
         Description  = "Removes the Home page in the Windows Settings app."
-        RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer"
+        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer"
         ValueName    = "SettingsPageVisibility"
         TweakValue   = "hide:home"
         DefaultValue = "show:home"
@@ -1794,21 +1794,21 @@ $generalTweaks = @(
         Description      = "If Enabled then Cursor movement is affected by the speed of your physical mouse movements."
         RegistrySettings = @(
             @{
-                Path          = "HKCU:\Control Panel\Mouse"
+                Path          = "HKCU\Control Panel\Mouse"
                 Name          = "MouseSpeed"
                 Value         = "1"
                 OriginalValue = "0"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\Control Panel\Mouse"
+                Path          = "HKCU\Control Panel\Mouse"
                 Name          = "MouseThreshold1"
                 Value         = "6"
                 OriginalValue = "0"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU:\Control Panel\Mouse"
+                Path          = "HKCU\Control Panel\Mouse"
                 Name          = "MouseThreshold2"
                 Value         = "10"
                 OriginalValue = "0"
@@ -1820,7 +1820,7 @@ $generalTweaks = @(
         Category     = "Accessibility"
         Name         = "Sticky Keys"
         Description  = "If Enabled then Sticky Keys is activated - Sticky keys is an accessibility feature of some graphical user interfaces which assists users who have physical disabilities or help users reduce repetitive strain injury."
-        RegistryPath = "HKCU:\Control Panel\Accessibility\StickyKeys"
+        RegistryPath = "HKCU\Control Panel\Accessibility\StickyKeys"
         ValueName    = "Flags"
         TweakValue   = "510"
         DefaultValue = "58"
@@ -1830,7 +1830,7 @@ $generalTweaks = @(
         Category     = "Taskbar"
         Name         = "Search Button in Taskbar"
         Description  = "If Enabled Search Button will be on the taskbar."
-        RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search"
+        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Search"
         ValueName    = "SearchboxTaskbarMode"
         TweakValue   = "1"
         DefaultValue = "0"
@@ -1874,13 +1874,13 @@ $generalTweaks = @(
         InvokeScript = @(
             @"
     # Previously detected folders
-    $bags = "HKCU:\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\Bags"
-    $bagMRU = "HKCU:\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\BagMRU"
+    $bags = "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\Bags"
+    $bagMRU = "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\BagMRU"
     Remove-Item -Path $bags -Recurse -Force -ErrorAction SilentlyContinue
     Write-Host "Removed $bags"
     Remove-Item -Path $bagMRU -Recurse -Force -ErrorAction SilentlyContinue
     Write-Host "Removed $bagMRU"
-    $allFolders = "HKCU:\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\Bags\AllFolders\Shell"
+    $allFolders = "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\Bags\AllFolders\Shell"
     if (!(Test-Path $allFolders)) {
         New-Item -Path $allFolders -Force | Out-Null
         Write-Host "Created $allFolders"
@@ -1892,8 +1892,8 @@ $generalTweaks = @(
         )
         UndoScript   = @(
             @"
-    $bags = "HKCU:\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\Bags"
-    $bagMRU = "HKCU:\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\BagMRU"
+    $bags = "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\Bags"
+    $bagMRU = "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\BagMRU"
     Remove-Item -Path $bags -Recurse -Force -ErrorAction SilentlyContinue
     Write-Host "Removed $bags"
     Remove-Item -Path $bagMRU -Recurse -Force -ErrorAction SilentlyContinue

@@ -1801,7 +1801,7 @@ $generalTweaks = @(
     },
     @{
         Category         = "Gaming"
-        Name             = "Mouse Acceleration"
+        Name             = "Disable Mouse Acceleration"
         Description      = "If Enabled then Cursor movement is affected by the speed of your physical mouse movements."
         RegistrySettings = @(
             @{

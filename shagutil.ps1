@@ -1912,6 +1912,16 @@ $generalTweaks = @(
     Write-Host "Please sign out and back in, or restart your computer to apply the changes!"
 "@
         )
+    },
+    @{
+        Category     = "Performance"
+        Name         = "Win 32 Priority Separation"
+        Description  = "Adjusts how Windows allocates CPU time to foreground and background applications. Setting to '26' (hex) gives more priority to foreground applications."
+        RegistryPath = "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl"
+        ValueName    = "Win32PrioritySeparation"
+        TweakValue   = "26" # Hexadecimal value
+        DefaultValue = "2"  # Common default for Win32PrioritySeparation (hex)
+        ValueType    = "DWord"
     }
 )
 

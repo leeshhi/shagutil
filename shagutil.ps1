@@ -2,7 +2,7 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Security # Needed ?
-$scriptVersion = "0.1.3"
+$scriptVersion = "0.1.4"
 
 #region 1. Initial Script Setup & Admin Check
 if (-not ([Security.Principal.WindowsPrincipal][System.Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltinRole] "Administrator")) {
@@ -560,34 +560,35 @@ function Set-ServiceStartType {
         return $false
     }
 }
+
 function ApplyTweaks {
     param([System.Windows.Forms.TreeView]$treeViewToApply)
     $selectedNodes = @($treeViewToApply.Nodes | Where-Object { $_.Checked -eq $true }) + @($treeViewToApply.Nodes | ForEach-Object { $_.Nodes } | Where-Object { $_.Checked -eq $true })
-
     foreach ($node in $selectedNodes) {
         $tweak = $node.Tag
         if ($tweak) {
             Write-Host "Applying tweak: $($tweak.Name)" -ForegroundColor Cyan
-            
-            # --- Bestehende Logik für RegistrySettings (Gruppierte Tweaks) ---
+            $actionTaken = $false # <<< NEU: Flag, um zu verfolgen, ob eine Aktion ausgeführt wurde
             if ($tweak.RegistrySettings) {
                 foreach ($setting in $tweak.RegistrySettings) {
                     $result = Set-RegistryValue -Path $setting.Path -Name $setting.Name -Value $setting.Value -Type $setting.Type -RemoveEntry ($setting.Value -eq "<RemoveEntry>")
                     if ($result) {
                         Write-Host "  -> Applied registry setting: $($setting.Name) in $($setting.Path)" -ForegroundColor Green
+                        $actionTaken = $true # <<< Flag setzen
                     }
                     else {
                         Write-Host "  -> Failed to apply registry setting: $($setting.Name) in $($setting.Path)" -ForegroundColor Red
                     }
                 }
             }
-            # --- Bestehende Logik für einzelne RegistryPath/ValueName (Einzelne Tweaks) ---
             elseif ($tweak.RegistryPath -and $tweak.ValueName) {
                 if ($tweak.Action -eq "Service") {
                     try {
-                        Set-RegistryValue -Path $tweak.RegistryPath -Name $tweak.ValueName -Value $tweak.TweakValue -Type $tweak.ValueType
-                        Set-Service -Name $tweak.Service -StartupType $tweak.TweakValue -ErrorAction Stop # TweakValue is the startup type
+                        $regResult = Set-RegistryValue -Path $tweak.RegistryPath -Name $tweak.ValueName -Value $tweak.TweakValue -Type $tweak.ValueType
+                        # Achtung: Set-Service gibt nicht immer einen booleschen Wert zurück. Sicherstellen, dass die Fehlermeldung korrekt ist.
+                        Set-Service -Name $tweak.Service -StartupType $tweak.TweakValue -ErrorAction Stop
                         Write-Host "  -> Set service '$($tweak.Service)' startup type to '$($tweak.TweakValue)' and updated registry." -ForegroundColor Green
+                        $actionTaken = $true # <<< Flag setzen
                     }
                     catch {
                         Write-Host "  -> Failed to configure service '$($tweak.Service)': $($_.Exception.Message)" -ForegroundColor Red
@@ -597,29 +598,33 @@ function ApplyTweaks {
                     $result = Set-RegistryValue -Path $tweak.RegistryPath -Name $tweak.ValueName -Value $tweak.TweakValue -Type $tweak.ValueType -RemoveEntry ($tweak.TweakValue -eq "<RemoveEntry>")
                     if ($result) {
                         Write-Host "  -> Applied registry tweak: $($tweak.Name)" -ForegroundColor Green
+                        $actionTaken = $true # <<< Flag setzen
                     }
                     else {
                         Write-Host "  -> Failed to apply registry tweak: $($tweak.Name)" -ForegroundColor Red
                     }
                 }
             }
-            # --- NEUE LOGIK: InvokeScript ausführen ---
             if ($tweak.InvokeScript) {
                 Write-Host "  -> Executing InvokeScript for $($tweak.Name)..." -ForegroundColor Yellow
+                $scriptSuccess = $true # Um zu prüfen, ob alle Skriptbefehle erfolgreich waren
                 foreach ($command in $tweak.InvokeScript) {
                     try {
-                        # Invoke-Expression führt den String als PowerShell-Befehl aus
-                        # Dies ist nützlich für powercfg.exe oder andere CLI-Befehle
                         Invoke-Expression $command
                         Write-Host "    - Executed: '$command'" -ForegroundColor DarkGreen
+                        $actionTaken = $true # <<< Flag setzen, wenn Skript ausgeführt wird
                     }
                     catch {
                         Write-Warning "    - Failed to execute command '$command': $($_.Exception.Message)"
+                        $scriptSuccess = $false
                     }
                 }
+                if (-not $scriptSuccess) {
+                    Write-Host "  -> One or more InvokeScript commands failed for $($tweak.Name)." -ForegroundColor Red
+                }
             }
-            # --- Fallback für nicht definierte Tweaks ---
-            else {
+            if (-not $actionTaken) {
+                # <<< NEU: Prüft nur, wenn KEINE Aktion ausgeführt wurde
                 Write-Warning "Tweak '$($tweak.Name)' has no valid registry settings or action defined to apply."
             }
         }
@@ -627,6 +632,7 @@ function ApplyTweaks {
     [System.Windows.Forms.MessageBox]::Show("Selected tweaks applied. Some changes may require a system restart.", "Tweaks Applied", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
     Update-GeneralTweaksStatus -tweakNodes $allTweakNodes # Update status after applying
 }
+
 function ResetTweaks {
     param([System.Windows.Forms.TreeView]$treeViewToReset)
     $selectedNodes = @($treeViewToReset.Nodes | Where-Object { $_.Checked -eq $true }) + @($treeViewToReset.Nodes | ForEach-Object { $_.Nodes } | Where-Object { $_.Checked -eq $true })
@@ -1431,32 +1437,15 @@ $generalTweaks = @(
         )
     },
     @{
-        Category     = "Taskbar"
+        Category     = "Features"
         Name         = "Enable End Task With Right Click"
-        Description  = "Enables option to end task when right clicking a program in the taskbar"
-        InvokeScript = @(
-            @"
-    $path = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings"
-    $name = "TaskbarEndTask"
-    $value = 1
-    if (-not (Test-Path $path)) {
-        New-Item -Path $path -Force | Out-Null
+        Description  = "Enables a new 'End Task' option in the right-click context menu for apps on the taskbar."
+        RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings"
+        ValueName    = "TaskbarEndTask"
+        TweakValue   = 1
+        DefaultValue = 0 # Annahme: Der Standardwert ist 0 oder der Eintrag existiert nicht
+        ValueType    = "DWord"
     }
-    New-ItemProperty -Path $path -Name $name -PropertyType DWord -Value $value -Force | Out-Null
-"@
-        )
-        UndoScript   = @(
-            @"
-    $path = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings"
-    $name = "TaskbarEndTask"
-    $value = 0
-    if (-not (Test-Path $path)) {
-        New-Item -Path $path -Force | Out-Null
-    }
-    New-ItemProperty -Path $path -Name $name -PropertyType DWord -Value $value -Force | Out-Null
-"@
-        )
-    },
     @{
         Category     = "System"
         Name         = "Disable Storage Sense"

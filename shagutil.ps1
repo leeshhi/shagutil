@@ -2,7 +2,7 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Security # Needed ?
-$scriptVersion = "0.1.0"
+$scriptVersion = "0.1.1"
 
 #region 1. Initial Script Setup & Admin Check
 if (-not ([Security.Principal.WindowsPrincipal][System.Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltinRole] "Administrator")) {
@@ -1276,7 +1276,6 @@ $treeView.Location = New-Object System.Drawing.Point(15, 15)
 $treeView.HideSelection = $false
 $treeView.CheckBoxes = $true
 $treeView.ShowNodeToolTips = $true
-#$treeView.ItemHeight = 20
 $tabTweaks.Controls.Add($treeView)
 $allTweakNodes = @()
 
@@ -1785,20 +1784,102 @@ function Test-WingetPackageInstalled {
 }
 
 function Update-InstalledProgramsStatus {
-    # Function to update the visual status of programs in the TreeView
-    Update-InstalledPackageIds -parentForm $form -progressBar $downloadProgressBar -statusLabel $statusDownloadLabel
+    param(
+        [Parameter(Mandatory = $true)][System.Windows.Forms.Form]$parentForm,
+        [Parameter(Mandatory = $true)][System.Windows.Forms.ProgressBar]$progressBar,
+        [Parameter(Mandatory = $true)][System.Windows.Forms.Label]$statusLabel
+    )
 
-    foreach ($node in $allProgramNodes) {
-        $pkgId = $node.Tag
-        if (Test-WingetPackageInstalled -packageId $pkgId) {
-            #$node.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font.FontFamily, 11, [System.Drawing.FontStyle]::Bold)
-            #$node.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font, [System.Drawing.FontStyle]::Bold)
-            $node.ForeColor = [System.Drawing.Color]::Green
+    $statusLabel.Text = "Status: Initializing Winget data..."
+    $progressBar.Visible = $true
+    $progressBar.Style = 'Marquee' # Set to marquee for indefinite progress during data fetching
+    $parentForm.Refresh()
+
+    $installedApps = @()
+    $script:downloadsTabInitialized = $false # Reset initialization status
+
+    try {
+        # --- Start of Winget Invocation Fix ---
+        # 1. Try to find winget.exe via Get-Command (preferred way if in PATH)
+        $wingetPath = (Get-Command winget.exe -ErrorAction SilentlyContinue).Source
+        
+        # 2. Fallback to common Winget installation path if not found in PATH
+        if (-not $wingetPath) {
+            $localAppData = [System.Environment]::GetFolderPath('LocalApplicationData')
+            $wingetPathCandidate = Join-Path $localAppData 'Microsoft\WindowsApps\winget.exe'
+            if (Test-Path $wingetPathCandidate) {
+                $wingetPath = $wingetPathCandidate
+            }
+            else {
+                throw "Winget executable not found. Please ensure Winget is installed and accessible."
+            }
+        }
+
+        # 3. Execute winget via Start-Process for robust execution in scripting contexts
+        # Redirect StandardOutput to a temporary file to reliably capture JSON output
+        $tempOutputFile = [System.IO.Path]::GetTempFileName()
+        
+        Write-Host "DEBUG: Attempting to run winget from: $wingetPath" -ForegroundColor DarkGray
+        Write-Host "DEBUG: Output will be redirected to: $tempOutputFile" -ForegroundColor DarkGray
+
+        $processInfo = New-Object System.Diagnostics.ProcessStartInfo
+        $processInfo.FileName = $wingetPath
+        $processInfo.Arguments = 'list --source winget --accept-source-agreements --disable-interactivity --output json'
+        $processInfo.UseShellExecute = $false
+        $processInfo.RedirectStandardOutput = $true
+        $processInfo.CreateNoWindow = $true
+
+        $process = New-Object System.Diagnostics.Process
+        $process.StartInfo = $processInfo
+        
+        $process.Start() | Out-Null
+        $process.WaitForExit()
+
+        $jsonOutput = $process.StandardOutput.ReadToEnd()
+
+        # Check for errors from winget itself (e.g., if winget exited with an error code)
+        if ($process.ExitCode -ne 0) {
+            $errorMessage = "Winget process exited with error code $($process.ExitCode)."
+            if ($jsonOutput) {
+                $errorMessage += " Winget Output: $($jsonOutput)"
+            }
+            throw $errorMessage
+        }
+        
+        # Parse JSON output
+        $wingetData = $jsonOutput | ConvertFrom-Json -ErrorAction Stop
+        
+        # --- End of Winget Invocation Fix ---
+
+        if ($wingetData -and $wingetData.Installers -and $wingetData.Installers.Packages) {
+            $installedApps = $wingetData.Installers.Packages
+            $script:downloadsTabInitialized = $true
+            Write-Host "DEBUG: Successfully retrieved $($installedApps.Count) installed apps from winget." -ForegroundColor Green
         }
         else {
-            #$node.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font.FontFamily, 11, [System.Drawing.FontStyle]::Regular)
-            #$node.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font, [System.Drawing.FontStyle]::Regular)
+            Write-Host "DEBUG: Winget returned no packages or an unexpected format." -ForegroundColor Yellow
         }
+    }
+    catch {
+        Write-Error "Error in Update-InstalledProgramsStatus (Winget): $($_.Exception.Message)"
+        if ($_.Exception.InnerException) {
+            Write-Error "Inner Exception: $($_.Exception.InnerException.Message)"
+        }
+        [System.Windows.Forms.MessageBox]::Show("Failed to load installed applications from Winget. Please ensure Winget is installed and updated. Error: $($_.Exception.Message)", "Winget Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+        $statusLabel.Text = "Status: Winget data load failed!"
+        $installedApps = @() # Ensure empty list on error
+    }
+    finally {
+        $progressBar.Visible = $false
+        $statusLabel.Text = "Status: Winget data loaded."
+        # Clean up temporary output file if it was created
+        if (Test-Path $tempOutputFile) {
+            Remove-Item $tempOutputFile -ErrorAction SilentlyContinue
+        }
+        
+        # Continue with populating the TreeView for the downloads tab
+        Populate-DownloadsTreeView -installedApps $installedApps -availableApps $script:availableApps
+        $parentForm.Refresh()
     }
 }
 
@@ -1911,6 +1992,7 @@ function Uninstall-Programs {
     $statusDownloadLabel.Text = "Uninstallation process completed."
     Update-InstalledProgramsStatus
 }
+
 $tabDownloads = New-Object System.Windows.Forms.TabPage "Downloads"
 $tabControl.TabPages.Add($tabDownloads)
 
@@ -2113,8 +2195,7 @@ $downloadProgressBar.Location = New-Object System.Drawing.Point(15, 730)
 $downloadProgressBar.Visible = $false
 $tabDownloads.Controls.Add($downloadProgressBar)
 
-# TreeView AfterCheck event
-$downloadTreeView.Add_AfterCheck({
+$downloadTreeView.Add_AfterCheck({ # TreeView AfterCheck event
         param($sender, $e)
 
         if ($global:IgnoreCheckEventDownloads) { 
@@ -2174,8 +2255,7 @@ $downloadTreeView.Add_AfterCheck({
         $global:IgnoreCheckEventDownloads = $false
     })
 
-# Uninstall Button Click
-$uninstallButton.Add_Click({
+$uninstallButton.Add_Click({ # Uninstall Button Click
         $status = Get-SelectedInstallStatus
         $toUninstall = $status.Installed
         if ($toUninstall.Count -eq 0) {
@@ -2185,8 +2265,7 @@ $uninstallButton.Add_Click({
         Uninstall-Programs -nodes $toUninstall
     })
 
-# Install Button Click
-$installButton.Add_Click({
+$installButton.Add_Click({ # Install Button Click
         $status = Get-SelectedInstallStatus
         $toInstallOrUpdate = $status.AllSelected
         if ($toInstallOrUpdate.Count -eq 0) {
@@ -2196,8 +2275,7 @@ $installButton.Add_Click({
         Install-OrUpdate -nodes $toInstallOrUpdate
     })
 
-# Update Button Click
-$updateButton.Add_Click({
+$updateButton.Add_Click({ # Update Button Click
         try {
             $selectedNodes = $downloadTreeView.Nodes.Find("Installed", $true) | Where-Object { $_.Checked } # This "Installed" tag logic is problematic, fix later.
 
@@ -2256,8 +2334,7 @@ $updateButton.Add_Click({
         }
     })
 
-# Uncheck All Button Click
-$uncheckAllButton.Add_Click({
+$uncheckAllButton.Add_Click({ # Uncheck All Button Click
         $global:IgnoreCheckEventDownloads = $true
     
         foreach ($parentNode in $downloadTreeView.Nodes) {

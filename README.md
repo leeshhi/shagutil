@@ -18,7 +18,7 @@ ShagUtil must be run in Admin mode because it performs system-wide tweaks. To ac
 #### Stable Branch (Recommended)
 
 ```ps1
-irm "win.shag.my" | iex
+irm "https://shag.my/win" | iex
 ```
 
 ### Alternatives:
@@ -26,7 +26,7 @@ irm "win.shag.my" | iex
 irm "win.shag.gg" | iex
 ```
 ```ps1
-irm "https://shag.my/win" | iex
+irm "win.shag.my" | iex
 ```
 ```ps1
 irm "https://shag.my/shagutil" | iex

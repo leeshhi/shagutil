@@ -1,7 +1,8 @@
+#Add-Type -AssemblyName PresentationFramework
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Security # Needed ?
-$scriptVersion = "0.0.9"
+$scriptVersion = "0.1.0"
 
 #region 1. Initial Script Setup & Admin Check
 if (-not ([Security.Principal.WindowsPrincipal][System.Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltinRole] "Administrator")) {
@@ -113,6 +114,7 @@ function Invoke-WingetCommand {
         }
     }
 }
+#endregion
 
 #region 3. Main Form & TabControl Setup
 $global:hasChanges = $false
@@ -134,8 +136,6 @@ $form.Font = New-Object System.Drawing.Font("Segoe UI", 11)
 # > https://learn.microsoft.com/de-de/dotnet/api/system.windows.forms.control.anchor?view=windowsdesktop-9.0
 # > https://learn.microsoft.com/de-de/dotnet/api/system.windows.forms.form.autoscalebasesize?view=windowsdesktop-8.0#system-windows-forms-form-autoscalebasesize
 
-
-
 # TabControl setup  #  > Make tab size bigger
 $tabControl = New-Object System.Windows.Forms.TabControl
 $tabControl.Dock = 'Fill'
@@ -146,8 +146,6 @@ $tabControl.Add_DrawItem({ # DrawItem Event for individual tab text color
         $tab = $sender.TabPages[$e.Index]
         $font = $tabControl.Font
         $text = $tab.Text
-
-        # Make tab size bigger
 
         if ($text -eq "Untested") {
             $color = [System.Drawing.Color]::Red
@@ -199,7 +197,6 @@ $form.Add_Load({ # Form Load Event (for Update Check)
 $tabHome = New-Object System.Windows.Forms.TabPage "Home"
 $tabControl.TabPages.Add($tabHome)
 
-#region Home Tab - System Information Panel & Functions
 function Initialize-HomeTabContent {
     param($systemInfoPanel, $form, $systemInfoTitle)
     $controlsToRemove = $systemInfoPanel.Controls | Where-Object { $_ -ne $systemInfoTitle }
@@ -378,9 +375,7 @@ $systemInfoTitle.Font = New-Object System.Drawing.Font($systemInfoTitle.Font.Fon
 $systemInfoTitle.AutoSize = $true
 $systemInfoTitle.Location = New-Object System.Drawing.Point(10, 10)
 $systemInfoPanel.Controls.Add($systemInfoTitle)
-#endregion
 
-#region Home Tab - Quick Links Panel
 # Panel for Quick Links (directly below System Information)
 $quickLinksPanel = New-Object System.Windows.Forms.Panel
 $quickLinksPanel.Size = New-Object System.Drawing.Size(200, 200)
@@ -415,9 +410,7 @@ foreach ($link in $quickLinks) {
     $quickLinksPanel.Controls.Add($button)
     $buttonYPos += 35
 }
-#endregion
 
-#region Home Tab - Contact Information Panel
 $contactPanel = New-Object System.Windows.Forms.Panel
 $contactPanel.Size = New-Object System.Drawing.Size(200, 200)
 $contactPanel.Location = New-Object System.Drawing.Point(($quickLinksPanel.Location.X + $quickLinksPanel.Size.Width + 20), $quickLinksPanel.Location.Y)
@@ -466,42 +459,77 @@ $discord2Link.Add_LinkClicked({ Start-Process "https://discord.gg/qxPNcgtTqn" })
 $contactPanel.Controls.Add($discord2Link)
 $contactYPos += 25
 #endregion
-#endregion
 
-#region 5. Tab: General
-$tabGeneral = New-Object System.Windows.Forms.TabPage "Tweaks"
-$tabControl.TabPages.Add($tabGeneral)
+#region 5. Tab: Tweaks
+$tabTweaks = New-Object System.Windows.Forms.TabPage "Tweaks"
+$tabControl.TabPages.Add($tabTweaks)
 
-#region Tweak functions
 function Get-RegistryValue {
-    # Function to get current registry value
-    param([string]$Path, [string]$Name)
+    param(
+        [string]$Path,
+        [string]$Name
+    )
     try {
-        $value = Get-ItemProperty -Path $Path -Name $Name -ErrorAction SilentlyContinue
-        if ($value) {
-            return $value.$Name
+        if (Test-Path $Path) {
+            # Attempt to get the value. Use -ErrorAction SilentlyContinue for non-existent names.
+            # Select-Object -ExpandProperty is crucial to get the raw value, not a PS custom object.
+            $value = Get-ItemProperty -Path $Path -Name $Name -ErrorAction SilentlyContinue | Select-Object -ExpandProperty $Name
+            return $value
         }
-        return $null
     }
     catch {
-        Write-Warning ("Could not read registry value {0} from {1}: {2}" -f $Name, $Path, $_)
-        return $null
+        # Suppress common errors like path not found or name not found for cleaner output
+        # Uncomment the line below for debugging purposes if needed
+        # Write-Warning "Could not get registry value '$Name' from '$Path': $($_.Exception.Message)"
     }
+    return $null # Return $null if path or name does not exist, or on error
 }
 
 function Set-RegistryValue {
-    # Function to set registry value
-    param([string]$Path, [string]$Name, $Value, [string]$Type)
+    param(
+        [string]$Path,
+        [string]$Name,
+        $Value,
+        [string]$Type, # Expected types: "DWord", "String", "ExpandString", "Binary", "MultiString", "QWord"
+        [switch]$RemoveEntry # If set, the registry entry will be removed instead of set
+    )
     try {
-        if (-not (Test-Path $Path)) {
-            New-Item -Path $Path -Force | Out-Null
+        # Ensure the parent path exists before attempting to set/remove the item property
+        $parentPath = Split-Path -Path $Path -Parent
+        if (-not (Test-Path $parentPath)) {
+            New-Item -Path $parentPath -Force | Out-Null # Create parent path if it doesn't exist
         }
-        Set-ItemProperty -Path $Path -Name $Name -Value $Value -Type $Type -Force -ErrorAction Stop
-        $global:hasChanges = $true
-        return $true
+
+        if ($RemoveEntry) {
+            if (Test-Path $Path -PathType Container) {
+                # Ensure the key exists before attempting removal
+                Remove-ItemProperty -Path $Path -Name $Name -ErrorAction SilentlyContinue
+                # Optional: Write-Host "Removed registry value '$Name' from '$Path'." -ForegroundColor Yellow
+            }
+            return $true # Assume success for removal attempts if no error occurred
+        }
+        else {
+            # Use a switch statement for specific registry types
+            switch ($Type) {
+                "DWord" { Set-ItemProperty -Path $Path -Name $Name -Value $Value -Type DWord -Force }
+                "String" { Set-ItemProperty -Path $Path -Name $Name -Value $Value -Type String -Force }
+                "ExpandString" { Set-ItemProperty -Path $Path -Name $Name -Value $Value -Type ExpandString -Force }
+                "Binary" { Set-ItemProperty -Path $Path -Name $Name -Value $Value -Type Binary -Force }
+                "MultiString" { Set-ItemProperty -Path $Path -Name $Name -Value $Value -Type MultiString -Force }
+                "QWord" { Set-ItemProperty -Path $Path -Name $Name -Value $Value -Type QWord -Force }
+                default {
+                    # Fallback for unknown/unspecified type, defaults to String or Binary if value suggests
+                    # This might need refinement based on actual common usage.
+                    Write-Warning "Unknown or unspecified registry type '$Type' for '$Name' in '$Path'. Defaulting to String."
+                    Set-ItemProperty -Path $Path -Name $Name -Value $Value -Force # PowerShell often defaults to String or Binary
+                }
+            }
+            # Optional: Write-Host "Set registry value '$Name' in '$Path' to '$Value' (Type: $Type)." -ForegroundColor Green
+            return $true
+        }
     }
     catch {
-        Write-Warning ("Could not set registry value {0} to {1} in {2}: {3}" -f $Name, $Value, $Path, $_)
+        Write-Warning "Failed to set/remove registry value '$Name' in '$Path': $($_.Exception.Message)"
         return $false
     }
 }
@@ -545,10 +573,117 @@ function Set-ServiceStartType {
         return $false
     }
 }
-#endregion
-#endregion
 
-#region Tweak Data
+function Apply-Tweaks {
+    param(
+        [System.Windows.Forms.TreeView]$treeViewToApply
+    )
+
+    $selectedNodes = @($treeViewToApply.Nodes | Where-Object { $_.Checked -eq $true }) + @($treeViewToApply.Nodes | ForEach-Object { $_.Nodes } | Where-Object { $_.Checked -eq $true })
+
+    foreach ($node in $selectedNodes) {
+        $tweak = $node.Tag
+        if ($tweak) {
+            Write-Host "Applying tweak: $($tweak.Name)" -ForegroundColor Cyan
+            if ($tweak.RegistrySettings) {
+                # Handle grouped tweak with multiple registry settings
+                foreach ($setting in $tweak.RegistrySettings) {
+                    $result = Set-RegistryValue -Path $setting.Path -Name $setting.Name -Value $setting.Value -Type $setting.Type -RemoveEntry ($setting.Value -eq "<RemoveEntry>")
+                    if ($result) {
+                        Write-Host "  -> Applied registry setting: $($setting.Name) in $($setting.Path)" -ForegroundColor Green
+                    }
+                    else {
+                        Write-Host "  -> Failed to apply registry setting: $($setting.Name) in $($setting.Path)" -ForegroundColor Red
+                    }
+                }
+            }
+            elseif ($tweak.RegistryPath -and $tweak.ValueName) {
+                # Handle single registry tweak
+                if ($tweak.Action -eq "Service") {
+                    try {
+                        Set-RegistryValue -Path $tweak.RegistryPath -Name $tweak.ValueName -Value $tweak.TweakValue -Type $tweak.ValueType
+                        Set-Service -Name $tweak.Service -StartupType $tweak.TweakValue -ErrorAction Stop # TweakValue is the startup type
+                        Write-Host "  -> Set service '$($tweak.Service)' startup type to '$($tweak.TweakValue)' and updated registry." -ForegroundColor Green
+                    }
+                    catch {
+                        Write-Host "  -> Failed to configure service '$($tweak.Service)': $($_.Exception.Message)" -ForegroundColor Red
+                    }
+                }
+                else {
+                    $result = Set-RegistryValue -Path $tweak.RegistryPath -Name $tweak.ValueName -Value $tweak.TweakValue -Type $tweak.ValueType -RemoveEntry ($tweak.TweakValue -eq "<RemoveEntry>")
+                    if ($result) {
+                        Write-Host "  -> Applied registry tweak: $($tweak.Name)" -ForegroundColor Green
+                    }
+                    else {
+                        Write-Host "  -> Failed to apply registry tweak: $($tweak.Name)" -ForegroundColor Red
+                    }
+                }
+            }
+            else {
+                Write-Warning "Tweak '$($tweak.Name)' has no valid registry settings or action defined to apply."
+            }
+        }
+    }
+    [System.Windows.Forms.MessageBox]::Show("Selected tweaks applied. Some changes may require a system restart.", "Tweaks Applied", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+    Update-GeneralTweaksStatus -tweakNodes $allTweakNodes # Update status after applying
+}
+
+function Reset-Tweaks {
+    param(
+        [System.Windows.Forms.TreeView]$treeViewToReset
+    )
+
+    $selectedNodes = @($treeViewToReset.Nodes | Where-Object { $_.Checked -eq $true }) + @($treeViewToReset.Nodes | ForEach-Object { $_.Nodes } | Where-Object { $_.Checked -eq $true })
+
+    foreach ($node in $selectedNodes) {
+        $tweak = $node.Tag
+        if ($tweak) {
+            Write-Host "Resetting tweak: $($tweak.Name)" -ForegroundColor Cyan
+            if ($tweak.RegistrySettings) {
+                # Handle grouped tweak with multiple registry settings
+                foreach ($setting in $tweak.RegistrySettings) {
+                    $remove = ($setting.OriginalValue -eq "<RemoveEntry>")
+                    $result = Set-RegistryValue -Path $setting.Path -Name $setting.Name -Value $setting.OriginalValue -Type $setting.Type -RemoveEntry $remove
+                    if ($result) {
+                        Write-Host "  -> Reset registry setting: $($setting.Name) in $($setting.Path)" -ForegroundColor Green
+                    }
+                    else {
+                        Write-Host "  -> Failed to reset registry setting: $($setting.Name) in $($setting.Path)" -ForegroundColor Red
+                    }
+                }
+            }
+            elseif ($tweak.RegistryPath -and $tweak.ValueName) {
+                # Handle single registry tweak
+                if ($tweak.Action -eq "Service") {
+                    try {
+                        Set-RegistryValue -Path $tweak.RegistryPath -Name $tweak.ValueName -Value $tweak.DefaultValue -Type $tweak.ValueType
+                        Set-Service -Name $tweak.Service -StartupType $tweak.DefaultValue -ErrorAction Stop # DefaultValue is the startup type
+                        Write-Host "  -> Reset service '$($tweak.Service)' startup type to '$($tweak.DefaultValue)' and updated registry." -ForegroundColor Green
+                    }
+                    catch {
+                        Write-Host "  -> Failed to reset service '$($tweak.Service)': $($_.Exception.Message)" -ForegroundColor Red
+                    }
+                }
+                else {
+                    $remove = ($tweak.DefaultValue -eq "<RemoveEntry>")
+                    $result = Set-RegistryValue -Path $tweak.RegistryPath -Name $tweak.ValueName -Value $tweak.DefaultValue -Type $tweak.ValueType -RemoveEntry $remove
+                    if ($result) {
+                        Write-Host "  -> Reset registry tweak: $($tweak.Name)" -ForegroundColor Green
+                    }
+                    else {
+                        Write-Host "  -> Failed to reset registry tweak: $($tweak.Name)" -ForegroundColor Red
+                    }
+                }
+            }
+            else {
+                Write-Warning "Tweak '$($tweak.Name)' has no valid registry settings or action defined to reset."
+            }
+        }
+    }
+    [System.Windows.Forms.MessageBox]::Show("Selected tweaks reset to default. Some changes may require a system restart.", "Tweaks Reset", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+    Update-GeneralTweaksStatus -tweakNodes $allTweakNodes # Update status after resetting
+}
+
 $generalTweaks = @(
     @{
         Name         = "Disable Desktop Icons Cache"
@@ -571,16 +706,6 @@ $generalTweaks = @(
         ValueType    = "DWord"
     },
     @{
-        Name         = "Disable Game DVR (Xbox Game Bar)"
-        Description  = "Turns off the Game DVR feature, which can impact game performance."
-        Category     = "Gaming"
-        RegistryPath = "HKCU:\System\GameConfigStore"
-        ValueName    = "GameDVR_Enabled"
-        TweakValue   = 0
-        DefaultValue = 1
-        ValueType    = "DWord"
-    },
-    @{
         Name         = "Disable Search Indexer"
         Description  = "Disables the Windows Search Indexer service, saving disk I/O and RAM."
         Category     = "Performance"
@@ -596,9 +721,6 @@ $generalTweaks = @(
         Name         = "Disable Visual Effects (Adjust for best performance)"
         Description  = "Adjusts visual effects for best performance (disables animations, shadows etc.). This typically applies multiple settings, so we'll treat it as a group or a specific set of registry changes."
         Category     = "Visuals"
-        # For simplicity, we'll represent this as a single tweak, but it often involves multiple registry keys.
-        # For a full implementation, you'd list all affected keys/values here, or create a specific function.
-        # Example for one part:
         RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects"
         ValueName    = "VisualFXSetting"
         TweakValue   = 2 # 2 = Adjust for best performance
@@ -614,11 +736,540 @@ $generalTweaks = @(
         #TweakValue   = 1
         #DefaultValue = 0
         #ValueType    = "DWord"
+    },
+    @{
+        Name         = "Disable ConsumerFeatures"
+        Description  = "Windows 10 wird keine Spiele, Drittanbieter-Apps oder Anwendungslinks aus dem Windows Store für den angemeldeten Benutzer automatisch installieren. Einige Standard-Apps (z.B. Phone Link) werden unzugänglich."
+        Category     = "Privacy"
+        RegistryPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent"
+        ValueName    = "DisableWindowsConsumerFeatures"
+        TweakValue   = 1
+        DefaultValue = "<RemoveEntry>"
+        ValueType    = "DWord"
+    },
+    @{
+        Name         = "Hide Task View Button"
+        Description  = "Hides the Task View button from the taskbar."
+        Category     = "Visuals - Taskbar"
+        RegistryPath = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+        ValueName    = "ShowTaskViewButton"
+        TweakValue   = 0
+        DefaultValue = 1
+        ValueType    = "DWord"
+    },
+    @{
+        Name         = "Hide People Band"
+        Description  = "Hides the People button from the taskbar."
+        Category     = "Visuals - Taskbar"
+        RegistryPath = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\People"
+        ValueName    = "PeopleBand"
+        TweakValue   = 0
+        DefaultValue = 1
+        ValueType    = "DWord"
+    },
+    @{
+        Name         = "Set Explorer Launch To (This PC)"
+        Description  = "Sets File Explorer to open to 'This PC' instead of 'Quick Access'."
+        Category     = "Explorer"
+        RegistryPath = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+        ValueName    = "LaunchTo"
+        TweakValue   = 1
+        DefaultValue = 1 # Annahme: Standard ist oft 1 für Quick Access, 2 für This PC
+        ValueType    = "DWord"
+    },
+    @{
+        Name         = "Enable Long Paths"
+        Description  = "Enables support for file paths longer than 260 characters."
+        Category     = "System"
+        RegistryPath = "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem"
+        ValueName    = "LongPathsEnabled"
+        TweakValue   = 1
+        DefaultValue = 0
+        ValueType    = "DWord"
+    },
+    @{
+        Name         = "Set Driver Search Order Config"
+        Description  = "Configures driver search order. (Usually 1 is default/recommended)"
+        Category     = "System"
+        RegistryPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching"
+        ValueName    = "SearchOrderConfig"
+        TweakValue   = 1
+        DefaultValue = 1
+        ValueType    = "DWord"
+    },
+    @{
+        Name         = "Set System Responsiveness (Multimedia)"
+        Description  = "Optimizes system responsiveness for multimedia tasks."
+        Category     = "Performance"
+        RegistryPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile"
+        ValueName    = "SystemResponsiveness"
+        TweakValue   = 0
+        DefaultValue = 1
+        ValueType    = "DWord"
+    },
+    @{
+        Name         = "Disable Network Throttling"
+        Description  = "Disables network throttling for better performance (sets NetworkThrottlingIndex to FFFFFFFF)."
+        Category     = "Performance"
+        RegistryPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile"
+        ValueName    = "NetworkThrottlingIndex"
+        TweakValue   = 4294967295 # 0xFFFFFFFF
+        DefaultValue = 10 # Oder 10 (decimal) als Standardwert
+        ValueType    = "DWord"
+    },
+    @{
+        Name         = "Enable Auto End Tasks"
+        Description  = "Automatically ends tasks that are not responding during shutdown."
+        Category     = "System"
+        RegistryPath = "HKCU:\Control Panel\Desktop"
+        ValueName    = "AutoEndTasks"
+        TweakValue   = 1
+        DefaultValue = 0 # Oft Standard ist 0
+        ValueType    = "DWord"
+    },
+    @{
+        Name         = "Disable Clear Page File At Shutdown"
+        Description  = "Prevents clearing the page file at shutdown (for faster shutdown)."
+        Category     = "Performance"
+        RegistryPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"
+        ValueName    = "ClearPageFileAtShutdown"
+        TweakValue   = 0
+        DefaultValue = 0 # Standardwert ist meist 0
+        ValueType    = "DWord"
+    },
+    @{
+        Name         = "Set NDU Service Start (to 2)"
+        Description  = "Sets the NDU service start type. (Typically 2 = Automatic)."
+        Category     = "System"
+        RegistryPath = "HKLM:\SYSTEM\ControlSet001\Services\Ndu"
+        ValueName    = "Start"
+        TweakValue   = 2
+        DefaultValue = 1 # Standardwert ist meist 1 (System Start)
+        ValueType    = "DWord"
+    },
+    @{
+        Name         = "Increase IRPStackSize"
+        Description  = "Increases the IRPStackSize for network performance (e.g., SMB shares)."
+        Category     = "Network"
+        RegistryPath = "HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters"
+        ValueName    = "IRPStackSize"
+        TweakValue   = 30
+        DefaultValue = 20
+        ValueType    = "DWord"
+    },
+    @{
+        Name         = "Disable Windows Feeds (Policy)"
+        Description  = "Disables Windows Feeds feature via group policy."
+        Category     = "Privacy"
+        RegistryPath = "HKCU:\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds"
+        ValueName    = "EnableFeeds"
+        TweakValue   = 0
+        DefaultValue = "<RemoveEntry>"
+        ValueType    = "DWord"
+    },
+    @{
+        Name         = "Hide Feeds Taskbar View"
+        Description  = "Hides the Feeds icon from the taskbar."
+        Category     = "Visuals - Taskbar"
+        RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Feeds"
+        ValueName    = "ShellFeedsTaskbarViewMode"
+        TweakValue   = 2 # 2 = Hidden
+        DefaultValue = 1 # 1 = Show
+        ValueType    = "DWord"
+    },
+    @{
+        Name         = "Hide Meet Now Button"
+        Description  = "Hides the Meet Now button from the taskbar system tray."
+        Category     = "Visuals - Taskbar"
+        RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer"
+        ValueName    = "HideSCAMeetNow"
+        TweakValue   = 1
+        DefaultValue = "<RemoveEntry>"
+        ValueType    = "DWord"
+    },
+    @{
+        Name         = "Disable User Profile Engagement (ScoobeSystemSettingEnabled)"
+        Description  = "Disables ScoobeSystemSettingEnabled for user profile engagement."
+        Category     = "Privacy - Telemetry"
+        RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\UserProfileEngagement"
+        ValueName    = "ScoobeSystemSettingEnabled"
+        TweakValue   = 0
+        DefaultValue = 1
+        ValueType    = "DWord"
+    },
+    @{
+        Name             = "Disable Notification Center & Push Notifications"
+        Description      = "Deaktiviert das Benachrichtigungscenter, den Kalender und alle Push-Benachrichtigungen (Toast-Benachrichtigungen)."
+        Category         = "Privacy - Notifications"
+        RegistrySettings = @(
+            @{
+                Path          = "HKCU:\Software\Policies\Microsoft\Windows\Explorer"
+                Name          = "DisableNotificationCenter"
+                Value         = 1
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU:\Software\Microsoft\Windows\CurrentVersion\PushNotifications"
+                Name          = "ToastEnabled"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            }
+        )
+    },
+    @{
+        Name             = "Disable GameDVR"
+        Description      = "Deaktiviert GameDVR-Funktionen in Windows."
+        Category         = "Gaming"
+        RegistrySettings = @(
+            @{
+                Path          = "HKCU:\System\GameConfigStore"
+                Name          = "GameDVR_FSEBehavior"
+                Value         = 2
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU:\System\GameConfigStore"
+                Name          = "GameDVR_Enabled"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU:\System\GameConfigStore"
+                Name          = "GameDVR_HonorUserFSEBehaviorMode"
+                Value         = 1
+                OriginalValue = 0
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU:\System\GameConfigStore"
+                Name          = "GameDVR_EFSEFeatureFlags"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR"
+                Name          = "AllowGameDVR"
+                Value         = 0
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            }
+        )
+    },
+    @{
+        Name             = "Disable Windows Telemetry & Content Delivery"
+        Description      = "Deaktiviert verschiedene Telemetrie- und Inhaltsbereitstellungsfunktionen von Windows."
+        Category         = "Privacy - Telemetry"
+        RegistrySettings = @(
+            @{
+                Path          = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Privacy"
+                Name          = "AllowTelemetry"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection"
+                Name          = "AllowTelemetry"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection"
+                Name          = "AllowTelemetry"
+                Value         = 0
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Name          = "ContentDeliveryAllowed"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Name          = "OemPreInstalledAppsEnabled"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Name          = "PreInstalledAppsEnabled"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Name          = "PreInstalledAppsEverEnabled"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Name          = "SilentInstalledAppsEnabled"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Name          = "SubscribedContent-338387Enabled"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Name          = "SubscribedContent-338388Enabled"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Name          = "SubscribedContent-338389Enabled"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Name          = "SubscribedContent-353698Enabled"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Name          = "SystemPaneSuggestionsEnabled"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU:\SOFTWARE\Microsoft\Siuf\Rules"
+                Name          = "NumberOfSIUFInPeriod"
+                Value         = 0
+                OriginalValue = 0
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection"
+                Name          = "DoNotShowFeedbackNotifications"
+                Value         = 1
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU:\SOFTWARE\Policies\Microsoft\Windows\CloudContent"
+                Name          = "DisableTailoredExperiencesWithDiagnosticData"
+                Value         = 1
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo"
+                Name          = "DisabledByGroupPolicy"
+                Value         = 1
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting"
+                Name          = "Disabled"
+                Value         = 1
+                OriginalValue = 0
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DeliveryOptimization\Config"
+                Name          = "DODownloadMode"
+                Value         = 1
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM:\SYSTEM\CurrentControlSet\Control\Remote Assistance"
+                Name          = "fAllowToGetHelp"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\OperationStatusManager"
+                Name          = "EnthusiastMode"
+                Value         = 1
+                OriginalValue = 0
+                Type          = "DWord"
+            }
+        )
+    },
+    @{
+        Name             = "Disable Wi-Fi Sense"
+        Description      = "Deaktiviert Wi-Fi Sense, das automatische Verbindungen zu Hotspots ermöglicht, sowie das Melden von Netzwerken."
+        Category         = "Privacy - Network"
+        RegistrySettings = @(
+            @{
+                Path          = "HKLM:\SOFTWARE\Microsoft\PolicyManager\default\Connectivity"
+                Name          = "AllowOpenSuggNetw"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM:\SOFTWARE\Microsoft\PolicyManager\default\Connectivity"
+                Name          = "AllowAutoConnectToOpenSuggNetw"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM:\Software\Microsoft\PolicyManager\default\WiFi\AllowWiFiHotSpotReporting"
+                Name          = "Value"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM:\Software\Microsoft\PolicyManager\default\WiFi\AllowAutoConnectToWiFiSenseHotspots"
+                Name          = "Value"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            }
+        )
+    },
+    @{
+        Name             = "Disable Microsoft Copilot"
+        Description      = "Deaktiviert die Microsoft Copilot-Funktion und den zugehörigen Taskleisten-Button."
+        Category         = "Privacy - AI"
+        RegistrySettings = @(
+            @{
+                Path          = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+                Name          = "ShowCopilotButton"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+                Name          = "CopilotState"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Copilot"
+                Name          = "TurnOffCopilot"
+                Value         = 1
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM:\SOFTWARE\Microsoft\Windows\Shell\Copilot"
+                Name          = "IsCopilotAvailable"
+                Value         = 0
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM:\SOFTWARE\Microsoft\Windows\Shell\Copilot"
+                Name          = "CopilotDisabledReason"
+                Value         = "IsEnabledForGeographicRegionFailed"
+                OriginalValue = "<RemoveEntry>"
+                Type          = "String"
+            },
+            @{
+                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsCopilot"
+                Name          = "AllowCopilotRuntime"
+                Value         = 0
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked"
+                Name          = "{CB3B0003-8088-4EDE-8769-8B354AB2FF8C}"
+                Value         = ""
+                OriginalValue = "<RemoveEntry>"
+                Type          = "String"
+            },
+            @{
+                Path          = "HKLM:\SOFTWARE\Microsoft\Windows\Shell\Copilot\BingChat"
+                Name          = "IsUserEligible"
+                Value         = 0
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot"
+                Name          = "TurnOffWindowsCopilot"
+                Value         = 1
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU:\Software\Policies\Microsoft\Windows\WindowsCopilot"
+                Name          = "TurnOffWindowsCopilot"
+                Value         = 1
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            }
+        )
+    },
+    @{
+        Name             = "Disable Windows Recall"
+        Description      = "Deaktiviert die Windows Recall-Funktion."
+        Category         = "Privacy - AI"
+        RegistrySettings = @(
+            @{
+                Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+                Name          = "AIExplorerState"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Explorer"
+                Name          = "DisableAIExplorer"
+                Value         = 1
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsAI"
+                Name          = "DisableAIDataAnalysis"
+                Value         = 1
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsAI"
+                Name          = "AllowRecallEnablement"
+                Value         = 0
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy"
+                Name          = "VerifiedAndReputablePolicyState"
+                Value         = 0
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            }
+        )
     }
 )
-#endregion
 
-#region GUI Elements
 $treeView = New-Object System.Windows.Forms.TreeView
 $treeView.Size = New-Object System.Drawing.Size(650, 550)
 $treeView.Location = New-Object System.Drawing.Point(15, 15)
@@ -626,14 +1277,14 @@ $treeView.HideSelection = $false
 $treeView.CheckBoxes = $true
 $treeView.ShowNodeToolTips = $true
 #$treeView.ItemHeight = 20
-$tabGeneral.Controls.Add($treeView)
+$tabTweaks.Controls.Add($treeView)
 $allTweakNodes = @()
 
 function GeneralTreeView {
-    # Populate TreeView with categories and tweaks
     param([Parameter(Mandatory = $true)][System.Windows.Forms.TreeView]$treeViewToPopulate)
     $treeViewToPopulate.Nodes.Clear()
-    $tempTweakNodes = [System.Collections.Generic.List[System.Windows.Forms.TreeNode]]::new()
+    # Use a generic list for allTweakNodes to avoid issues with array resizing performance
+    $global:allTweakNodes = [System.Collections.Generic.List[System.Windows.Forms.TreeNode]]::new()
     $categories = [System.Collections.Generic.Dictionary[string, System.Collections.Generic.List[PSObject]]]::new()
 
     foreach ($tweak in $generalTweaks) {
@@ -652,62 +1303,88 @@ function GeneralTreeView {
         $tweaksInThisCategory = $categoryEntry.Value
         $parentNode = New-Object System.Windows.Forms.TreeNode $categoryName
         $parentNode.ForeColor = [System.Drawing.Color]::RoyalBlue
-        #$parentNode.NodeFont = New-Object System.Drawing.Font($treeViewToPopulate.Font, [System.Drawing.FontStyle]::Bold)
         $parentNode.NodeFont = New-Object System.Drawing.Font($treeViewToPopulate.Font.FontFamily, 10, [System.Drawing.FontStyle]::Bold)
         $treeViewToPopulate.Nodes.Add($parentNode) | Out-Null
         $parentNode.Expand() 
         
         foreach ($tweak in $tweaksInThisCategory | Sort-Object Name) {
-            $childNode = New-Object System.Windows.Forms.TreeNode $tweak.Name
-            $childNode.Tag = $tweak
+            $childNode = New-Object System.Windows.Forms.TreeNode ($tweak.Name)
+            $childNode.Tag = $tweak # Store the full tweak object in the node's Tag property
             $childNode.ToolTipText = $tweak.Description
             $parentNode.Nodes.Add($childNode) | Out-Null
-            $tempTweakNodes.Add($childNode)
+            $global:allTweakNodes.Add($childNode) # Add directly to the global list
         }
     }
-    $global:allTweakNodes = $tempTweakNodes.ToArray()
+    # Convert to array at the end if you prefer, but List is often better for dynamic additions
+    # $global:allTweakNodes = $global:allTweakNodes.ToArray() 
 }
 
 function Update-GeneralTweaksStatus {
-    # Function to update the visual status of tweaks in the TreeView
-    foreach ($node in $global:allTweakNodes) {
-        if (-not ($node -is [System.Windows.Forms.TreeNode]) -or -not $node.Tag) {
-            Write-Warning "Überspringe ungültigen Knoten oder Knoten ohne Tweak-Daten in allTweakNodes. Knoten: $($node | Out-String)"
-            continue
-        }
+    param(
+        [System.Collections.Generic.List[System.Windows.Forms.TreeNode]]$tweakNodes # Expects a List now
+    )
 
+    foreach ($node in $tweakNodes) {
         $tweak = $node.Tag
-        $currentValue = $null
+        if ($tweak) {
+            $isTweakActive = $true # Assume active unless proven otherwise for grouped tweaks
 
-        if (($tweak.RegistryPath -ne $null -and $tweak.RegistryPath -ne "") -or `
-            ($tweak.Action -eq "Service" -and $tweak.Service -ne $null -and $tweak.Service -ne "")) {
-            if ($tweak.Action -eq "Service") {
-                $currentValue = Get-ServiceStatus -serviceName $tweak.Service
+            if ($tweak.RegistrySettings) {
+                # Check all settings for grouped tweak
+                foreach ($setting in $tweak.RegistrySettings) {
+                    $currentValue = Get-RegistryValue -Path $setting.Path -Name $setting.Name
+
+                    if ($setting.Value -eq "<RemoveEntry>") {
+                        # Tweak active if value is NOT present (i.e., it was successfully removed)
+                        if ($null -ne $currentValue) {
+                            $isTweakActive = $false
+                            break # One setting not active, whole tweak is not active
+                        }
+                    }
+                    else {
+                        # Tweak active if current value matches TweakValue (case-insensitive for strings)
+                        if ($null -eq $currentValue -or ($currentValue.ToString() -ne $setting.Value.ToString())) {
+                            $isTweakActive = $false
+                            break # One setting not active, whole tweak is not active
+                        }
+                    }
+                }
+            }
+            elseif ($tweak.RegistryPath -and $tweak.ValueName) {
+                # Check single registry tweak
+                $currentValue = Get-RegistryValue -Path $tweak.RegistryPath -Name $tweak.ValueName
+
+                if ($tweak.TweakValue -eq "<RemoveEntry>") {
+                    # Tweak active if value is NOT present
+                    if ($null -ne $currentValue) {
+                        $isTweakActive = $false
+                    }
+                }
+                else {
+                    # Tweak active if current value matches TweakValue (case-insensitive for strings)
+                    if ($null -eq $currentValue -or ($currentValue.ToString() -ne $tweak.TweakValue.ToString())) {
+                        $isTweakActive = $false
+                    }
+                }
             }
             else {
-                if (-not (Test-Path $tweak.RegistryPath)) {
-                    Write-Warning "Registry-Pfad existiert nicht: $($tweak.RegistryPath). Kann Wert für $($tweak.Name) nicht lesen."
-                    $node.Checked = $false
-                    #$node.NodeFont = New-Object System.Drawing.Font($treeView.Font, [System.Drawing.FontStyle]::Regular)
-                    continue
-                }
-                $currentValue = Get-RegistryValue -path $tweak.RegistryPath -name $tweak.ValueName -type $tweak.ValueType
+                # If no registry settings are defined, consider it inactive or handle as needed
+                # This could be for tweaks that don't modify registry or are not yet implemented for status checks
+                $isTweakActive = $false
+                # Write-Warning "Tweak $($tweak.Name) has no valid registry settings defined for status check."
             }
-            if (($currentValue -eq $tweak.TweakValue) -or ($tweak.Action -eq "Service" -and $currentValue -eq $tweak.TweakValue)) {
-                $node.Checked = $true
-                #$node.NodeFont = New-Object System.Drawing.Font($treeView.Font, [System.Drawing.FontStyle]::Bold)
-                #$node.NodeFont = New-Object System.Drawing.Font($treeView.Font.FontFamily, 11, [System.Drawing.FontStyle]::Bold)
+
+            # Use $global:IgnoreCheckEvent to prevent triggering AfterCheck recursively
+            $global:IgnoreCheckEvent = $true 
+            $node.Checked = $isTweakActive
+            $global:IgnoreCheckEvent = $false
+
+            if ($isTweakActive) {
                 $node.ForeColor = [System.Drawing.Color]::Green
             }
             else {
-                $node.Checked = $false
-                #$node.NodeFont = New-Object System.Drawing.Font($treeView.Font, [System.Drawing.FontStyle]::Regular)
+                $node.ForeColor = [System.Drawing.Color]::Red
             }
-        }
-        else {
-            Write-Warning "Tweak-Daten fehlen oder sind ungültig für Knoten $($node.Text): $($tweak | Out-String). Status kann nicht bestimmt werden."
-            $node.Checked = $false # Standardmäßig nicht ausgewählt
-            #$node.NodeFont = New-Object System.Drawing.Font($treeView.Font, [System.Drawing.FontStyle]::Regular)
         }
     }
 }
@@ -719,18 +1396,18 @@ $statusLabel.Location = New-Object System.Drawing.Point(15, ($treeView.Location.
 $statusLabel.TextAlign = 'MiddleLeft'
 $statusLabel.Text = "Status: Ready"
 $statusLabel.BackColor = [System.Drawing.Color]::LightGray
-$tabGeneral.Controls.Add($statusLabel)
+$tabTweaks.Controls.Add($statusLabel)
 # Progress Bar
 $progressBar = New-Object System.Windows.Forms.ProgressBar
 $progressBar.Size = New-Object System.Drawing.Size(650, 20)
 $progressBar.Location = New-Object System.Drawing.Point(15, ($statusLabel.Location.Y + $statusLabel.Size.Height + 5))
 $progressBar.Visible = $false
-$tabGeneral.Controls.Add($progressBar)
+$tabTweaks.Controls.Add($progressBar)
 # Buttons Panel
 $buttonPanel = New-Object System.Windows.Forms.Panel
 $buttonPanel.Size = New-Object System.Drawing.Size(650, 50)
 $buttonPanel.Location = New-Object System.Drawing.Point(15, ($progressBar.Location.Y + $progressBar.Size.Height + 5))
-$tabGeneral.Controls.Add($buttonPanel)
+$tabTweaks.Controls.Add($buttonPanel)
 # Apply Button
 $applyButton = New-Object System.Windows.Forms.Button
 $applyButton.Text = "Apply tweaks(s)"
@@ -754,9 +1431,7 @@ $generalUncheckAllButton.Size = New-Object System.Drawing.Size(100, 30)
 $generalUncheckAllButton.Location = New-Object System.Drawing.Point(320, 10)
 $generalUncheckAllButton.BackColor = [System.Drawing.Color]::SlateGray
 $buttonPanel.Controls.Add($generalUncheckAllButton)
-#endregion
 
-#region Event Handlers
 $treeView.Add_AfterCheck({
         param($sender, $e)
         if ($global:IgnoreCheckEvent) { return }
@@ -769,19 +1444,27 @@ $treeView.Add_AfterCheck({
             }
         }
         else {
-            # Tweak node: Update parent's checked state
+            # Tweak node: Update parent's checked state if all children are checked/unchecked
             $parent = $e.Node.Parent
             if ($parent -ne $null) {
                 $checkedChildrenCount = ($parent.Nodes | Where-Object { $_.Checked }).Count
+                # Check parent if all children are checked
                 $parent.Checked = ($checkedChildrenCount -eq $parent.Nodes.Count)
             }
         }
 
         # Enable/Disable Apply/Reset buttons based on selections
-        $checkedTweaks = $global:allTweakNodes | Where-Object { $_.Checked }
-        $uncheckedTweaks = $global:allTweakNodes | Where-Object { -not $_.Checked }
-        $applyButton.Enabled = $checkedTweaks.Count -gt 0
-        $resetButton.Enabled = $uncheckedTweaks.Count -gt 0 # Reset enabled if any are unchecked (implying they are currently tweaked or could be reset)
+        # Use the global:allTweakNodes as a flat list of all tweak nodes
+        $checkedTweaksCount = ($global:allTweakNodes | Where-Object { $_.Checked }).Count
+        $uncheckedTweaksCount = ($global:allTweakNodes | Where-Object { -not $_.Checked }).Count
+    
+        $applyButton.Enabled = $checkedTweaksCount -gt 0
+        # The reset button should be enabled if there are any unchecked tweaks (implying they are currently active and can be reset)
+        # Or if any of the checked tweaks are currently in a "non-default" state, even if checked for application.
+        # For now, we'll stick to the existing logic which seems to imply reset applies to UNCHECKED tweaks.
+        # If the user's intention is to reset *selected* tweaks to default, the logic in $resetButton.Add_Click would need to change.
+        $resetButton.Enabled = $uncheckedTweaksCount -gt 0 
+
         $global:IgnoreCheckEvent = $false
     })
 
@@ -818,17 +1501,61 @@ $applyButton.Add_Click({ # Apply Button Click for General Tab
 
                 $success = $false
                 if ($tweak.Action -eq "Service") {
+                    # Existing logic for service tweaks
                     $success = Set-ServiceStartType -ServiceName $tweak.Service -StartType $tweak.TweakValue
+                    if ($success) { Write-Host "  -> Service '$($tweak.Service)' set to startup type '$($tweak.TweakValue)'." -ForegroundColor Green }
+                    else { Write-Host "  -> Failed to set service '$($tweak.Service)' startup type." -ForegroundColor Red }
                 }
-                else {
-                    $success = Set-RegistryValue -Path $tweak.RegistryPath -Name $tweak.ValueName -Value $tweak.TweakValue -Type $tweak.ValueType
-                }
+                elseif ($tweak.RegistrySettings) {
+                    # --- Start of 1:1 Replacement/Addition for Grouped Registry Tweaks (Apply) ---
+                    Write-Host "Applying Grouped Registry Tweak: $($tweak.Name)" -ForegroundColor Cyan
+                    $allSettingsApplied = $true # Assume success for the group
+                    foreach ($setting in $tweak.RegistrySettings) {
+                        # Use "<RemoveEntry>" for values that should be removed
+                        $removeEntry = ($setting.Value -eq "<RemoveEntry>")
+                        if ($removeEntry) {
+                            $settingValue = $null # Value parameter isn't used when removing
+                        }
+                        else {
+                            $settingValue = $setting.Value
+                        }
 
-                if ($success) {
-                    $progressBar.Value++
+                        if ($setting.Path -and $setting.Name -and ($removeEntry -or ($setting.Value -ne $null)) -and $setting.Type) {
+                            if (-not (Set-RegistryValue -Path $setting.Path -Name $setting.Name -Value $settingValue -Type $setting.Type -RemoveEntry:$removeEntry)) {
+                                $allSettingsApplied = $false # If one sub-tweak fails, the whole group fails
+                                Write-Error "Failed to apply sub-tweak '$($setting.Name)' in '$($setting.Path)' for '$($tweak.Name)'."
+                            }
+                            else {
+                                Write-Host "  -> Applied registry setting: $($setting.Name) in $($setting.Path)" -ForegroundColor Green
+                            }
+                        }
+                        else {
+                            Write-Warning "Skipping invalid registry setting in '$($tweak.Name)': Missing Path, Name, Value, or Type."
+                            $allSettingsApplied = $false # Invalid setting means overall failure for the group
+                        }
+                    }
+                    $success = $allSettingsApplied
+                    # --- End of 1:1 Replacement/Addition for Grouped Registry Tweaks (Apply) ---
+                }
+                elseif ($tweak.RegistryPath -and $tweak.ValueName) {
+                    # Existing logic for single registry tweaks
+                    # Use "<RemoveEntry>" for values that should be removed
+                    $removeEntry = ($tweak.TweakValue -eq "<RemoveEntry>")
+                    if ($removeEntry) {
+                        $tweakRegistryValue = $null
+                    }
+                    else {
+                        $tweakRegistryValue = $tweak.TweakValue
+                    }
+
+                    $success = Set-RegistryValue -Path $tweak.RegistryPath -Name $tweak.ValueName -Value $tweakRegistryValue -Type $tweak.ValueType -RemoveEntry:$removeEntry
+                    if ($success) { Write-Host "  -> Applied registry tweak: $($tweak.Name)" -ForegroundColor Green }
+                    else { Write-Host "  -> Failed to apply registry tweak: $($tweak.Name)" -ForegroundColor Red }
                 }
                 else {
-                    [System.Windows.Forms.MessageBox]::Show("Failed to apply tweak: $($tweak.Name). Please check console for details.", "Error Applying Tweak", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+                    # Fallback for unsupported tweak types
+                    [System.Windows.Forms.MessageBox]::Show("Unknown tweak type for: $($tweak.Name).", "Error Applying Tweak", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+                    $success = $false
                 }
             }
 
@@ -886,10 +1613,56 @@ $resetButton.Add_Click({ # Reset Button Click for General Tab
 
                 if ($tweak.Action -eq "Service") {
                     $success = Set-ServiceStartType -ServiceName $tweak.Service -StartType $tweak.DefaultValue
+                    if ($success) { Write-Host "  -> Service '$($tweak.Service)' startup type reset to '$($tweak.DefaultValue)'." -ForegroundColor Green }
+                    else { Write-Host "  -> Failed to reset service '$($tweak.Service)' startup type." -ForegroundColor Red }
+                }
+                elseif ($tweak.RegistrySettings) {
+                    # --- Start of 1:1 Replacement/Addition for Grouped Registry Tweaks (Reset) ---
+                    Write-Host "Resetting Grouped Registry Tweak: $($tweak.Name)" -ForegroundColor Cyan
+                    $allSettingsReset = $true # Assume success for the group
+                    foreach ($setting in $tweak.RegistrySettings) {
+                        # Use "<RemoveEntry>" for values that should be removed on reset (i.e., default is absence)
+                        $removeEntry = ($setting.OriginalValue -eq "<RemoveEntry>")
+                        if ($removeEntry) {
+                            $settingOriginalValue = $null # Value parameter isn't used when removing
+                        }
+                        else {
+                            $settingOriginalValue = $setting.OriginalValue
+                        }
+
+                        if ($setting.Path -and $setting.Name -and ($removeEntry -or ($setting.OriginalValue -ne $null)) -and $setting.Type) {
+                            if (-not (Set-RegistryValue -Path $setting.Path -Name $setting.Name -Value $settingOriginalValue -Type $setting.Type -RemoveEntry:$removeEntry)) {
+                                $allSettingsReset = $false # If one sub-tweak fails, the whole group fails
+                                Write-Error "Failed to reset sub-tweak '$($setting.Name)' in '$($setting.Path)' for '$($tweak.Name)'."
+                            }
+                            else {
+                                Write-Host "  -> Reset registry setting: $($setting.Name) in $($setting.Path)" -ForegroundColor Green
+                            }
+                        }
+                        else {
+                            Write-Warning "Skipping invalid registry setting for reset in '$($tweak.Name)': Missing Path, Name, OriginalValue, or Type."
+                            $allSettingsReset = $false # Invalid setting means overall failure for the group
+                        }
+                    }
+                    $success = $allSettingsReset
+                    # --- End of 1:1 Replacement/Addition for Grouped Registry Tweaks (Reset) ---
                 }
                 else {
-                    $success = Set-RegistryValue -Path $tweak.RegistryPath -Name $tweak.ValueName -Value $tweak.DefaultValue -Type $tweak.ValueType
+                    # Existing logic for single registry tweaks
+                    # Use "<RemoveEntry>" for values that should be removed on reset
+                    $removeEntry = ($tweak.DefaultValue -eq "<RemoveEntry>")
+                    if ($removeEntry) {
+                        $tweakDefaultValue = $null
+                    }
+                    else {
+                        $tweakDefaultValue = $tweak.DefaultValue
+                    }
+
+                    $success = Set-RegistryValue -Path $tweak.RegistryPath -Name $tweak.ValueName -Value $tweakDefaultValue -Type $tweak.ValueType -RemoveEntry:$removeEntry
+                    if ($success) { Write-Host "  -> Reset registry tweak: $($tweak.Name)" -ForegroundColor Green }
+                    else { Write-Host "  -> Failed to reset registry tweak: $($tweak.Name)" -ForegroundColor Red }
                 }
+
                 if ($success) {
                     $progressBar.Value++
                 }
@@ -934,7 +1707,6 @@ $generalUncheckAllButton.Add_Click({ # Uncheck All Button Click for General Tab
 
 #region 6. Tab: Downloads
 if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-    #region Winget Installation/Check
     [System.Windows.Forms.MessageBox]::Show("winget was not found. Attempting to install the app installer (using winget) from the Microsoft Store.", "winget not found", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
     try {
         $process = Start-Process -FilePath "ms-windows-store://pdp/?ProductId=9NBLGGH4NNS1" -PassThru -NoNewWindow -ErrorAction Stop
@@ -955,9 +1727,7 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
 }
 
 $global:installedPackageIds = @{}
-#endregion
 
-#region Winget Related Functions
 function Update-InstalledPackageIds {
     # Function to update the list of installed Winget packages
     param([System.Windows.Forms.Form]$parentForm, [System.Windows.Forms.ProgressBar]$progressBar, [System.Windows.Forms.Label]$statusLabel)
@@ -1141,13 +1911,10 @@ function Uninstall-Programs {
     $statusDownloadLabel.Text = "Uninstallation process completed."
     Update-InstalledProgramsStatus
 }
-#endregion
-
 $tabDownloads = New-Object System.Windows.Forms.TabPage "Downloads"
 $tabControl.TabPages.Add($tabDownloads)
 
-#region Program Data
-$programCategories = @{
+$programCategories = @{ # Downloads
     "Benchmarks"            = @(
         @{Name = "AIDA64 Extreme"; Id = "FinalWire.AIDA64.Extreme" },
         @{Name = "CrystalDiskInfo"; Id = "CrystalDewWorld.CrystalDiskInfo" },
@@ -1260,9 +2027,7 @@ $programCategories = @{
         @{Name = "VMware Workstation Player"; Id = "VMware.WorkstationPlayer" }
     )
 }
-#endregion
 
-#region GUI Elements
 # Label top
 $downloadsLabel = New-Object System.Windows.Forms.Label
 $downloadsLabel.Text = "Select the programs to install via winget:"
@@ -1277,12 +2042,10 @@ $downloadTreeView.Location = New-Object System.Drawing.Point(15, 50)
 $downloadTreeView.HideSelection = $false
 $downloadTreeView.CheckBoxes = $true
 $tabDownloads.Controls.Add($downloadTreeView)
+$allProgramNodes = @() # List to hold all program nodes for status checks
 
-# List to hold all program nodes for status checks
-$allProgramNodes = @()
-
-# Populate TreeView with categories and programs
 foreach ($category in $programCategories.Keys) {
+    # Populate TreeView with categories and programs
     $parentNode = New-Object System.Windows.Forms.TreeNode $category
 
     foreach ($prog in $programCategories[$category]) {
@@ -1349,9 +2112,7 @@ $downloadProgressBar.Size = New-Object System.Drawing.Size(600, 20)
 $downloadProgressBar.Location = New-Object System.Drawing.Point(15, 730)
 $downloadProgressBar.Visible = $false
 $tabDownloads.Controls.Add($downloadProgressBar)
-#endregion
 
-#region Event Handlers
 # TreeView AfterCheck event
 $downloadTreeView.Add_AfterCheck({
         param($sender, $e)
@@ -1510,6 +2271,7 @@ $uncheckAllButton.Add_Click({
         $statusDownloadLabel.Text = "All selections cleared."
         $global:IgnoreCheckEventDownloads = $false
     })
+#endregion
 
 #region 7. Tab: Untested
 $tabUntested = New-Object System.Windows.Forms.TabPage "Untested"
@@ -1588,13 +2350,13 @@ $tabAbout.Controls.Add($githubProjectButton)
 #endregion
 
 #region 9. Final Execution
-# Initial calls for Home tab info and General tab setup
-$form.Add_Shown({
+$form.Add_Shown({ # Initial calls for Home tab info and General tab setup
         #Initialize-HomeTabContent
         Initialize-HomeTabContent -systemInfoPanel $systemInfoPanel -form $form -systemInfoTitle $systemInfoTitle
-        GeneralTreeView -treeViewToPopulate $treeView # Diese Zeile ist jetzt IMMER aktiv
+        GeneralTreeView -treeViewToPopulate $treeView # This line should call your GeneralTreeView
         #Update-GeneralTweaksStatus
-        Update-GeneralTweaksStatus -tweakNodes $allTweakNodes
+        #Update-GeneralTweaksStatus -tweakNodes $allTweakNodes
+        Update-GeneralTweaksStatus -tweakNodes $global:allTweakNodes # Ensure this uses $global:allTweakNodes
 
         if (-not $script:downloadsTabInitialized) {
             $statusDownloadLabel.Text = "Status: Initializing Winget data..."

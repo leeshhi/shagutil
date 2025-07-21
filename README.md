@@ -21,7 +21,7 @@ ShagUtil must be run in Admin mode because it performs system-wide tweaks. To ac
 irm "win.shag.my" | iex
 ```
 
-### Alternative:
+### Alternatives:
 ```ps1
 irm "win.shag.gg" | iex
 ```

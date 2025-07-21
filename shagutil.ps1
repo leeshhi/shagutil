@@ -2,7 +2,7 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Security # Needed ?
-$scriptVersion = "0.1.1"
+$scriptVersion = "0.1.2"
 
 #region 1. Initial Script Setup & Admin Check
 if (-not ([Security.Principal.WindowsPrincipal][System.Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltinRole] "Administrator")) {
@@ -567,7 +567,7 @@ function Set-ServiceStartType {
         return $false
     }
 }
-function Apply-Tweaks {
+function ApplyTweaks {
     param(
         [System.Windows.Forms.TreeView]$treeViewToApply
     )
@@ -620,7 +620,7 @@ function Apply-Tweaks {
     [System.Windows.Forms.MessageBox]::Show("Selected tweaks applied. Some changes may require a system restart.", "Tweaks Applied", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
     Update-GeneralTweaksStatus -tweakNodes $allTweakNodes # Update status after applying
 }
-function Reset-Tweaks {
+function ResetTweaks {
     param(
         [System.Windows.Forms.TreeView]$treeViewToReset
     )
@@ -1464,96 +1464,33 @@ $applyButton.Add_Click({ # Apply Button Click for General Tab
             [System.Windows.Forms.MessageBox]::Show("Please select at least one tweak to apply.", "No Tweaks Selected", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
             return
         }
-
+    
         $dialogResult = [System.Windows.Forms.MessageBox]::Show(
             "Are you sure you want to apply the selected tweaks? This might require a system restart.",
             "Confirm Apply Tweaks",
             [System.Windows.Forms.MessageBoxButtons]::YesNo,
             [System.Windows.Forms.MessageBoxIcon]::Question
         )
-
+    
         if ($dialogResult -eq [System.Windows.Forms.DialogResult]::Yes) {
             $statusLabel.Text = "Status: Applying tweaks..."
             $progressBar.Style = 'Continuous'
             $progressBar.Minimum = 0
-            $progressBar.Maximum = $checkedTweaks.Count
+            $progressBar.Maximum = $checkedTweaks.Count # Progressbar basiert auf der Anzahl der ausgewählten Tweaks
             $progressBar.Value = 0
             $progressBar.Visible = $true
             $form.Refresh()
-
+    
             $global:hasChanges = $false
             $global:restartNeeded = $false
-
-            foreach ($node in $checkedTweaks) {
-                $tweak = $node.Tag
-                $statusLabel.Text = "Applying: $($tweak.Name)..."
-                $form.Refresh()
-
-                $success = $false
-                if ($tweak.Action -eq "Service") {
-                    # Existing logic for service tweaks
-                    $success = Set-ServiceStartType -ServiceName $tweak.Service -StartType $tweak.TweakValue
-                    if ($success) { Write-Host "  -> Service '$($tweak.Service)' set to startup type '$($tweak.TweakValue)'." -ForegroundColor Green }
-                    else { Write-Host "  -> Failed to set service '$($tweak.Service)' startup type." -ForegroundColor Red }
-                }
-                elseif ($tweak.RegistrySettings) {
-                    # --- Start of 1:1 Replacement/Addition for Grouped Registry Tweaks (Apply) ---
-                    Write-Host "Applying Grouped Registry Tweak: $($tweak.Name)" -ForegroundColor Cyan
-                    $allSettingsApplied = $true # Assume success for the group
-                    foreach ($setting in $tweak.RegistrySettings) {
-                        # Use "<RemoveEntry>" for values that should be removed
-                        $removeEntry = ($setting.Value -eq "<RemoveEntry>")
-                        if ($removeEntry) {
-                            $settingValue = $null # Value parameter isn't used when removing
-                        }
-                        else {
-                            $settingValue = $setting.Value
-                        }
-
-                        if ($setting.Path -and $setting.Name -and ($removeEntry -or ($setting.Value -ne $null)) -and $setting.Type) {
-                            if (-not (Set-RegistryValue -Path $setting.Path -Name $setting.Name -Value $settingValue -Type $setting.Type -RemoveEntry:$removeEntry)) {
-                                $allSettingsApplied = $false # If one sub-tweak fails, the whole group fails
-                                Write-Error "Failed to apply sub-tweak '$($setting.Name)' in '$($setting.Path)' for '$($tweak.Name)'."
-                            }
-                            else {
-                                Write-Host "  -> Applied registry setting: $($setting.Name) in $($setting.Path)" -ForegroundColor Green
-                            }
-                        }
-                        else {
-                            Write-Warning "Skipping invalid registry setting in '$($tweak.Name)': Missing Path, Name, Value, or Type."
-                            $allSettingsApplied = $false # Invalid setting means overall failure for the group
-                        }
-                    }
-                    $success = $allSettingsApplied
-                    # --- End of 1:1 Replacement/Addition for Grouped Registry Tweaks (Apply) ---
-                }
-                elseif ($tweak.RegistryPath -and $tweak.ValueName) {
-                    # Existing logic for single registry tweaks
-                    # Use "<RemoveEntry>" for values that should be removed
-                    $removeEntry = ($tweak.TweakValue -eq "<RemoveEntry>")
-                    if ($removeEntry) {
-                        $tweakRegistryValue = $null
-                    }
-                    else {
-                        $tweakRegistryValue = $tweak.TweakValue
-                    }
-
-                    $success = Set-RegistryValue -Path $tweak.RegistryPath -Name $tweak.ValueName -Value $tweakRegistryValue -Type $tweak.ValueType -RemoveEntry:$removeEntry
-                    if ($success) { Write-Host "  -> Applied registry tweak: $($tweak.Name)" -ForegroundColor Green }
-                    else { Write-Host "  -> Failed to apply registry tweak: $($tweak.Name)" -ForegroundColor Red }
-                }
-                else {
-                    # Fallback for unsupported tweak types
-                    [System.Windows.Forms.MessageBox]::Show("Unknown tweak type for: $($tweak.Name).", "Error Applying Tweak", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-                    $success = $false
-                }
-            }
-
+    
+            ApplyTweaks -treeViewToApply $treeView # $treeView ist dein TreeView-Objekt für die Tweaks
+    
             $progressBar.Visible = $false
             $statusLabel.Text = "Status: Tweak application complete."
-            Update-GeneralTweaksStatus # Re-check status after applying
+            Update-GeneralTweaksStatus -tweakNodes $global:allTweakNodes # Re-check status after applying
             $form.Refresh()
-
+    
             if ($global:restartNeeded) {
                 $restartDialogResult = [System.Windows.Forms.MessageBox]::Show(
                     "Some changes require a system restart to take effect. Do you want to restart now?",
@@ -1569,9 +1506,8 @@ $applyButton.Add_Click({ # Apply Button Click for General Tab
     })
 
 $resetButton.Add_Click({ # Reset Button Click for General Tab
-        # Get all tweaks that are NOT checked (meaning we want to reset them to default)
         $toResetTweaks = $global:allTweakNodes | Where-Object { -not $_.Checked }
-
+    
         if ($toResetTweaks.Count -eq 0) {
             [System.Windows.Forms.MessageBox]::Show("No tweaks selected to reset. Select the tweaks you want to keep active, and then click 'Reset' to revert the unchecked ones to their default state.", "No Tweaks Selected", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
             return
@@ -1583,95 +1519,31 @@ $resetButton.Add_Click({ # Reset Button Click for General Tab
             [System.Windows.Forms.MessageBoxButtons]::YesNo,
             [System.Windows.Forms.MessageBoxIcon]::Question
         )
-
+    
         if ($dialogResult -eq [System.Windows.Forms.DialogResult]::Yes) {
             $statusLabel.Text = "Status: Resetting tweaks to default..."
             $progressBar.Style = 'Continuous'
             $progressBar.Minimum = 0
-            $progressBar.Maximum = $toResetTweaks.Count
+            $progressBar.Maximum = $toResetTweaks.Count # Progressbar basiert auf der Anzahl der zu resetierenden Tweaks
             $progressBar.Value = 0
             $progressBar.Visible = $true
             $form.Refresh()
             $global:hasChanges = $false
             $global:restartNeeded = $false
-
-            foreach ($node in $toResetTweaks) {
-                $tweak = $node.Tag
-                $statusLabel.Text = "Resetting: $($tweak.Name)..."
-                $form.Refresh()
-                $success = $false
-
-                if ($tweak.Action -eq "Service") {
-                    $success = Set-ServiceStartType -ServiceName $tweak.Service -StartType $tweak.DefaultValue
-                    if ($success) { Write-Host "  -> Service '$($tweak.Service)' startup type reset to '$($tweak.DefaultValue)'." -ForegroundColor Green }
-                    else { Write-Host "  -> Failed to reset service '$($tweak.Service)' startup type." -ForegroundColor Red }
-                }
-                elseif ($tweak.RegistrySettings) {
-                    # --- Start of 1:1 Replacement/Addition for Grouped Registry Tweaks (Reset) ---
-                    Write-Host "Resetting Grouped Registry Tweak: $($tweak.Name)" -ForegroundColor Cyan
-                    $allSettingsReset = $true # Assume success for the group
-                    foreach ($setting in $tweak.RegistrySettings) {
-                        # Use "<RemoveEntry>" for values that should be removed on reset (i.e., default is absence)
-                        $removeEntry = ($setting.OriginalValue -eq "<RemoveEntry>")
-                        if ($removeEntry) {
-                            $settingOriginalValue = $null # Value parameter isn't used when removing
-                        }
-                        else {
-                            $settingOriginalValue = $setting.OriginalValue
-                        }
-
-                        if ($setting.Path -and $setting.Name -and ($removeEntry -or ($setting.OriginalValue -ne $null)) -and $setting.Type) {
-                            if (-not (Set-RegistryValue -Path $setting.Path -Name $setting.Name -Value $settingOriginalValue -Type $setting.Type -RemoveEntry:$removeEntry)) {
-                                $allSettingsReset = $false # If one sub-tweak fails, the whole group fails
-                                Write-Error "Failed to reset sub-tweak '$($setting.Name)' in '$($setting.Path)' for '$($tweak.Name)'."
-                            }
-                            else {
-                                Write-Host "  -> Reset registry setting: $($setting.Name) in $($setting.Path)" -ForegroundColor Green
-                            }
-                        }
-                        else {
-                            Write-Warning "Skipping invalid registry setting for reset in '$($tweak.Name)': Missing Path, Name, OriginalValue, or Type."
-                            $allSettingsReset = $false # Invalid setting means overall failure for the group
-                        }
-                    }
-                    $success = $allSettingsReset
-                    # --- End of 1:1 Replacement/Addition for Grouped Registry Tweaks (Reset) ---
-                }
-                else {
-                    # Existing logic for single registry tweaks
-                    # Use "<RemoveEntry>" for values that should be removed on reset
-                    $removeEntry = ($tweak.DefaultValue -eq "<RemoveEntry>")
-                    if ($removeEntry) {
-                        $tweakDefaultValue = $null
-                    }
-                    else {
-                        $tweakDefaultValue = $tweak.DefaultValue
-                    }
-
-                    $success = Set-RegistryValue -Path $tweak.RegistryPath -Name $tweak.ValueName -Value $tweakDefaultValue -Type $tweak.ValueType -RemoveEntry:$removeEntry
-                    if ($success) { Write-Host "  -> Reset registry tweak: $($tweak.Name)" -ForegroundColor Green }
-                    else { Write-Host "  -> Failed to reset registry tweak: $($tweak.Name)" -ForegroundColor Red }
-                }
-
-                if ($success) {
-                    $progressBar.Value++
-                }
-                else {
-                    [System.Windows.Forms.MessageBox]::Show("Failed to reset tweak: $($tweak.Name). Please check console for details.", "Error Resetting Tweak", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-                }
-            }
-
+    
+            ResetTweaks -treeViewToReset $treeView # $treeView ist dein TreeView-Objekt für die Tweaks
+    
             $progressBar.Visible = $false
             $statusLabel.Text = "Status: Tweak reset complete."
-            Update-GeneralTweaksStatus # Re-check status after resetting
+            Update-GeneralTweaksStatus -tweakNodes $global:allTweakNodes # Re-check status after resetting
             $form.Refresh()
-
+    
             if ($global:restartNeeded) {
                 $restartDialogResult = [System.Windows.Forms.MessageBox]::Show(
                     "Some changes require a system restart to take effect. Do you want to restart now?",
                     "Restart Required",
                     [System.Windows.Forms.MessageBoxButtons]::YesNo,
-                    [System.Windows.Forms.MessageBoxIcon]::Question
+                    [System.Windows.Forms.MessageBox.Icon]::Question
                 )
                 if ($restartDialogResult -eq [System.Windows.Forms.DialogResult]::Yes) {
                     Restart-Computer -Force

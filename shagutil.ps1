@@ -819,7 +819,7 @@ $generalTweaks = @(
         Category     = "Privacy"
         Name         = "Disable ConsumerFeatures"
         Description  = "Windows 10 will not automatically install any games, third-party apps, or application links from the Windows Store for the signed-in user. Some default Apps will be inaccessible (eg. Phone Link)"
-        RegistryPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent"
+        RegistryPath = "HKLM\SOFTWARE\Policies\Microsoft\Windows\CloudContent"
         ValueName    = "DisableWindowsConsumerFeatures"
         TweakValue   = 1
         DefaultValue = "<RemoveEntry>"
@@ -829,7 +829,7 @@ $generalTweaks = @(
         Category     = "System"
         Name         = "Enable Long Paths"
         Description  = "Enables support for file paths longer than 260 characters."
-        RegistryPath = "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem"
+        RegistryPath = "HKLM\SYSTEM\CurrentControlSet\Control\FileSystem"
         ValueName    = "LongPathsEnabled"
         TweakValue   = 1
         DefaultValue = 0
@@ -839,7 +839,7 @@ $generalTweaks = @(
         Category     = "Performance"
         Name         = "Set System Responsiveness (Multimedia)"
         Description  = "Optimizes system responsiveness for multimedia tasks."
-        RegistryPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile"
+        RegistryPath = "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile"
         ValueName    = "SystemResponsiveness"
         TweakValue   = 0
         DefaultValue = 1
@@ -900,7 +900,7 @@ $generalTweaks = @(
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR"
+                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\GameDVR"
                 Name          = "AllowGameDVR"
                 Value         = "0"
                 OriginalValue = "<RemoveEntry>"
@@ -914,21 +914,21 @@ $generalTweaks = @(
         Description      = "This erases recent docs, clipboard, and run history."
         RegistrySettings = @(
             @{
-                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\System"
+                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\System"
                 Name          = "EnableActivityFeed"
                 Value         = 0
                 OriginalValue = "<RemoveEntry>"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\System"
+                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\System"
                 Name          = "PublishUserActivities"
                 Value         = 0
                 OriginalValue = "<RemoveEntry>"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\System"
+                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\System"
                 Name          = "UploadUserActivities"
                 Value         = 0
                 OriginalValue = "<RemoveEntry>"
@@ -942,14 +942,14 @@ $generalTweaks = @(
         Description      = "Hibernation is really meant for laptops as it saves what's in memory before turning the pc off. It really should never be used, but some people are lazy and rely on it. Don't be like Bob. Bob likes hibernation."
         RegistrySettings = @(
             @{
-                Path          = "HKLM:\System\CurrentControlSet\Control\Session Manager\Power"
+                Path          = "HKLM\System\CurrentControlSet\Control\Session Manager\Power"
                 Name          = "HibernateEnabled"
                 Value         = 0
                 OriginalValue = 1
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FlyoutMenuSettings"
+                Path          = "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FlyoutMenuSettings"
                 Name          = "ShowHibernateOption"
                 Value         = 0
                 OriginalValue = 1
@@ -965,14 +965,14 @@ $generalTweaks = @(
         Description      = "Disables HomeGroup - HomeGroup is a password-protected home networking service that lets you share your stuff with other PCs that are currently running and connected to your network."
         RegistrySettings = @(
             @{
-                Path          = "HKLM:\SYSTEM\CurrentControlSet\Services\HomeGroupListener"
+                Path          = "HKLM\SYSTEM\CurrentControlSet\Services\HomeGroupListener"
                 Name          = "Start"
                 Value         = 3 # 3 = Manual
                 OriginalValue = 2 # 2 = Automatic
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM:\SYSTEM\CurrentControlSet\Services\HomeGroupProvider"
+                Path          = "HKLM\SYSTEM\CurrentControlSet\Services\HomeGroupProvider"
                 Name          = "Start"
                 Value         = 3 # 3 = Manual
                 OriginalValue = 2 # 2 = Automatic
@@ -986,28 +986,28 @@ $generalTweaks = @(
         Description      = "Disables Location Tracking."
         RegistrySettings = @(
             @{
-                Path          = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location"
+                Path          = "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location"
                 Name          = "Value"
                 Value         = "Deny"
                 OriginalValue = "Allow"
                 Type          = "String"
             },
             @{
-                Path          = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Sensor\Overrides\{BFA794E4-F964-4FDB-90F6-51056BFE4B44}"
+                Path          = "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Sensor\Overrides\{BFA794E4-F964-4FDB-90F6-51056BFE4B44}"
                 Name          = "SensorPermissionState"
                 Value         = 0
                 OriginalValue = 1
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM:\SYSTEM\CurrentControlSet\Services\lfsvc\Service\Configuration"
+                Path          = "HKLM\SYSTEM\CurrentControlSet\Services\lfsvc\Service\Configuration"
                 Name          = "Status"
                 Value         = 0
                 OriginalValue = 1
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM:\SYSTEM\Maps"
+                Path          = "HKLM\SYSTEM\Maps"
                 Name          = "AutoUpdateEnabled"
                 Value         = 0
                 OriginalValue = 1
@@ -1022,14 +1022,14 @@ $generalTweaks = @(
         RegistrySettings = @(
             # Registry-Einstellungen für Telemetrie und Inhaltsbereitstellung
             @{
-                Path          = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection"
+                Path          = "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection"
                 Name          = "AllowTelemetry"
                 Value         = 0
                 OriginalValue = "<RemoveEntry>" # Standard ist oft nicht vorhanden oder 1
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection"
+                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection"
                 Name          = "AllowTelemetry"
                 Value         = 0
                 OriginalValue = "<RemoveEntry>" # Standard ist oft nicht vorhanden oder 1
@@ -1113,7 +1113,7 @@ $generalTweaks = @(
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\DataCollection"
+                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection"
                 Name          = "DoNotShowFeedbackNotifications"
                 Value         = 1
                 OriginalValue = "<RemoveEntry>"
@@ -1127,28 +1127,28 @@ $generalTweaks = @(
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo"
+                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo"
                 Name          = "DisabledByGroupPolicy"
                 Value         = 1
                 OriginalValue = "<RemoveEntry>"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM:\SOFTWARE\Microsoft\Windows\Windows Error Reporting"
+                Path          = "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting"
                 Name          = "Disabled"
                 Value         = 1
                 OriginalValue = 0
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DeliveryOptimization\Config"
+                Path          = "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\DeliveryOptimization\Config"
                 Name          = "DODownloadMode"
                 Value         = 1 # Peer-to-peer downloads (LAN only or disabled)
                 OriginalValue = 1 # Standardwert, wenn nicht geändert
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM:\SYSTEM\CurrentControlSet\Control\Remote Assistance"
+                Path          = "HKLM\SYSTEM\CurrentControlSet\Control\Remote Assistance"
                 Name          = "fAllowToGetHelp"
                 Value         = 0
                 OriginalValue = 1
@@ -1183,7 +1183,7 @@ $generalTweaks = @(
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem"
+                Path          = "HKLM\SYSTEM\CurrentControlSet\Control\FileSystem"
                 Name          = "LongPathsEnabled"
                 Value         = 1
                 OriginalValue = 0
@@ -1191,21 +1191,21 @@ $generalTweaks = @(
             },
             @{
                 # Kommentar: "Driver searching is a function that should be left in" - Wert bleibt 1
-                Path          = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching"
+                Path          = "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching"
                 Name          = "SearchOrderConfig"
                 Value         = 1
                 OriginalValue = 1
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile"
+                Path          = "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile"
                 Name          = "SystemResponsiveness"
                 Value         = 0 # Optimiert für Multimedia
                 OriginalValue = 1 # Standardwert
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile"
+                Path          = "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile"
                 Name          = "NetworkThrottlingIndex"
                 Value         = 4294967295 # Deaktiviert Drosselung (FFFFFFFF in Hex)
                 OriginalValue = 10 # Standardwert (oder 10 für Gaming)
@@ -1219,21 +1219,21 @@ $generalTweaks = @(
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"
+                Path          = "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"
                 Name          = "ClearPageFileAtShutdown"
                 Value         = 0 # Deaktiviert das Löschen der Auslagerungsdatei beim Herunterfahren
                 OriginalValue = 0 # Standardwert
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM:\SYSTEM\ControlSet001\Services\Ndu"
+                Path          = "HKLM\SYSTEM\ControlSet001\Services\Ndu"
                 Name          = "Start"
                 Value         = 2 # NDU (Network Diagnostic Usage) auf Manuell setzen (2=Automatic, 3=Manual, 4=Disabled)
                 OriginalValue = 1 # Standardwert (Boot)
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM:\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters"
+                Path          = "HKLM\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters"
                 Name          = "IRPStackSize"
                 Value         = 30 # Erhöht IRPStackSize für größere Netzwerkpakete
                 OriginalValue = 20 # Standardwert
@@ -1271,7 +1271,7 @@ $generalTweaks = @(
         InvokeScript     = @(
             @"
     bcdedit /set `{current`} bootmenupolicy Legacy | Out-Null
-    If ((get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion" -Name CurrentBuild).CurrentBuild -lt 22557) {
+    If ((get-ItemProperty -Path "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" -Name CurrentBuild).CurrentBuild -lt 22557) {
         $taskmgr = Start-Process -WindowStyle Hidden -FilePath taskmgr.exe -PassThru
         Do {
             Start-Sleep -Milliseconds 100
@@ -1281,12 +1281,12 @@ $generalTweaks = @(
         $preferences.Preferences[28] = 0
         Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\TaskManager" -Name "Preferences" -Type Binary -Value $preferences.Preferences
     }
-    Remove-Item -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{0DB7E03F-FC29-4DC6-9020-FF41B59E513A}" -Recurse -ErrorAction SilentlyContinue
-    If (Test-Path "HKLM:\SOFTWARE\Policies\Microsoft\Edge") {
-        Remove-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Edge" -Recurse -ErrorAction SilentlyContinue
+    Remove-Item -Path "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{0DB7E03F-FC29-4DC6-9020-FF41B59E513A}" -Recurse -ErrorAction SilentlyContinue
+    If (Test-Path "HKLM\SOFTWARE\Policies\Microsoft\Edge") {
+        Remove-Item -Path "HKLM\SOFTWARE\Policies\Microsoft\Edge" -Recurse -ErrorAction SilentlyContinue
     }
     $ram = (Get-CimInstance -ClassName Win32_PhysicalMemory | Measure-Object -Property Capacity -Sum).Sum / 1kb
-    Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control" -Name "SvcHostSplitThresholdInKB" -Type DWord -Value $ram -Force
+    Set-ItemProperty -Path "HKLM\SYSTEM\CurrentControlSet\Control" -Name "SvcHostSplitThresholdInKB" -Type DWord -Value $ram -Force
     
     $autoLoggerDir = "$env:PROGRAMDATA\Microsoft\Diagnosis\ETLLogs\AutoLogger"
     If (Test-Path "$autoLoggerDir\AutoLogger-Diagtrack-Listener.etl") {
@@ -1312,7 +1312,7 @@ $generalTweaks = @(
             "schtasks /Change /TN 'Microsoft\\Windows\\Maps\\MapsUpdateTask' /Enable | Out-Null",
             "bcdedit /set {current} bootmenupolicy Standard | Out-Null",
     @"
-    If ((get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion" -Name CurrentBuild).CurrentBuild -lt 22557) {
+    If ((get-ItemProperty -Path "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" -Name CurrentBuild).CurrentBuild -lt 22557) {
         $preferences = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\TaskManager" -Name "Preferences" -ErrorAction SilentlyContinue
         if ($preferences) {
             $preferences.Preferences[28] = 1 # Setzt den Wert auf den Standard zurück
@@ -1324,7 +1324,7 @@ $generalTweaks = @(
     $autoLoggerDir = "$env:PROGRAMDATA\Microsoft\Diagnosis\ETLLogs\AutoLogger"
     icacls $autoLoggerDir /grant SYSTEM:`(OI`)`(CI`)F | Out-Null
 "@,
-            "Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control' -Name 'SvcHostSplitThresholdInKB' -Type DWord -Value 380000 -Force",
+            "Set-ItemProperty -Path 'HKLM\SYSTEM\CurrentControlSet\Control' -Name 'SvcHostSplitThresholdInKB' -Type DWord -Value 380000 -Force",
             "Set-MpPreference -SubmitSamplesConsent 1 -ErrorAction SilentlyContinue | Out-Null"
         )
     },
@@ -1467,7 +1467,7 @@ $generalTweaks = @(
         Description      = "Disables MS Copilot AI built into Windows since 23H2."
         RegistrySettings = @(
             @{
-                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot"
+                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot"
                 Name          = "TurnOffWindowsCopilot"
                 Value         = 1
                 OriginalValue = "<RemoveEntry>"
@@ -1488,14 +1488,14 @@ $generalTweaks = @(
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM:\SOFTWARE\Microsoft\Windows\Shell\Copilot"
+                Path          = "HKLM\SOFTWARE\Microsoft\Windows\Shell\Copilot"
                 Name          = "IsCopilotAvailable"
                 Value         = 0
                 OriginalValue = "<RemoveEntry>"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM:\SOFTWARE\Microsoft\Windows\Shell\Copilot"
+                Path          = "HKLM\SOFTWARE\Microsoft\Windows\Shell\Copilot"
                 Name          = "CopilotDisabledReason"
                 Value         = "IsEnabledForGeographicRegionFailed"
                 OriginalValue = "<RemoveEntry>"
@@ -1509,14 +1509,14 @@ $generalTweaks = @(
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked"
+                Path          = "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked"
                 Name          = "{CB3B0003-8088-4EDE-8769-8B354AB2FF8C}"
                 Value         = ""
                 OriginalValue = "<RemoveEntry>"
                 Type          = "String"
             },
             @{
-                Path          = "HKLM:\SOFTWARE\Microsoft\Windows\Shell\Copilot\BingChat"
+                Path          = "HKLM\SOFTWARE\Microsoft\Windows\Shell\Copilot\BingChat"
                 Name          = "IsUserEligible"
                 Value         = 0
                 OriginalValue = "<RemoveEntry>"
@@ -1564,21 +1564,21 @@ $generalTweaks = @(
         Description      = "Turn Recall off"
         RegistrySettings = @(
             @{
-                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsAI"
+                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI"
                 Name          = "DisableAIDataAnalysis"
                 Value         = 1
                 OriginalValue = "<RemoveEntry>"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsAI"
+                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsAI"
                 Name          = "AllowRecallEnablement"
                 Value         = 0
                 OriginalValue = "<RemoveEntry>"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM:\SYSTEM\CurrentControlSet\Control\CI\Policy"
+                Path          = "HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy"
                 Name          = "VerifiedAndReputablePolicyState"
                 Value         = 0
                 OriginalValue = "<RemoveEntry>"
@@ -1635,7 +1635,7 @@ $generalTweaks = @(
         Category     = "Network"
         Name         = "Prefer IPv4 over IPv6"
         Description  = "To set the IPv4 preference can have latency and security benefits on private networks where IPv6 is not configured."
-        RegistryPath = "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters"
+        RegistryPath = "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters"
         ValueName    = "DisabledComponents"
         TweakValue   = "32"
         DefaultValue = "0"
@@ -1647,7 +1647,7 @@ $generalTweaks = @(
         Description      = "Teredo network tunneling is a ipv6 feature that can cause additional latency, but may cause problems with some games"
         RegistrySettings = @(
             @{
-                Path          = "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters"
+                Path          = "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters"
                 Name          = "DisabledComponents"
                 Value         = "1"
                 OriginalValue = "0"
@@ -1671,7 +1671,7 @@ $generalTweaks = @(
         Description      = "Disables IPv6."
         RegistrySettings = @(
             @{
-                Path          = "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters"
+                Path          = "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters"
                 Name          = "DisabledComponents"
                 Value         = "255"
                 OriginalValue = "0"
@@ -1744,7 +1744,7 @@ $generalTweaks = @(
         Category     = "System"
         Name         = "Verbose Messages During Logon"
         Description  = "Show detailed messages during the login process for troubleshooting and diagnostics."
-        RegistryPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"
+        RegistryPath = "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"
         ValueName    = "VerboseStatus"
         TweakValue   = "1"
         DefaultValue = "0"
@@ -1756,21 +1756,21 @@ $generalTweaks = @(
         Description      = "If disabled then you will not see recommendations in the Start Menu. | Enables 'iseducationenvironment' | Relogin Required. | WARNING: This will also disable Windows Spotlight on your Lock Screen as a side effect."
         RegistrySettings = @(
             @{
-                Path          = "HKLM:\SOFTWARE\Microsoft\PolicyManager\current\device\Start"
+                Path          = "HKLM\SOFTWARE\Microsoft\PolicyManager\current\device\Start"
                 Name          = "HideRecommendedSection"
                 Value         = "0"
                 OriginalValue = "1"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM:\SOFTWARE\Microsoft\PolicyManager\current\device\Education"
+                Path          = "HKLM\SOFTWARE\Microsoft\PolicyManager\current\device\Education"
                 Name          = "IsEducationEnvironment"
                 Value         = "0"
                 OriginalValue = "1"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Explorer"
+                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\Explorer"
                 Name          = "HideRecommendedSection"
                 Value         = "0"
                 OriginalValue = "1"
@@ -1842,14 +1842,14 @@ $generalTweaks = @(
         Description      = "If Enabled then you will see a detailed Blue Screen of Death (BSOD) with more information."
         RegistrySettings = @(
             @{
-                Path          = "HKLM:\SYSTEM\CurrentControlSet\Control\CrashControl"
+                Path          = "HKLM\SYSTEM\CurrentControlSet\Control\CrashControl"
                 Name          = "DisplayParameters"
                 Value         = "1"
                 OriginalValue = "0"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM:\SYSTEM\CurrentControlSet\Control\CrashControl"
+                Path          = "HKLM\SYSTEM\CurrentControlSet\Control\CrashControl"
                 Name          = "DisableEmoticon"
                 Value         = "1"
                 OriginalValue = "0"
@@ -1861,7 +1861,7 @@ $generalTweaks = @(
         Category     = "Power"
         Name         = "S3 Sleep"
         Description  = "Toggles between Modern Standby and S3 sleep."
-        RegistryPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Power"
+        RegistryPath = "HKLM\SYSTEM\CurrentControlSet\Control\Power"
         ValueName    = "PlatformAoAcOverride"
         TweakValue   = "0"
         DefaultValue = "<RemoveEntry>"
@@ -1906,7 +1906,7 @@ $generalTweaks = @(
         Category     = "Performance"
         Name         = "Win 32 Priority Separation"
         Description  = "Adjusts how Windows allocates CPU time to foreground and background applications. Setting to '26' (hex) gives more priority to foreground applications."
-        RegistryPath = "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl"
+        RegistryPath = "HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl"
         ValueName    = "Win32PrioritySeparation"
         TweakValue   = "26" # Hexadecimal value
         DefaultValue = "2"  # Common default for Win32PrioritySeparation (hex)

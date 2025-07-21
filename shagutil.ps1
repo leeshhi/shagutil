@@ -51,8 +51,7 @@ function CheckUpdates {
             Error           = $_.Exception.Message
         }
     }
-}
-function Invoke-WingetCommand {
+}function Invoke-WingetCommand {
     # Function: Invoke Winget Commands and Log Output
     param([string]$arguments, [int]$timeoutSeconds = 60)
     $tempDir = [System.IO.Path]::GetTempPath()
@@ -164,7 +163,7 @@ $tabControl.Add_DrawItem({ # DrawItem Event for individual tab text color
         $e.Graphics.DrawString($text, $font, $brush, $point, $sf)
         $brush.Dispose()
     })
-
+    
 $form.Controls.Add($tabControl)
 
 $form.Add_Load({ # Form Load Event (for Update Check)
@@ -481,7 +480,6 @@ function Get-RegistryValue {
     }
     return $null # Return $null if path or name does not exist, or on error
 }
-
 function Set-RegistryValue {
     param(
         [string]$Path,
@@ -530,7 +528,6 @@ function Set-RegistryValue {
         return $false
     }
 }
-
 function Get-ServiceStatus {
     # Function to get service start type
     param([string]$ServiceName)
@@ -553,7 +550,6 @@ function Get-ServiceStatus {
         return $null
     }
 }
-
 function Set-ServiceStartType {
     # Function to set service start type
     param([string]$ServiceName, [int]$StartType)
@@ -570,7 +566,6 @@ function Set-ServiceStartType {
         return $false
     }
 }
-
 function Apply-Tweaks {
     param(
         [System.Windows.Forms.TreeView]$treeViewToApply
@@ -624,7 +619,6 @@ function Apply-Tweaks {
     [System.Windows.Forms.MessageBox]::Show("Selected tweaks applied. Some changes may require a system restart.", "Tweaks Applied", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
     Update-GeneralTweaksStatus -tweakNodes $allTweakNodes # Update status after applying
 }
-
 function Reset-Tweaks {
     param(
         [System.Windows.Forms.TreeView]$treeViewToReset
@@ -887,7 +881,7 @@ $generalTweaks = @(
     @{
         Name         = "Disable User Profile Engagement (ScoobeSystemSettingEnabled)"
         Description  = "Disables ScoobeSystemSettingEnabled for user profile engagement."
-        Category     = "Privacy - Telemetry"
+        Category     = "Privacy"
         RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\UserProfileEngagement"
         ValueName    = "ScoobeSystemSettingEnabled"
         TweakValue   = 0
@@ -897,7 +891,7 @@ $generalTweaks = @(
     @{
         Name             = "Disable Notification Center & Push Notifications"
         Description      = "Deaktiviert das Benachrichtigungscenter, den Kalender und alle Push-Benachrichtigungen (Toast-Benachrichtigungen)."
-        Category         = "Privacy - Notifications"
+        Category         = "Privacy"
         RegistrySettings = @(
             @{
                 Path          = "HKCU:\Software\Policies\Microsoft\Windows\Explorer"
@@ -960,7 +954,7 @@ $generalTweaks = @(
     @{
         Name             = "Disable Windows Telemetry & Content Delivery"
         Description      = "Deaktiviert verschiedene Telemetrie- und Inhaltsbereitstellungsfunktionen von Windows."
-        Category         = "Privacy - Telemetry"
+        Category         = "Privacy"
         RegistrySettings = @(
             @{
                 Path          = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Privacy"
@@ -1114,7 +1108,7 @@ $generalTweaks = @(
     @{
         Name             = "Disable Wi-Fi Sense"
         Description      = "Deaktiviert Wi-Fi Sense, das automatische Verbindungen zu Hotspots ermöglicht, sowie das Melden von Netzwerken."
-        Category         = "Privacy - Network"
+        Category         = "Privacy"
         RegistrySettings = @(
             @{
                 Path          = "HKLM:\SOFTWARE\Microsoft\PolicyManager\default\Connectivity"
@@ -1149,7 +1143,7 @@ $generalTweaks = @(
     @{
         Name             = "Disable Microsoft Copilot"
         Description      = "Deaktiviert die Microsoft Copilot-Funktion und den zugehörigen Taskleisten-Button."
-        Category         = "Privacy - AI"
+        Category         = "Privacy"
         RegistrySettings = @(
             @{
                 Path          = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
@@ -1226,7 +1220,7 @@ $generalTweaks = @(
     @{
         Name             = "Disable Windows Recall"
         Description      = "Deaktiviert die Windows Recall-Funktion."
-        Category         = "Privacy - AI"
+        Category         = "Privacy"
         RegistrySettings = @(
             @{
                 Path          = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
@@ -1314,7 +1308,6 @@ function GeneralTreeView {
     # Convert to array at the end if you prefer, but List is often better for dynamic additions
     # $global:allTweakNodes = $global:allTweakNodes.ToArray() 
 }
-
 function Update-GeneralTweaksStatus {
     param(
         [System.Collections.Generic.List[System.Windows.Forms.TreeNode]]$tweakNodes # Expects a List now
@@ -1723,7 +1716,6 @@ if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
 }
 
 $global:installedPackageIds = @{}
-
 function Update-InstalledPackageIds {
     # Function to update the list of installed Winget packages
     param([System.Windows.Forms.Form]$parentForm, [System.Windows.Forms.ProgressBar]$progressBar, [System.Windows.Forms.Label]$statusLabel)
@@ -1773,13 +1765,11 @@ function Update-InstalledPackageIds {
         $parentForm.Refresh()
     }
 }
-
 function Test-WingetPackageInstalled {
     # Function to test if a Winget package is installed
     param([string]$packageId)
     return $global:installedPackageIds.ContainsKey($packageId)
 }
-
 function Update-InstalledProgramsStatus {
     # Function to update the visual status of programs in the TreeView
     Update-InstalledPackageIds -parentForm $form -progressBar $downloadProgressBar -statusLabel $statusDownloadLabel
@@ -1797,7 +1787,6 @@ function Update-InstalledProgramsStatus {
         }
     }
 }
-
 function Get-SelectedInstallStatus {
     # Function to get selected installation status
     $selected = $allProgramNodes | Where-Object { $_.Checked }
@@ -1816,7 +1805,6 @@ function Get-SelectedInstallStatus {
         AllSelected  = $selected
     }
 }
-
 function Install-WingetProgram {
     # Function to install/update programs via winget
     param([string]$packageId)
@@ -1844,7 +1832,6 @@ function Install-WingetProgram {
         return $true
     }
 }
-
 function Install-OrUpdate {
     # Function to install or update selected nodes
     param([System.Windows.Forms.TreeNode[]]$nodes)
@@ -1869,7 +1856,6 @@ function Install-OrUpdate {
     $statusDownloadLabel.Text = "Install/Update process completed."
     Update-InstalledProgramsStatus
 }
-
 function Uninstall-Programs {
     # Function to uninstall programs
     param([System.Windows.Forms.TreeNode[]]$nodes)
@@ -2044,18 +2030,15 @@ $allProgramNodes = @() # List to hold all program nodes for status checks
 foreach ($category in $programCategories.Keys) {
     # Populate TreeView with categories and programs
     $parentNode = New-Object System.Windows.Forms.TreeNode $category
-
     foreach ($prog in $programCategories[$category]) {
         $childNode = New-Object System.Windows.Forms.TreeNode $prog.Name
         $childNode.Tag = $prog.Id
-
         # Highlight installed programs (bold + green)
         if (Test-WingetPackageInstalled -packageId $prog.Id) {
             #$childNode.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font.FontFamily, 11, [System.Drawing.FontStyle]::Bold)
             #$childNode.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font, [System.Drawing.FontStyle]::Bold)
             $childNode.ForeColor = [System.Drawing.Color]::Green
         }
-
         $parentNode.Nodes.Add($childNode) | Out-Null
         $allProgramNodes += $childNode
     }
@@ -2210,7 +2193,6 @@ $updateButton.Add_Click({ # Update Button Click
                     $downloadProgressBar.Style = 'Marquee'
                     $downloadProgressBar.Visible = $true
                     $form.Refresh()
-
                     $wingetResult = Invoke-WingetCommand -arguments "upgrade --all --accept-package-agreements --accept-source-agreements" -timeoutSeconds 300
             
                     if ($wingetResult.TimedOut) {

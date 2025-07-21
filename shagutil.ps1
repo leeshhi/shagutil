@@ -51,7 +51,8 @@ function CheckUpdates {
             Error           = $_.Exception.Message
         }
     }
-}function Invoke-WingetCommand {
+}
+function Invoke-WingetCommand {
     # Function: Invoke Winget Commands and Log Output
     param([string]$arguments, [int]$timeoutSeconds = 60)
     $tempDir = [System.IO.Path]::GetTempPath()

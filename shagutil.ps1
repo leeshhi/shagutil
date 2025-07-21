@@ -1440,12 +1440,12 @@ $generalTweaks = @(
         Category     = "Features"
         Name         = "Enable End Task With Right Click"
         Description  = "Enables a new 'End Task' option in the right-click context menu for apps on the taskbar."
-        RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings"
+        RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" # Corrected Path
         ValueName    = "TaskbarEndTask"
-        TweakValue   = 1
-        DefaultValue = 0 # Annahme: Der Standardwert ist 0 oder der Eintrag existiert nicht
+        TweakValue   = 1 # Value to set when enabled
+        DefaultValue = 0 # Value to set when reset/disabled (assuming 0 is default or missing)
         ValueType    = "DWord"
-    }
+    },
     @{
         Category     = "System"
         Name         = "Disable Storage Sense"

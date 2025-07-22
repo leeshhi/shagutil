@@ -2,7 +2,7 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Security # Needed ?
-$scriptVersion = "0.2.0"
+$scriptVersion = "0.3.0"
 
 #region 1. Initial Script Setup & Admin Check
 if (-not ([Security.Principal.WindowsPrincipal][System.Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltinRole] "Administrator")) {
@@ -319,7 +319,7 @@ $tabControl.Add_DrawItem({ # DrawItem Event for individual tab text color
         $brush.Dispose()
     })
     
-$form.Controls.Add($tabControl)
+[void]$form.Controls.Add($tabControl)
 
 $form.Add_Load({ # Form Load Event (for Update Check)
         $updateInfo = CheckUpdates
@@ -346,7 +346,7 @@ $form.Add_Load({ # Form Load Event (for Update Check)
 
 #region 4. Tab: Home
 $tabHome = New-Object System.Windows.Forms.TabPage "Home"
-$tabControl.TabPages.Add($tabHome)
+[void]$tabControl.TabPages.Add($tabHome)
 
 function Initialize-HomeTabContent {
     param($systemInfoPanel, $form, $systemInfoTitle)
@@ -361,7 +361,7 @@ function Initialize-HomeTabContent {
     $loadingLabel.Text = "Loading system information, please wait..."
     $loadingLabel.AutoSize = $true
     $loadingLabel.Location = New-Object System.Drawing.Point(10, 40)
-    $systemInfoPanel.Controls.Add($loadingLabel)
+    [void]$systemInfoPanel.Controls.Add($loadingLabel)
     $form.Refresh()
 
     $job = Start-Job -ScriptBlock {
@@ -469,7 +469,7 @@ function Initialize-HomeTabContent {
                             $label.Text = $subLine
                             $label.AutoSize = $true
                             $label.Location = New-Object System.Drawing.Point(10, $yPos)
-                            $systemInfoPanel.Controls.Add($label)
+                            [void]$systemInfoPanel.Controls.Add($label)
                             $yPos += 25
                         }
                     }
@@ -478,7 +478,7 @@ function Initialize-HomeTabContent {
                         $label.Text = $line
                         $label.AutoSize = $true
                         $label.Location = New-Object System.Drawing.Point(10, $yPos)
-                        $systemInfoPanel.Controls.Add($label)
+                        [void]$systemInfoPanel.Controls.Add($label)
                         $yPos += 25
                     }
                 }
@@ -510,17 +510,17 @@ $homeContainer = New-Object System.Windows.Forms.TableLayoutPanel
 $homeContainer.Dock = [System.Windows.Forms.DockStyle]::Fill
 $homeContainer.RowCount = 2
 $homeContainer.ColumnCount = 1
-$homeContainer.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 440)))  # 400 + 20px padding top + 20px gap
-$homeContainer.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100)))
-$homeContainer.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100)))
+[void]$homeContainer.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 440)))  # 400 + 20px padding top + 20px gap
+[void]$homeContainer.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100)))
+[void]$homeContainer.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100)))
 $homeContainer.Padding = New-Object System.Windows.Forms.Padding(20)
-$tabHome.Controls.Add($homeContainer)
+[void]$tabHome.Controls.Add($homeContainer)
 
 # Panel for System Information (top section)
 $systemInfoPanel = New-Object System.Windows.Forms.Panel
 $systemInfoPanel.Dock = [System.Windows.Forms.DockStyle]::Fill
 $systemInfoPanel.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
-$homeContainer.Controls.Add($systemInfoPanel, 0, 0)
+[void]$homeContainer.Controls.Add($systemInfoPanel, 0, 0)
 
 # Title for System Information in the panel
 $systemInfoTitle = New-Object System.Windows.Forms.Label
@@ -528,30 +528,30 @@ $systemInfoTitle.Text = "System Information"
 $systemInfoTitle.Font = New-Object System.Drawing.Font($systemInfoTitle.Font.FontFamily, 12, [System.Drawing.FontStyle]::Bold)
 $systemInfoTitle.AutoSize = $true
 $systemInfoTitle.Location = New-Object System.Drawing.Point(10, 10)
-$systemInfoPanel.Controls.Add($systemInfoTitle)
+[void]$systemInfoPanel.Controls.Add($systemInfoTitle)
 
 # Container for the bottom section (Quick Links + Contact)
 $bottomContainerPanel = New-Object System.Windows.Forms.Panel
 $bottomContainerPanel.Dock = [System.Windows.Forms.DockStyle]::Fill
-$homeContainer.Controls.Add($bottomContainerPanel, 0, 1)
+[void]$homeContainer.Controls.Add($bottomContainerPanel, 0, 1)
 
 # Create a table layout for the bottom section
 $tableLayout = New-Object System.Windows.Forms.TableLayoutPanel
 $tableLayout.Dock = [System.Windows.Forms.DockStyle]::Fill
 $tableLayout.ColumnCount = 2
 $tableLayout.RowCount = 1
-$tableLayout.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Absolute, 240)))  # Fixed width for Quick Links
-$tableLayout.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100)))  # Rest for Contact
-$tableLayout.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100)))
+[void]$tableLayout.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Absolute, 240)))  # Fixed width for Quick Links
+[void]$tableLayout.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100)))  # Rest for Contact
+[void]$tableLayout.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100)))
 $tableLayout.CellBorderStyle = [System.Windows.Forms.TableLayoutPanelCellBorderStyle]::Single
-$bottomContainerPanel.Controls.Add($tableLayout)
+[void]$bottomContainerPanel.Controls.Add($tableLayout)
 
 # Panel for Quick Links (left side)
 $quickLinksPanel = New-Object System.Windows.Forms.Panel
 $quickLinksPanel.Dock = [System.Windows.Forms.DockStyle]::Fill
 $quickLinksPanel.Padding = New-Object System.Windows.Forms.Padding(10)
 $quickLinksPanel.AutoScroll = $true
-$tableLayout.Controls.Add($quickLinksPanel, 0, 0)
+[void]$tableLayout.Controls.Add($quickLinksPanel, 0, 0)
 
 # Title for Quick Links
 $quickLinksTitle = New-Object System.Windows.Forms.Label
@@ -559,7 +559,7 @@ $quickLinksTitle.Text = "Quick Links"
 $quickLinksTitle.Font = New-Object System.Drawing.Font($quickLinksTitle.Font.FontFamily, 12, [System.Drawing.FontStyle]::Bold)
 $quickLinksTitle.AutoSize = $true
 $quickLinksTitle.Location = New-Object System.Drawing.Point(10, 10)
-$quickLinksPanel.Controls.Add($quickLinksTitle)
+[void]$quickLinksPanel.Controls.Add($quickLinksTitle)
 
 # Quick Links Buttons
 $buttonYPos = 40
@@ -577,7 +577,7 @@ foreach ($link in $quickLinks) {
     $button.Location = New-Object System.Drawing.Point(10, $buttonYPos)
     $button.BackColor = [System.Drawing.Color]::DodgerBlue
     $button.Add_Click($link.Action)
-    $quickLinksPanel.Controls.Add($button)
+    [void]$quickLinksPanel.Controls.Add($button)
     $buttonYPos += 35
 }
 
@@ -586,7 +586,7 @@ $contactPanel = New-Object System.Windows.Forms.Panel
 $contactPanel.Dock = [System.Windows.Forms.DockStyle]::Fill
 $contactPanel.Padding = New-Object System.Windows.Forms.Padding(10)
 $contactPanel.AutoScroll = $true
-$tableLayout.Controls.Add($contactPanel, 1, 0)
+[void]$tableLayout.Controls.Add($contactPanel, 1, 0)
 
 # Title for Contact
 $contactTitle = New-Object System.Windows.Forms.Label
@@ -594,7 +594,7 @@ $contactTitle.Text = "Connect with me"
 $contactTitle.Font = New-Object System.Drawing.Font($contactTitle.Font.FontFamily, 12, [System.Drawing.FontStyle]::Bold)
 $contactTitle.AutoSize = $true
 $contactTitle.Location = New-Object System.Drawing.Point(10, 10)
-$contactPanel.Controls.Add($contactTitle)
+[void]$contactPanel.Controls.Add($contactTitle)
 
 # Contact Information (LinkLabels)
 $contactYPos = 40
@@ -603,7 +603,7 @@ $websiteLink.Text = "Website"
 $websiteLink.AutoSize = $true
 $websiteLink.Location = New-Object System.Drawing.Point(10, $contactYPos)
 $websiteLink.Add_LinkClicked({ Start-Process "https://shag.gg" })
-$contactPanel.Controls.Add($websiteLink)
+[void]$contactPanel.Controls.Add($websiteLink)
 $contactYPos += 25
 
 $githubLink = New-Object System.Windows.Forms.LinkLabel
@@ -611,7 +611,7 @@ $githubLink.Text = "GitHub"
 $githubLink.AutoSize = $true
 $githubLink.Location = New-Object System.Drawing.Point(10, $contactYPos)
 $githubLink.Add_LinkClicked({ Start-Process "https://github.com/leeshhi" })
-$contactPanel.Controls.Add($githubLink)
+[void]$contactPanel.Controls.Add($githubLink)
 $contactYPos += 25
 
 $discordLink = New-Object System.Windows.Forms.LinkLabel
@@ -619,7 +619,7 @@ $discordLink.Text = "Discord"
 $discordLink.AutoSize = $true
 $discordLink.Location = New-Object System.Drawing.Point(10, $contactYPos)
 $discordLink.Add_LinkClicked({ Start-Process "https://discord.gg/gDmjYgydb3" })
-$contactPanel.Controls.Add($discordLink)
+[void]$contactPanel.Controls.Add($discordLink)
 $contactYPos += 25
 
 $discord2Link = New-Object System.Windows.Forms.LinkLabel
@@ -627,13 +627,13 @@ $discord2Link.Text = "Discord (Shag.gg)"
 $discord2Link.AutoSize = $true
 $discord2Link.Location = New-Object System.Drawing.Point(10, $contactYPos)
 $discord2Link.Add_LinkClicked({ Start-Process "https://discord.gg/qxPNcgtTqn" })
-$contactPanel.Controls.Add($discord2Link)
+[void]$contactPanel.Controls.Add($discord2Link)
 $contactYPos += 25
 #endregion
 
 #region 5. Tab: Tweaks
 $tabTweaks = New-Object System.Windows.Forms.TabPage "Tweaks"
-$tabControl.TabPages.Add($tabTweaks)
+[void]$tabControl.TabPages.Add($tabTweaks)
 
 function Create-RegistryPSPath {
     param(
@@ -1100,7 +1100,7 @@ function GeneralTreeView {
     param([Parameter(Mandatory = $true)][System.Windows.Forms.TreeView]$treeViewToPopulate)
     $treeViewToPopulate.Nodes.Clear()
     # Use a generic list for allTweakNodes to avoid issues with array resizing performance
-    $global:allTweakNodes = [System.Collections.Generic.List[System.Windows.Forms.TreeNode]]::new()
+    $global:allTweakNodes = @()
     $categories = [System.Collections.Generic.Dictionary[string, System.Collections.Generic.List[PSObject]]]::new()
 
     foreach ($tweak in $generalTweaks) {
@@ -1109,9 +1109,9 @@ function GeneralTreeView {
             $categoryName = "Uncategorized"
         }
         if (-not $categories.ContainsKey($categoryName)) {
-            $categories.Add($categoryName, [System.Collections.Generic.List[PSObject]]::new())
+            [void]$categories.Add($categoryName, [System.Collections.Generic.List[PSObject]]::new())
         }
-        $categories[$categoryName].Add($tweak)
+        [void]$categories[$categoryName].Add($tweak)
     }
 
     foreach ($categoryEntry in $categories.GetEnumerator() | Sort-Object Name) {
@@ -1120,15 +1120,15 @@ function GeneralTreeView {
         $parentNode = New-Object System.Windows.Forms.TreeNode $categoryName
         $parentNode.ForeColor = [System.Drawing.Color]::RoyalBlue
         $parentNode.NodeFont = New-Object System.Drawing.Font($treeViewToPopulate.Font.FontFamily, 10, [System.Drawing.FontStyle]::Bold)
-        $treeViewToPopulate.Nodes.Add($parentNode) | Out-Null
+        [void]$treeViewToPopulate.Nodes.Add($parentNode)
         $parentNode.Expand()
         
         foreach ($tweak in $tweaksInThisCategory | Sort-Object Name) {
             $childNode = New-Object System.Windows.Forms.TreeNode ($tweak.Name)
             $childNode.Tag = $tweak # Store the full tweak object in the node's Tag property
             $childNode.ToolTipText = $tweak.Description
-            $parentNode.Nodes.Add($childNode) | Out-Null
-            $global:allTweakNodes.Add($childNode) # Add directly to the global list
+            [void]$parentNode.Nodes.Add($childNode)
+            $global:allTweakNodes += $childNode
         }
     }
     # Convert to array at the end if you prefer, but List is often better for dynamic additions
@@ -1893,14 +1893,14 @@ try {
 $tweaksMainPanel = New-Object System.Windows.Forms.TableLayoutPanel
 $tweaksMainPanel.Dock = [System.Windows.Forms.DockStyle]::Fill
 $tweaksMainPanel.RowCount = 4
-$tweaksMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100)))
-$tweaksMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 30)))
-$tweaksMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 25)))
-$tweaksMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 60)))
+[void]$tweaksMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100)))
+[void]$tweaksMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 30)))
+[void]$tweaksMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 25)))
+[void]$tweaksMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 60)))
 $tweaksMainPanel.ColumnCount = 1
-$tweaksMainPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100)))
+[void]$tweaksMainPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100)))
 $tweaksMainPanel.Padding = New-Object System.Windows.Forms.Padding(10)
-$tabTweaks.Controls.Add($tweaksMainPanel)
+[void]$tabTweaks.Controls.Add($tweaksMainPanel)
 
 # TreeView for tweaks
 $treeView = New-Object System.Windows.Forms.TreeView
@@ -1908,7 +1908,7 @@ $treeView.Dock = [System.Windows.Forms.DockStyle]::Fill
 $treeView.HideSelection = $false
 $treeView.CheckBoxes = $true
 $treeView.ShowNodeToolTips = $true
-$tweaksMainPanel.Controls.Add($treeView, 0, 0)
+[void]$tweaksMainPanel.Controls.Add($treeView, 0, 0)
 $allTweakNodes = @()
 
 # Status Label (Footer)
@@ -1917,7 +1917,7 @@ $statusLabel.Dock = [System.Windows.Forms.DockStyle]::Fill
 $statusLabel.TextAlign = 'MiddleLeft'
 $statusLabel.Text = "Status: Ready"
 $statusLabel.BackColor = [System.Drawing.Color]::LightGray
-$tweaksMainPanel.Controls.Add($statusLabel, 0, 1)
+[void]$tweaksMainPanel.Controls.Add($statusLabel, 0, 1)
 
 # Progress Bar
 $progressBar = New-Object System.Windows.Forms.ProgressBar
@@ -2334,7 +2334,7 @@ function Uninstall-Programs {
 }
 
 $tabDownloads = New-Object System.Windows.Forms.TabPage "Downloads"
-$tabControl.TabPages.Add($tabDownloads)
+[void]$tabControl.TabPages.Add($tabDownloads)
 
 $programCategories = @{ # Downloads
     "Benchmarks"            = @(
@@ -2454,14 +2454,14 @@ $programCategories = @{ # Downloads
 $downloadsMainPanel = New-Object System.Windows.Forms.TableLayoutPanel
 $downloadsMainPanel.Dock = [System.Windows.Forms.DockStyle]::Fill
 $downloadsMainPanel.RowCount = 4
-$downloadsMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 30)))  # Label
-$downloadsMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100)))  # TreeView
-$downloadsMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 30)))  # Status
-$downloadsMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 50)))  # Buttons
+$downloadsMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 30))) | Out-Null  # Label
+$downloadsMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null  # TreeView
+$downloadsMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 30))) | Out-Null  # Status
+$downloadsMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 50))) | Out-Null  # Buttons
 $downloadsMainPanel.ColumnCount = 1
-$downloadsMainPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100)))
+$downloadsMainPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
 $downloadsMainPanel.Padding = New-Object System.Windows.Forms.Padding(10)
-$tabDownloads.Controls.Add($downloadsMainPanel)
+$tabDownloads.Controls.Add($downloadsMainPanel)| Out-Null
 
 # Label top
 $downloadsLabel = New-Object System.Windows.Forms.Label
@@ -2490,10 +2490,10 @@ foreach ($category in $programCategories.Keys) {
             #$childNode.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font, [System.Drawing.FontStyle]::Bold)
             $childNode.ForeColor = [System.Drawing.Color]::Green
         }
-        $parentNode.Nodes.Add($childNode) | Out-Null
+        [void]$parentNode.Nodes.Add($childNode)
         $allProgramNodes += $childNode
     }
-    $downloadTreeView.Nodes.Add($parentNode) | Out-Null
+    [void]$downloadTreeView.Nodes.Add($parentNode)
 }
 
 # Buttons Panel
@@ -2502,7 +2502,7 @@ $downloadButtonsPanel.Dock = [System.Windows.Forms.DockStyle]::Fill
 $downloadButtonsPanel.FlowDirection = [System.Windows.Forms.FlowDirection]::LeftToRight
 $downloadButtonsPanel.WrapContents = $false
 $downloadButtonsPanel.AutoSize = $true
-$downloadsMainPanel.Controls.Add($downloadButtonsPanel, 0, 3)
+[void]$downloadsMainPanel.Controls.Add($downloadButtonsPanel, 0, 3)
 
 # Install Button
 $installButton = New-Object System.Windows.Forms.Button
@@ -2511,7 +2511,7 @@ $installButton.Size = New-Object System.Drawing.Size(120, 30)
 $installButton.Margin = New-Object System.Windows.Forms.Padding(0, 0, 10, 0)
 $installButton.BackColor = [System.Drawing.Color]::LimeGreen
 $installButton.Enabled = $false
-$downloadButtonsPanel.Controls.Add($installButton)
+[void]$downloadButtonsPanel.Controls.Add($installButton)
 
 # Update Button
 $updateButton = New-Object System.Windows.Forms.Button
@@ -2520,7 +2520,7 @@ $updateButton.Size = New-Object System.Drawing.Size(120, 30)
 $updateButton.Margin = New-Object System.Windows.Forms.Padding(0, 0, 10, 0)
 $updateButton.BackColor = [System.Drawing.Color]::LightGreen
 $updateButton.Enabled = $true
-$downloadButtonsPanel.Controls.Add($updateButton)
+[void]$downloadButtonsPanel.Controls.Add($updateButton)
 
 # Uninstall Button
 $uninstallButton = New-Object System.Windows.Forms.Button
@@ -2529,7 +2529,7 @@ $uninstallButton.Size = New-Object System.Drawing.Size(120, 30)
 $uninstallButton.Margin = New-Object System.Windows.Forms.Padding(0, 0, 10, 0)
 $uninstallButton.BackColor = [System.Drawing.Color]::LightCoral
 $uninstallButton.Enabled = $false
-$downloadButtonsPanel.Controls.Add($uninstallButton)
+[void]$downloadButtonsPanel.Controls.Add($uninstallButton)
 
 # Uncheck All Button
 $uncheckAllButton = New-Object System.Windows.Forms.Button
@@ -2537,7 +2537,7 @@ $uncheckAllButton.Text = "Uncheck all"
 $uncheckAllButton.Size = New-Object System.Drawing.Size(120, 30)
 $uncheckAllButton.Margin = New-Object System.Windows.Forms.Padding(0, 0, 10, 0)
 $uncheckAllButton.BackColor = [System.Drawing.Color]::LightGray
-$downloadButtonsPanel.Controls.Add($uncheckAllButton)
+[void]$downloadButtonsPanel.Controls.Add($uncheckAllButton)
 
 # Status Label
 $statusDownloadLabel = New-Object System.Windows.Forms.Label
@@ -2715,18 +2715,18 @@ $uncheckAllButton.Add_Click({ # Uncheck All Button Click
 
 #region 8. Tab: Untested
 $tabUntested = New-Object System.Windows.Forms.TabPage "Untested"
-$tabControl.TabPages.Add($tabUntested)
+$tabControl.TabPages.Add($tabUntested) | Out-Null
 # Example Label in Untested Tab
 $untestedLabel = New-Object System.Windows.Forms.Label
 $untestedLabel.Text = "These tweaks are untested and experimental."
 $untestedLabel.AutoSize = $true
 $untestedLabel.Location = New-Object System.Drawing.Point(15, 15)
-$tabUntested.Controls.Add($untestedLabel)
+$tabUntested.Controls.Add($untestedLabel) | Out-Null
 #endregion
 
 #region 9. Tab: About
 $tabAbout = New-Object System.Windows.Forms.TabPage "About"
-$tabControl.TabPages.Add($tabAbout)
+$tabControl.TabPages.Add($tabAbout) | Out-Null
 
 # Main container for the About tab with better spacing
 $aboutContainer = New-Object System.Windows.Forms.TableLayoutPanel
@@ -2734,9 +2734,9 @@ $aboutContainer.Dock = [System.Windows.Forms.DockStyle]::Fill
 $aboutContainer.Padding = New-Object System.Windows.Forms.Padding(10)
 $aboutContainer.ColumnCount = 1
 $aboutContainer.RowCount = 2
-$aboutContainer.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 70)))
-$aboutContainer.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 30)))
-$tabAbout.Controls.Add($aboutContainer)
+$aboutContainer.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 70))) | Out-Null
+$aboutContainer.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 30))) | Out-Null
+$tabAbout.Controls.Add($aboutContainer) | Out-Null
 
 # Create a panel for the about text with better styling
 $textPanel = New-Object System.Windows.Forms.Panel
@@ -2744,7 +2744,7 @@ $textPanel.Dock = [System.Windows.Forms.DockStyle]::Fill
 $textPanel.BackColor = [System.Drawing.Color]::FromArgb(245, 245, 245)
 $textPanel.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
 $textPanel.Height = 250  # Fixed height for the text panel
-$aboutContainer.Controls.Add($textPanel, 0, 0)
+$aboutContainer.Controls.Add($textPanel, 0, 0) | Out-Null
 
 # Create a rich text box for better text formatting
 $aboutText = New-Object System.Windows.Forms.RichTextBox
@@ -2767,7 +2767,7 @@ I started this project because there are so many poor tools available on the int
 
 Only tweaks and adjustments that I personally use and/or have tested will appear here.
 "@
-$textPanel.Controls.Add($aboutText)
+$textPanel.Controls.Add($aboutText) | Out-Null
 
 # Create a more compact button panel with better organization
 $buttonPanel = New-Object System.Windows.Forms.TableLayoutPanel
@@ -2777,9 +2777,9 @@ $buttonPanel.RowCount = 2
 $buttonPanel.AutoSize = $true
 $buttonPanel.Padding = New-Object System.Windows.Forms.Padding(0, 15, 0, 5)
 $buttonPanel.CellBorderStyle = [System.Windows.Forms.TableLayoutPanelCellBorderStyle]::None
-$buttonPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 50)))
-$buttonPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 50)))
-$aboutContainer.Controls.Add($buttonPanel, 0, 1)
+$buttonPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 50))) | Out-Null
+$buttonPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 50))) | Out-Null
+$aboutContainer.Controls.Add($buttonPanel, 0, 1) | Out-Null
 
 # Function to create styled buttons
 function New-StyledButton {
@@ -2848,7 +2848,7 @@ $form.Add_Shown({ # Initial calls for Home tab info and General tab setup
         }
     })
 
-[void] $form.ShowDialog() # Show form
+[void]$form.ShowDialog() # Show form
 
 Write-Host "`nGoodbye! Thank you for using ShagUtil." -ForegroundColor Green
 #endregion

@@ -30,15 +30,15 @@ function ConvertTo-StandardTweakFormat {
         [PSObject]$Tweak
     )
     
-    # Konvertiere Hashtable in PSCustomObject, falls nötig
+    # Convert Hashtable to PSCustomObject if necessary
     if ($Tweak -is [System.Collections.Hashtable] -or $Tweak -is [System.Collections.Specialized.OrderedDictionary]) {
         $Tweak = [PSCustomObject]$Tweak
     }
     
-    # Erstelle eine flache Kopie des Tweaks, um das Original nicht zu verändern
+    # Create a shallow copy of the tweak to avoid modifying the original
     $standardTweak = New-Object PSObject
     
-    # Kopiere alle Eigenschaften in das neue Objekt
+    # Copy all properties to the new object
     $properties = $Tweak.PSObject.Properties | Where-Object { 
         $_.MemberType -eq 'NoteProperty' -or $_.MemberType -eq 'Property' 
     }
@@ -47,10 +47,10 @@ function ConvertTo-StandardTweakFormat {
         $standardTweak | Add-Member -MemberType NoteProperty -Name $prop.Name -Value $prop.Value -Force
     }
     
-    # Wenn der Tweak bereits ein RegistrySettings-Array hat, stellen Sie sicher, dass es korrekt formatiert ist
+    # If the tweak already has a RegistrySettings array, ensure it's properly formatted
     if ($standardTweak.PSObject.Properties['RegistrySettings']) {
         if ($standardTweak.RegistrySettings -is [array]) {
-            # Bereinige jedes Setting im Array
+            # Clean up each setting in the array
             $cleanedSettings = @()
             foreach ($setting in $standardTweak.RegistrySettings) {
                 $cleanedSetting = @{
@@ -63,15 +63,14 @@ function ConvertTo-StandardTweakFormat {
             }
             $standardTweak.RegistrySettings = $cleanedSettings
         } else {
-            # Wenn RegistrySettings kein Array ist, initialisiere es als leeres Array
+            # If RegistrySettings is not an array, initialize it as an empty array
             $standardTweak.RegistrySettings = @()
         }
     } else {
-        # Initialisiere das RegistrySettings-Array, falls nicht vorhanden
+        # Initialize the RegistrySettings array if it doesn't exist
         $standardTweak | Add-Member -MemberType NoteProperty -Name 'RegistrySettings' -Value @() -Force
     }
-    
-    # Wenn der Tweak eine einfache Registry-Einstellung enthält, füge sie zu RegistrySettings hinzu
+    # If the tweak contains a simple registry setting, add it to RegistrySettings
     if ($standardTweak.PSObject.Properties['RegistryPath'] -and $standardTweak.PSObject.Properties['ValueName']) {
         $registrySetting = @{
             Path = $standardTweak.RegistryPath
@@ -80,7 +79,7 @@ function ConvertTo-StandardTweakFormat {
             Type = if ($standardTweak.PSObject.Properties['ValueType']) { $standardTweak.ValueType } else { "DWord" }
         }
         
-        # Prüfe, ob diese Einstellung bereits in RegistrySettings vorhanden ist
+        # Check if this setting already exists in RegistrySettings
         $settingExists = $false
         foreach ($existingSetting in $standardTweak.RegistrySettings) {
             if ($existingSetting.Path -eq $registrySetting.Path -and $existingSetting.Name -eq $registrySetting.Name) {
@@ -93,11 +92,11 @@ function ConvertTo-StandardTweakFormat {
             $standardTweak.RegistrySettings += $registrySetting
         }
         
-        # Entferne die einzelnen Eigenschaften nicht, um Abwärtskompatibilität zu gewährleisten
+        # Do not remove individual properties to ensure backward compatibility
         # Die ApplyTweaks-Funktion kann nun mit beiden Formaten umgehen
     }
     
-    # Stelle sicher, dass der Tweak einen Namen hat
+    # Ensure the tweak has a name
     if (-not $standardTweak.PSObject.Properties['Name'] -or [string]::IsNullOrWhiteSpace($standardTweak.Name)) {
         if ($standardTweak.PSObject.Properties['RegistryPath'] -and $standardTweak.PSObject.Properties['ValueName']) {
             $standardTweak | Add-Member -MemberType NoteProperty -Name 'Name' -Value "$($standardTweak.RegistryPath)\$($standardTweak.ValueName)" -Force
@@ -117,56 +116,56 @@ function Test-TweakDefinition {
     
     $issues = @()
     
-    # Prüfe, ob der Tweak eine gültige Aktion hat
+    # Check if the tweak has a valid action
     $hasValidAction = ($Tweak.RegistryPath -and $Tweak.ValueName -ne $null) -or 
                      ($Tweak.PSObject.Properties['RegistrySettings'] -and $Tweak.RegistrySettings -and $Tweak.RegistrySettings.Count -gt 0) -or
                      ($Tweak.PSObject.Properties['InvokeScript'] -and $Tweak.InvokeScript -and $Tweak.InvokeScript.Count -gt 0)
     
-    # Wenn keine gültige Aktion gefunden wurde, prüfe die erforderlichen Eigenschaften
+    # If no valid action was found, check the required properties
     if (-not $hasValidAction) {
         $requiredProperties = @('Category', 'Name', 'Description')
         foreach ($prop in $requiredProperties) {
             if (-not $Tweak.PSObject.Properties[$prop] -or [string]::IsNullOrWhiteSpace($Tweak.$prop)) {
-                $issues += "Leere erforderliche Eigenschaft: $prop"
+                $issues += "Empty required property: $prop"
             }
         }
     }
     
-    # Überprüfe, ob entweder RegistrySettings oder InvokeScript vorhanden ist
+    # Check if either RegistrySettings or InvokeScript is present
     $hasRegistrySettings = $Tweak.PSObject.Properties['RegistrySettings'] -and $Tweak.RegistrySettings -and $Tweak.RegistrySettings.Count -gt 0
     $hasInvokeScript = $Tweak.PSObject.Properties['InvokeScript'] -and $Tweak.InvokeScript -and $Tweak.InvokeScript.Count -gt 0
     $hasRegistryPath = $Tweak.PSObject.Properties['RegistryPath'] -and $Tweak.RegistryPath -and $Tweak.PSObject.Properties['ValueName'] -and $Tweak.ValueName -ne $null
     
     if (-not $hasRegistrySettings -and -not $hasInvokeScript -and -not $hasRegistryPath) {
-        $issues += "Keine gültige Aktion definiert (weder RegistrySettings, InvokeScript noch einzelne Registry-Einstellungen)"
+        $issues += "No valid action defined (neither RegistrySettings, InvokeScript, nor individual registry settings)"
     }
     
-    # Überprüfe RegistrySettings, falls vorhanden
+    # Check RegistrySettings if present
     if ($hasRegistrySettings) {
         foreach ($setting in $Tweak.RegistrySettings) {
             $requiredSettingProps = @('Path', 'Name', 'Value', 'Type')
             foreach ($prop in $requiredSettingProps) {
                 if (-not $setting.ContainsKey($prop)) {
-                    $issues += "Fehlende erforderliche Eigenschaft in RegistrySetting: $prop"
+                    $issues += "Missing required property in RegistrySetting: $prop"
                 }
             }
             
-            # Überprüfe gültige Typen
+            # Check valid types
             $validTypes = @('String', 'DWord', 'QWord', 'Binary', 'ExpandString', 'MultiString')
             if ($setting.ContainsKey('Type') -and $setting.Type -notin $validTypes) {
-                $issues += "Ungültiger Registry-Typ: $($setting.Type). Erlaubt sind: $($validTypes -join ', ')"
+                $issues += "Invalid registry type: $($setting.Type). Allowed types: $($validTypes -join ', ')"
             }
         }
     }
     
-    # Ignoriere automatisch hinzugefügte Eigenschaften
+    # Ignore automatically added properties
     $ignoreProperties = @('IsReadOnly', 'IsFixedSize', 'IsSynchronized', 'Keys', 'Values', 'SyncRoot', 'Count')
     
-    # Überprüfe auf unbekannte Eigenschaften (ignoriere dabei die automatisch hinzugefügten)
+    # Check for unknown properties (ignoring automatically added ones)
     $validProperties = @('Category', 'Name', 'Description', 'RegistryPath', 'ValueName', 'TweakValue', 'DefaultValue', 'ValueType', 'RegistrySettings', 'InvokeScript', 'UndoScript', 'Action', 'Service')
     foreach ($prop in $Tweak.PSObject.Properties.Name) {
         if ($prop -notin $validProperties -and $prop -notin $ignoreProperties) {
-            $issues += "Unbekannte Eigenschaft: $prop"
+            $issues += "Unknown property: $prop"
         }
     }
     
@@ -616,7 +615,7 @@ function Get-RegistryValue {
     )
     try {
         # Convert registry path to PowerShell format (add colon after HKLM, HKCU, etc.)
-        $psPath = $Path -replace '^HKLM\\', 'HKLM:\' -replace '^HKCU\\', 'HKCU:\' -replace '^HKU\\', 'HKU:\' -replace '^HKCR\\', 'HKCR:\' -replace '^HKCC\\', 'HKCC:\'
+        $psPath = $Path -replace '^HKLM\\', 'HKLM:\' -replace '^HKCU\\', 'HKCU\' -replace '^HKU\\', 'HKU:\' -replace '^HKCR\\', 'HKCR:\' -replace '^HKCC\\', 'HKCC:\'
         
         if (Test-Path $psPath) {
             $value = Get-ItemProperty -Path $psPath -Name $Name -ErrorAction SilentlyContinue | Select-Object -ExpandProperty $Name
@@ -645,93 +644,96 @@ function Set-RegistryValue {
         [switch]$RemoveEntry
     )
     
-    # Check if running as administrator
-    $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
-    if (-not $isAdmin) {
-        Write-Host "  [WARNING] Registry changes require administrator privileges. Please run as administrator." -ForegroundColor Yellow
-        return $false
+    # Convert registry path to PowerShell format (add colon after HKLM, HKCU, etc.)
+    $psPath = $Path -replace '^HKLM\\', 'HKLM:\' -replace '^HKCU\\', 'HKCU:\' -replace '^HKU\\', 'HKU:\' -replace '^HKCR\\', 'HKCR:\' -replace '^HKCC\\', 'HKCC:\'
+    
+    # Check if running as administrator for HKLM access
+    if ($psPath -like 'HKLM:*' -or $psPath -like 'HKCR:*' -or $psPath -like 'HKCC:*') {
+        $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+        if (-not $isAdmin) {
+            Write-Host "  [WARNING] Administrator rights required for $psPath. Please run as administrator." -ForegroundColor Yellow
+            return $false
+        }
     }
+    
     try {
-        # Convert registry path to PowerShell format (add colon after HKLM, HKCU, etc.)
-        $psPath = $Path -replace '^HKLM\\', 'HKLM:\' -replace '^HKCU\\', 'HKCU:\' -replace '^HKU\\', 'HKU:\' -replace '^HKCR\\', 'HKCR:\' -replace '^HKCC\\', 'HKCC:\'
+        # Split the path into parent and key name
+        $keyPath = Split-Path -Path $psPath -Parent
+        $keyName = Split-Path -Path $psPath -Leaf
         
-        # Ensure the parent path exists before attempting to set/remove the item property
-        $parentPath = Split-Path -Path $psPath -Parent
-        
-        if (-not (Test-Path $parentPath)) {
+        # Create parent key if it doesn't exist
+        if (-not (Test-Path -Path $keyPath)) {
             try {
-                $null = New-Item -Path $parentPath -Force -ErrorAction Stop
-                Write-Host "  [INFO] Created registry key: $parentPath" -ForegroundColor Green
+                $null = New-Item -Path $keyPath -Force -ErrorAction Stop
+                Write-Host "  [INFO] Created registry path: $keyPath" -ForegroundColor Green
             } catch {
-                Write-Host "  [ERROR] Failed to create registry key: $_" -ForegroundColor Red
+                Write-Host "  [ERROR] Failed to create registry path '$keyPath': $_" -ForegroundColor Red
                 return $false
             }
         }
         
-        # Create the key if it doesn't exist
-        if (-not (Test-Path $psPath)) {
-            try {
-                $null = New-Item -Path $psPath -Force -ErrorAction Stop
-                Write-Host "  [INFO] Created registry path: $psPath" -ForegroundColor Green
-            } catch {
-                Write-Host "  [ERROR] Failed to create registry path: $_" -ForegroundColor Red
-                return $false
-            }
-        }
-
+        # Handle RemoveEntry case
         if ($RemoveEntry) {
-            try {
-                if (Test-Path $psPath) {
-                    if ((Get-ItemProperty -Path $psPath -Name $Name -ErrorAction SilentlyContinue) -ne $null) {
-                        Remove-ItemProperty -Path $psPath -Name $Name -Force -ErrorAction Stop
-                        Write-Host "  [SUCCESS] Removed registry value: $Name from $Path" -ForegroundColor Green
-                    } else {
-                        Write-Host "  [INFO] Registry value $Name does not exist in $Path" -ForegroundColor Yellow
-                    }
-                }
-                return $true
-            } catch {
-                Write-Host "  [ERROR] Failed to remove registry value: $_" -ForegroundColor Red
-                return $false
-            }
-        }
-        else {
-            # Set the registry value
-            try {
-                $valueToSet = $Value
-                
-                # Convert value based on type
-                switch ($Type) {
-                    "DWord" { $valueToSet = [int]$Value }
-                    "QWord" { $valueToSet = [long]$Value }
-                    "String" { $valueToSet = [string]$Value }
-                    "ExpandString" { $valueToSet = [string]$Value }
-                    default { $valueToSet = $Value }
-                }
-                
-                # Check if the value exists and is different
-                $currentValue = Get-ItemProperty -Path $psPath -Name $Name -ErrorAction SilentlyContinue | Select-Object -ExpandProperty $Name -ErrorAction SilentlyContinue
-                
-                if ($null -eq $currentValue -or $currentValue -ne $valueToSet) {
-                    # Set the new value
-                    $null = New-ItemProperty -Path $psPath -Name $Name -Value $valueToSet -PropertyType $Type -Force -ErrorAction Stop
-                    $displayValue = if ($Type -eq "DWord" -or $Type -eq "QWord") { "0x$($valueToSet.ToString('X')) ($valueToSet)" } else { "'$valueToSet'" }
-                    Write-Host "  [SUCCESS] Set $Name to $displayValue in $Path" -ForegroundColor Green
+            if (Test-Path -Path $psPath) {
+                $prop = Get-ItemProperty -Path $psPath -Name $Name -ErrorAction SilentlyContinue
+                if ($null -ne $prop) {
+                    Remove-ItemProperty -Path $psPath -Name $Name -Force -ErrorAction Stop
+                    Write-Host "  [SUCCESS] Removed registry value: $Name from $Path" -ForegroundColor Green
+                    return $true
                 } else {
-                    $displayValue = if ($Type -eq "DWord" -or $Type -eq "QWord") { "0x$($currentValue.ToString('X')) ($currentValue)" } else { "'$currentValue'" }
-                    Write-Host "  [INFO] $Name is already set to $displayValue in $Path" -ForegroundColor Cyan
+                    Write-Host "  [INFO] Registry value $Name does not exist in $Path" -ForegroundColor Cyan
+                    return $true
                 }
-                
-                return $true
-            } catch {
-                # If we get here, there was an error
-                Write-Host "  [ERROR] Failed to set registry value: $_" -ForegroundColor Red
-                return $false
             }
+            return $true
         }
-    }
-    catch {
-        Write-Warning "Failed to set/remove registry value '$Name' in '$psPath': $($_.Exception.Message)"
+        
+        # Convert value based on type
+        $valueToSet = switch ($Type) {
+            "DWord" { try { [int32]::Parse($Value) } catch { [int32]0 } }
+            "QWord" { try { [int64]::Parse($Value) } catch { [int64]0 } }
+            "String" { [string]$Value }
+            "ExpandString" { [string]$Value }
+            "Binary" { [byte[]]($Value -split ',' | ForEach-Object { [byte]$_ }) }
+            "MultiString" { [string[]]$Value }
+            default { $Value }
+        }
+        
+        # Check current value
+        $currentValue = $null
+        if (Test-Path -Path $psPath) {
+            $currentValue = Get-ItemProperty -Path $psPath -Name $Name -ErrorAction SilentlyContinue | 
+                          Select-Object -ExpandProperty $Name -ErrorAction SilentlyContinue
+        }
+        
+        # Compare and set if different
+        if ($null -eq $currentValue -or $currentValue -ne $valueToSet) {
+            # Create the key if it doesn't exist
+            if (-not (Test-Path -Path $psPath)) {
+                $null = New-Item -Path $psPath -Force -ErrorAction Stop
+            }
+            
+            # Set the value
+            $null = New-ItemProperty -Path $psPath -Name $Name -Value $valueToSet -PropertyType $Type -Force -ErrorAction Stop
+            
+            $displayValue = if ($Type -eq "DWord" -or $Type -eq "QWord") { 
+                "0x$($valueToSet.ToString('X')) ($valueToSet)" 
+            } else { 
+                "'$valueToSet'" 
+            }
+            Write-Host "  [SUCCESS] Set $Name to $displayValue in $Path" -ForegroundColor Green
+            return $true
+        } else {
+            $displayValue = if ($Type -eq "DWord" -or $Type -eq "QWord") { 
+                "0x$($currentValue.ToString('X')) ($currentValue)" 
+            } else { 
+                "'$currentValue'" 
+            }
+            Write-Host "  [INFO] $Name is already set to $displayValue in $Path" -ForegroundColor Cyan
+            return $true
+        }
+    } catch {
+        Write-Host "  [ERROR] Failed to set registry value '$Name' in '$Path': $($_.Exception.Message)" -ForegroundColor Red
         return $false
     }
 }
@@ -782,34 +784,34 @@ function ApplyTweaks {
         $tweak = $node.Tag
         if (-not $tweak) { continue }
         
-        # Konvertiere Hashtable in PSCustomObject, falls nötig
+        # Convert Hashtable to PSCustomObject if necessary
         if ($tweak -is [System.Collections.Hashtable] -or $tweak -is [System.Collections.Specialized.OrderedDictionary]) {
             $tweak = [PSCustomObject]$tweak
-            $node.Tag = $tweak  # Aktualisiere das Tag mit dem konvertierten Objekt
+            $node.Tag = $tweak  # Update the tag with the converted object
         }
         
         $tweakName = if ($tweak.PSObject.Properties['Name'] -and $tweak.Name) { 
             $tweak.Name 
         } else { 
-            "Unbenannter Tweak" 
+            "Unnamed Tweak" 
         }
         
         Write-Host "Applying tweak: $tweakName" -ForegroundColor Cyan
         $actionTaken = $false
         
-        # Debug-Ausgabe
-        Write-Host "Verarbeite Tweak: $tweakName" -ForegroundColor Cyan
+        # Debug output
+        Write-Host "Processing tweak: $tweakName" -ForegroundColor Cyan
         
         # 1. Prüfe auf InvokeScript (hat Vorrang)
         if ($tweak.PSObject.Properties['InvokeScript'] -and $tweak.InvokeScript) {
-            Write-Host "  -> Führe InvokeScript aus..." -ForegroundColor Yellow
+            Write-Host "  -> Executing InvokeScript..." -ForegroundColor Yellow
             foreach ($script in $tweak.InvokeScript) {
                 try {
                     Invoke-Expression $script | Out-Null
-                    Write-Host "  -> Script erfolgreich ausgeführt" -ForegroundColor Green
+                    Write-Host "  -> Script executed successfully" -ForegroundColor Green
                     $actionTaken = $true
                 } catch {
-                    Write-Host "  -> Fehler beim Ausführen des Scripts: $($_.Exception.Message)" -ForegroundColor Red
+                    Write-Host "  -> Error executing script: $($_.Exception.Message)" -ForegroundColor Red
                 }
             }
             if ($actionTaken) { continue }
@@ -821,12 +823,12 @@ function ApplyTweaks {
                 try {
                     $result = Set-RegistryValue -Path $setting.Path -Name $setting.Name -Value $setting.Value -Type $setting.Type -RemoveEntry:($setting.Value -eq "<RemoveEntry>")
                     if ($result) {
-                        $action = if ($setting.Value -eq "<RemoveEntry>") { "Entfernt" } else { "Gesetzt" }
+                        $action = if ($setting.Value -eq "<RemoveEntry>") { "Removed" } else { "Set" }
                         Write-Host "  -> [$action] $($setting.Name) in $($setting.Path)" -ForegroundColor Green
                         $actionTaken = $true
                     }
                 } catch {
-                    Write-Host "  -> Fehler beim Anwenden der Einstellung $($setting.Name): $($_.Exception.Message)" -ForegroundColor Red
+                    Write-Host "  -> Error applying setting $($setting.Name): $($_.Exception.Message)" -ForegroundColor Red
                 }
             }
             if ($actionTaken) { continue }
@@ -847,15 +849,15 @@ function ApplyTweaks {
                     $actionTaken = $true
                 }
             } catch {
-                Write-Host "  -> Fehler beim Anwenden der Einstellung $($tweak.ValueName): $($_.Exception.Message)" -ForegroundColor Red
+                Write-Host "  -> Error applying setting $($tweak.ValueName): $($_.Exception.Message)" -ForegroundColor Red
             }
             if ($actionTaken) { continue }
         }
         
-        # 4. Falls nichts anderes funktioniert hat
+        # 4. If nothing else worked
         if (-not $actionTaken) {
-            Write-Host "  -> Keine ausführbare Aktion für diesen Tweak gefunden. Möglicherweise fehlen erforderliche Eigenschaften." -ForegroundColor Yellow
-            Write-Host "     Verfügbare Eigenschaften: $($tweak.PSObject.Properties.Name -join ', ')" -ForegroundColor Gray
+            Write-Host "  -> No executable action found for this tweak. Required properties may be missing." -ForegroundColor Yellow
+            Write-Host "     Available properties: $($tweak.PSObject.Properties.Name -join ', ')" -ForegroundColor Gray
         }
     }
     
@@ -871,8 +873,6 @@ function ResetTweaks {
         $tweak = $node.Tag
         if ($tweak) {
             Write-Host "Resetting tweak: $($tweak.Name)" -ForegroundColor Cyan
-            
-            # --- Bestehende Logik für RegistrySettings (Gruppierte Tweaks) ---
             if ($tweak.RegistrySettings) {
                 foreach ($setting in $tweak.RegistrySettings) {
                     $remove = ($setting.OriginalValue -eq "<RemoveEntry>")
@@ -885,7 +885,6 @@ function ResetTweaks {
                     }
                 }
             }
-            # --- Bestehende Logik für einzelne RegistryPath/ValueName (Einzelne Tweaks) ---
             elseif ($tweak.RegistryPath -and $tweak.ValueName) {
                 if ($tweak.Action -eq "Service") {
                     try {
@@ -908,7 +907,6 @@ function ResetTweaks {
                     }
                 }
             }
-            # --- NEUE LOGIK: UndoScript ausführen ---
             if ($tweak.UndoScript) {
                 Write-Host "  -> Executing UndoScript for $($tweak.Name)..." -ForegroundColor Yellow
                 foreach ($command in $tweak.UndoScript) {
@@ -921,7 +919,6 @@ function ResetTweaks {
                     }
                 }
             }
-            # --- Fallback für nicht definierte Tweaks ---
             else {
                 Write-Warning "Tweak '$($tweak.Name)' has no valid registry settings or action defined to reset."
             }
@@ -937,24 +934,24 @@ function Update-GeneralTweaksStatus {
         $tweak = $node.Tag
         if (-not $tweak) { continue }
         
-        # Konvertiere Hashtable in PSCustomObject, falls nötig
+        # Convert Hashtable to PSCustomObject if necessary
         if ($tweak -is [System.Collections.Hashtable] -or $tweak -is [System.Collections.Specialized.OrderedDictionary]) {
             $tweak = [PSCustomObject]$tweak
-            $node.Tag = $tweak  # Aktualisiere das Tag mit dem konvertierten Objekt
+            $node.Tag = $tweak  # Update the tag with the converted object
         }
         
         $tweakName = if ($tweak.PSObject.Properties['Name'] -and $tweak.Name) { 
             $tweak.Name 
         } else { 
-            "Unbenannter Tweak" 
+            "Unnamed Tweak" 
         }
         
-        # Initialisiere Statusvariablen
+        # Initialize status variables
         $isApplied = $false
         $statusText = @()
         $hasAnyCheck = $false
         
-        # 1. Prüfe auf einfache Registry-Einstellungen
+        # 1. Check for simple registry settings
         if ($tweak.RegistryPath -and $tweak.ValueName -ne $null) {
             $hasAnyCheck = $true
             $currentValue = Get-RegistryValue -Path $tweak.RegistryPath -Name $tweak.ValueName
@@ -972,7 +969,7 @@ function Update-GeneralTweaksStatus {
             }
         }
         
-        # 2. Prüfe auf RegistrySettings-Array
+        # 2. Check for RegistrySettings array
         elseif ($tweak.PSObject.Properties['RegistrySettings'] -and $tweak.RegistrySettings) {
             $allSettingsApplied = $true
             $hasSettings = $false
@@ -1002,19 +999,19 @@ function Update-GeneralTweaksStatus {
             $isApplied = $hasSettings -and $allSettingsApplied
         }
         
-        # 3. Prüfe auf InvokeScript (kann nicht zuverlässig überprüft werden)
+        # 3. Check for InvokeScript (cannot be reliably verified)
         if ($tweak.PSObject.Properties['InvokeScript'] -and $tweak.InvokeScript) {
             $hasAnyCheck = $true
             if ($tweak.PSObject.Properties['IsApplied'] -and $tweak.IsApplied) {
                 $isApplied = $true
-                $statusText += "Script-Ausführung: Erfolgreich (manuell bestätigt)"
+                $statusText += "Script execution: Successful (manually confirmed)"
             } else {
                 $isApplied = $false
-                $statusText += "Script-Ausführung: Nicht überprüft (manuelle Überprüfung erforderlich)"
+                $statusText += "Script execution: Not verified (manual verification required)"
             }
         }
         
-        # 4. Spezielle Behandlung für Service-Tweaks
+        # 4. Special handling for Service tweaks
         if ($tweak.Action -eq "Service" -and $tweak.Service) {
             $hasAnyCheck = $true
             try {
@@ -1023,29 +1020,29 @@ function Update-GeneralTweaksStatus {
                 $expectedStartupType = $tweak.TweakValue
                 
                 $isApplied = ($startupType -eq $expectedStartupType)
-                $statusText += "Service '$($tweak.Service)': Starttyp ist '$startupType' (sollte sein: '$expectedStartupType')"
+                $statusText += "Service '$($tweak.Service)': Startup type is '$startupType' (should be: '$expectedStartupType')"
             } catch {
                 $isApplied = $false
-                $statusText += "Service '$($tweak.Service)': Konnte Status nicht überprüfen: $($_.Exception.Message)"
+                $statusText += "Service '$($tweak.Service)': Could not verify status: $($_.Exception.Message)"
             }
         }
         
-        # Wenn keine Überprüfung möglich war, zeige an, dass der Status unbekannt ist
+        # If no verification was possible, indicate that the status is unknown
         if (-not $hasAnyCheck) {
-            $statusText += "Keine Überprüfungsmöglichkeit für diesen Tweak vorhanden."
+            $statusText += "No verification method available for this tweak."
             $isApplied = $false
         }
         
-        # Setze die Farbe basierend auf dem Status
+        # Set the color based on the status
         if ($isApplied) {
             $node.ForeColor = [System.Drawing.Color]::Green
-            $node.ToolTipText = "Angewendet: $tweakName`n" + ($statusText -join "`n")
+            $node.ToolTipText = "Applied: $tweakName`n" + ($statusText -join "`n")
         } else {
             $node.ForeColor = [System.Drawing.Color]::Black
-            $node.ToolTipText = "Nicht angewendet: $tweakName`n" + ($statusText -join "`n")
+            $node.ToolTipText = "Not applied: $tweakName`n" + ($statusText -join "`n")
         }
         
-        # Setze das Häkchen basierend auf dem Status
+        # Set the checkmark based on the status
         $node.Checked = $isApplied
     }
 }
@@ -1132,7 +1129,7 @@ $generalTweaks = @(
     @{
         Category         = "Privacy"
         Name             = "Disable Notification Center & Push Notifications"
-        Description      = "Deaktiviert das Benachrichtigungscenter, den Kalender und alle Push-Benachrichtigungen (Toast-Benachrichtigungen)."
+        Description      = "Disables the notification center, calendar, and all push notifications (toast notifications)."
         RegistrySettings = @(
             @{
                 Path          = "HKCU\Software\Policies\Microsoft\Windows\Explorer"
@@ -1304,19 +1301,19 @@ $generalTweaks = @(
         Name             = "Disable Telemetry"
         Description      = "Disables Microsoft Telemetry. Note: This will lock many Edge Browser settings. Microsoft spies heavily on you on using the Edge browser."
         RegistrySettings = @(
-            # Registry-Einstellungen für Telemetrie und Inhaltsbereitstellung
+            # Registry settings for telemetry and content delivery
             @{
                 Path          = "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection"
                 Name          = "AllowTelemetry"
                 Value         = 0
-                OriginalValue = "<RemoveEntry>" # Standard ist oft nicht vorhanden oder 1
+                OriginalValue = "<RemoveEntry>" # Default is often not present or 1
                 Type          = "DWord"
             },
             @{
                 Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection"
                 Name          = "AllowTelemetry"
                 Value         = 0
-                OriginalValue = "<RemoveEntry>" # Standard ist oft nicht vorhanden oder 1
+                OriginalValue = "<RemoveEntry>" # Default is often not present or 1
                 Type          = "DWord"
             },
             @{
@@ -1553,63 +1550,127 @@ $generalTweaks = @(
             }
         )
         InvokeScript     = @(
-            @"
-    bcdedit /set `{current`} bootmenupolicy Legacy | Out-Null
-    If ((get-ItemProperty -Path "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" -Name CurrentBuild).CurrentBuild -lt 22557) {
+            @'
+# Set boot menu policy to Legacy
+bcdedit /set {current} bootmenupolicy Legacy | Out-Null
+
+# Update Task Manager preferences for older Windows versions
+try {
+    $currentBuild = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion" -Name CurrentBuild -ErrorAction Stop).CurrentBuild
+    if ($currentBuild -lt 22557) {
         $taskmgr = Start-Process -WindowStyle Hidden -FilePath taskmgr.exe -PassThru
-        Do {
+        
+        # Wait for Task Manager to initialize preferences
+        $preferences = $null
+        $attempts = 0
+        $maxAttempts = 10
+        
+        while ($null -eq $preferences -and $attempts -lt $maxAttempts) {
             Start-Sleep -Milliseconds 100
-            $preferences = Get-ItemProperty -Path "HKCU\Software\Microsoft\Windows\CurrentVersion\TaskManager" -Name "Preferences" -ErrorAction SilentlyContinue
-        } Until ($preferences)
-        Stop-Process $taskmgr
-        $preferences.Preferences[28] = 0
-        Set-ItemProperty -Path "HKCU\Software\Microsoft\Windows\CurrentVersion\TaskManager" -Name "Preferences" -Type Binary -Value $preferences.Preferences
-    }
-    Remove-Item -Path "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{0DB7E03F-FC29-4DC6-9020-FF41B59E513A}" -Recurse -ErrorAction SilentlyContinue
-    If (Test-Path "HKLM\SOFTWARE\Policies\Microsoft\Edge") {
-        Remove-Item -Path "HKLM\SOFTWARE\Policies\Microsoft\Edge" -Recurse -ErrorAction SilentlyContinue
-    }
-    $ram = (Get-CimInstance -ClassName Win32_PhysicalMemory | Measure-Object -Property Capacity -Sum).Sum / 1kb
-    Set-ItemProperty -Path "HKLM\SYSTEM\CurrentControlSet\Control" -Name "SvcHostSplitThresholdInKB" -Type DWord -Value $ram -Force
-    
-    $autoLoggerDir = "$env:PROGRAMDATA\Microsoft\Diagnosis\ETLLogs\AutoLogger"
-    If (Test-Path "$autoLoggerDir\AutoLogger-Diagtrack-Listener.etl") {
-        Remove-Item "$autoLoggerDir\AutoLogger-Diagtrack-Listener.etl"
-    }
-    icacls $autoLoggerDir /deny SYSTEM:`(OI`)`(CI`)F | Out-Null
-    Set-MpPreference -SubmitSamplesConsent 2 -ErrorAction SilentlyContinue | Out-Null
-    "@
-        )
-        UndoScript      = @(
-            "schtasks /Change /TN 'Microsoft\\Windows\\Application Experience\\Microsoft Compatibility Appraiser' /Enable | Out-Null",
-            "schtasks /Change /TN 'Microsoft\\Windows\\Application Experience\\ProgramDataUpdater' /Enable | Out-Null",
-            "schtasks /Change /TN 'Microsoft\\Windows\\Autochk\\Proxy' /Enable | Out-Null",
-            "schtasks /Change /TN 'Microsoft\\Windows\\Customer Experience Improvement Program\\Consolidator' /Enable | Out-Null",
-            "schtasks /Change /TN 'Microsoft\\Windows\\Customer Experience Improvement Program\\UsbCeip' /Enable | Out-Null",
-            "schtasks /Change /TN 'Microsoft\\Windows\\DiskDiagnostic\\Microsoft-Windows-DiskDiagnosticDataCollector' /Enable | Out-Null",
-            "schtasks /Change /TN 'Microsoft\\Windows\\Feedback\\Siuf\\DmClient' /Enable | Out-Null",
-            "schtasks /Change /TN 'Microsoft\\Windows\\Feedback\\Siuf\\DmClientOnScenarioDownload' /Enable | Out-Null",
-            "schtasks /Change /TN 'Microsoft\\Windows\\Windows Error Reporting\\QueueReporting' /Enable | Out-Null",
-            "schtasks /Change /TN 'Microsoft\\Windows\\Application Experience\\MareBackup' /Enable | Out-Null",
-            "schtasks /Change /TN 'Microsoft\\Windows\\Application Experience\\StartupAppTask' /Enable | Out-Null",
-            "schtasks /Change /TN 'Microsoft\\Windows\\Application Experience\\PcaPatchDbTask' /Enable | Out-Null",
-            "schtasks /Change /TN 'Microsoft\\Windows\\Maps\\MapsUpdateTask' /Enable | Out-Null",
-            "bcdedit /set {current} bootmenupolicy Standard | Out-Null",
-    @"
-    If ((get-ItemProperty -Path "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion" -Name CurrentBuild).CurrentBuild -lt 22557) {
-        $preferences = Get-ItemProperty -Path "HKCU\Software\Microsoft\Windows\CurrentVersion\TaskManager" -Name "Preferences" -ErrorAction SilentlyContinue
-        if ($preferences) {
-            $preferences.Preferences[28] = 1 # Setzt den Wert auf den Standard zurück
-            Set-ItemProperty -Path "HKCU\Software\Microsoft\Windows\CurrentVersion\TaskManager" -Name "Preferences" -Type Binary -Value $preferences.Preferences -Force
+            $preferences = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\TaskManager" -Name "Preferences" -ErrorAction SilentlyContinue
+            $attempts = $attempts + 1
+        }
+        
+        if ($null -ne $preferences) {
+            Stop-Process $taskmgr -Force -ErrorAction SilentlyContinue
+            try {
+                $preferences.Preferences[28] = 0
+                Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\TaskManager" -Name "Preferences" -Type Binary -Value $preferences.Preferences -Force -ErrorAction Stop
+            } catch {
+                Write-Warning "Failed to update Task Manager preferences: $_"
+            }
+        } else {
+            Write-Warning "Failed to update Task Manager preferences after $maxAttempts attempts"
+            Stop-Process $taskmgr -Force -ErrorAction SilentlyContinue
         }
     }
+} catch {
+    Write-Warning "Error checking Windows version or updating Task Manager: $_"
+    if ($taskmgr -and -not $taskmgr.HasExited) {
+        Stop-Process $taskmgr -Force -ErrorAction SilentlyContinue
+    }
+}
+
+# Remove 3D Objects from This PC
+try {
+    $path = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{0DB7E03F-FC29-4DC6-9020-FF41B59E513A}"
+    if (Test-Path $path) {
+        Remove-Item -Path $path -Recurse -Force -ErrorAction Stop
+    }
+} catch {
+    Write-Warning "Failed to remove 3D Objects from This PC: $_"
+}
+
+# Remove Edge policies if they exist
+if (Test-Path "HKLM:\SOFTWARE\Policies\Microsoft\Edge") {
+    try {
+        Remove-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Edge" -Recurse -Force -ErrorAction Stop
+    } catch {
+        Write-Warning "Failed to remove Edge policies: $_"
+    }
+}
+
+# Optimize SvcHost split threshold based on installed RAM
+try {
+    $ram = (Get-CimInstance -ClassName Win32_PhysicalMemory | Measure-Object -Property Capacity -Sum).Sum / 1kb
+    if ($ram -gt 0) {
+        try {
+            New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control" -Name "SvcHostSplitThresholdInKB" -Value $ram -Force -ErrorAction Stop | Out-Null
+        } catch {
+            Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control" -Name "SvcHostSplitThresholdInKB" -Value $ram -Force -ErrorAction Stop
+        }
+    }
+} catch {
+    Write-Warning "Failed to set SvcHostSplitThresholdInKB: $_"
+}
+    
+# Disable AutoLogger
+$autoLoggerDir = "$env:PROGRAMDATA\Microsoft\Diagnosis\ETLLogs\AutoLogger"
+try {
+    if (Test-Path "$autoLoggerDir\AutoLogger-Diagtrack-Listener.etl") {
+        Remove-Item -Path "$autoLoggerDir\AutoLogger-Diagtrack-Listener.etl" -Force -ErrorAction SilentlyContinue
+    }
+    
+    # Deny SYSTEM access to AutoLogger directory
+    if (Test-Path $autoLoggerDir) {
+        icacls $autoLoggerDir /deny "SYSTEM:(OI)(CI)F" /T /C | Out-Null
+    }
+} catch {
+    Write-Warning "Failed to configure AutoLogger: $_"
+}
+
+# Disable sample submission in Windows Defender
+try {
+    if (Get-Command -Name Set-MpPreference -ErrorAction SilentlyContinue) {
+        Set-MpPreference -SubmitSamplesConsent 2 -ErrorAction SilentlyContinue | Out-Null
+    }
+} catch {
+    Write-Warning "Failed to set Windows Defender sample submission preference: $_"
+}
+'@
+        )
+        UndoScript = @(
+@"
+    # Re-enable AutoLogger
+    `$autoLoggerDir = "`$env:PROGRAMDATA\Microsoft\Diagnosis\ETLLogs\AutoLogger"
+    if (Test-Path `$autoLoggerDir) {
+        icacls `$autoLoggerDir /grant SYSTEM:(OI)(CI)F /T /C | Out-Null
+    }
 "@,
-            @"
-    $autoLoggerDir = "$env:PROGRAMDATA\Microsoft\Diagnosis\ETLLogs\AutoLogger"
-    icacls $autoLoggerDir /grant SYSTEM:`(OI`)`(CI`)F | Out-Null
+@"
+    # Reset SvcHostSplitThresholdInKB
+    if (Test-Path 'HKLM:\SYSTEM\CurrentControlSet\Control') {
+        Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control' -Name 'SvcHostSplitThresholdInKB' -Type DWord -Value 380000 -Force -ErrorAction SilentlyContinue
+    }
 "@,
-            "Set-ItemProperty -Path 'HKLM\SYSTEM\CurrentControlSet\Control' -Name 'SvcHostSplitThresholdInKB' -Type DWord -Value 380000 -Force",
-            "Set-MpPreference -SubmitSamplesConsent 1 -ErrorAction SilentlyContinue | Out-Null"
+@"
+    # Re-enable Windows Defender sample submission
+    try {
+        Set-MpPreference -SubmitSamplesConsent 1 -ErrorAction SilentlyContinue | Out-Null
+    } catch {
+        Write-Warning "Failed to re-enable Windows Defender sample submission: `$_"
+    }
+"@
         )
     },
     @{
@@ -1818,16 +1879,16 @@ $generalTweaks = @(
     }
 
     # Disable Copilot for current user
-    if (-not (Test-Path "HKCU:\Software\Policies\Microsoft\Windows\WindowsCopilot")) {
-        New-Item -Path "HKCU:\Software\Policies\Microsoft\Windows\WindowsCopilot" -Force | Out-Null
+    if (-not (Test-Path "HKCU\Software\Policies\Microsoft\Windows\WindowsCopilot")) {
+        New-Item -Path "HKCU\Software\Policies\Microsoft\Windows\WindowsCopilot" -Force | Out-Null
     }
-    Set-ItemProperty -Path "HKCU:\Software\Policies\Microsoft\Windows\WindowsCopilot" -Name "TurnOffWindowsCopilot" -Value 1 -Type DWord -Force
+    Set-ItemProperty -Path "HKCU\Software\Policies\Microsoft\Windows\WindowsCopilot" -Name "TurnOffWindowsCopilot" -Value 1 -Type DWord -Force
 
     # Disable Copilot button in taskbar
-    if (-not (Test-Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced")) {
-        New-Item -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Force | Out-Null
+    if (-not (Test-Path "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced")) {
+        New-Item -Path "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Force | Out-Null
     }
-    Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "ShowCopilotButton" -Value 0 -Type DWord -Force
+    Set-ItemProperty -Path "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "ShowCopilotButton" -Value 0 -Type DWord -Force
 
     # Disable Copilot in Shell
     if (-not (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\Shell\Copilot")) {
@@ -1843,10 +1904,10 @@ $generalTweaks = @(
     Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked" -Name "{CB3B0003-8088-4EDE-8769-8B354AB2FF8C}" -Value "" -Type String -Force
 
     # Disable Copilot runtime
-    if (-not (Test-Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsCopilot")) {
-        New-Item -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsCopilot" -Force | Out-Null
+    if (-not (Test-Path "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsCopilot")) {
+        New-Item -Path "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsCopilot" -Force | Out-Null
     }
-    Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsCopilot" -Name "AllowCopilotRuntime" -Value 0 -Type DWord -Force
+    Set-ItemProperty -Path "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsCopilot" -Name "AllowCopilotRuntime" -Value 0 -Type DWord -Force
 
     # Disable Bing Chat integration
     if (-not (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\Shell\Copilot\BingChat")) {
@@ -2409,7 +2470,18 @@ $generalUncheckAllButton.Add_Click({ # Uncheck All Button Click for General Tab
     })
 #endregion
 
-#region 6. Tab: Downloads
+#region 6. Tab: Misc
+$tabMisc = New-Object System.Windows.Forms.TabPage "Misc"
+$tabControl.TabPages.Add($tabMisc)
+# Example Label in Misc Tab
+$miscLabel = New-Object System.Windows.Forms.Label
+$miscLabel.Text = "Soon"
+$miscLabel.AutoSize = $true
+$miscLabel.Location = New-Object System.Drawing.Point(15, 15)
+$tabMisc.Controls.Add($miscLabel)
+#endregion
+
+#region 7. Tab: Downloads
 if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
     [System.Windows.Forms.MessageBox]::Show("winget was not found. Attempting to install the app installer (using winget) from the Microsoft Store.", "winget not found", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
     try {
@@ -2962,7 +3034,7 @@ $uncheckAllButton.Add_Click({ # Uncheck All Button Click
     })
 #endregion
 
-#region 7. Tab: Untested
+#region 8. Tab: Untested
 $tabUntested = New-Object System.Windows.Forms.TabPage "Untested"
 $tabControl.TabPages.Add($tabUntested)
 # Example Label in Untested Tab
@@ -3038,7 +3110,7 @@ $githubProjectButton.Add_Click({ Start-Process "https://github.com/leeshhi" })
 $tabAbout.Controls.Add($githubProjectButton)
 #endregion
 
-#region 9. Final Execution
+#region 10. Final Execution
 $form.Add_Shown({ # Initial calls for Home tab info and General tab setup
         #Initialize-HomeTabContent
         Initialize-HomeTabContent -systemInfoPanel $systemInfoPanel -form $form -systemInfoTitle $systemInfoTitle

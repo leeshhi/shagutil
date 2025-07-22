@@ -2,7 +2,7 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Security # Needed ?
-$scriptVersion = "0.1.5"
+$scriptVersion = "0.2.0"
 
 #region 1. Initial Script Setup & Admin Check
 if (-not ([Security.Principal.WindowsPrincipal][System.Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltinRole] "Administrator")) {
@@ -26,7 +26,7 @@ Write-Host ""
 #region 2. Global Helper Functions
 function ConvertTo-StandardTweakFormat {
     param(
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [PSObject]$Tweak
     )
     
@@ -54,29 +54,31 @@ function ConvertTo-StandardTweakFormat {
             $cleanedSettings = @()
             foreach ($setting in $standardTweak.RegistrySettings) {
                 $cleanedSetting = @{
-                    Path = $setting.Path
-                    Name = $setting.Name
+                    Path  = $setting.Path
+                    Name  = $setting.Name
                     Value = $setting.Value
-                    Type = if ($setting.Type) { $setting.Type } else { "DWord" }
+                    Type  = if ($setting.Type) { $setting.Type } else { "DWord" }
                 }
                 $cleanedSettings += $cleanedSetting
             }
             $standardTweak.RegistrySettings = $cleanedSettings
-        } else {
+        }
+        else {
             # If RegistrySettings is not an array, initialize it as an empty array
             $standardTweak.RegistrySettings = @()
         }
-    } else {
+    }
+    else {
         # Initialize the RegistrySettings array if it doesn't exist
         $standardTweak | Add-Member -MemberType NoteProperty -Name 'RegistrySettings' -Value @() -Force
     }
     # If the tweak contains a simple registry setting, add it to RegistrySettings
     if ($standardTweak.PSObject.Properties['RegistryPath'] -and $standardTweak.PSObject.Properties['ValueName']) {
         $registrySetting = @{
-            Path = $standardTweak.RegistryPath
-            Name = $standardTweak.ValueName
+            Path  = $standardTweak.RegistryPath
+            Name  = $standardTweak.ValueName
             Value = if ($standardTweak.PSObject.Properties['TweakValue']) { $standardTweak.TweakValue } else { $null }
-            Type = if ($standardTweak.PSObject.Properties['ValueType']) { $standardTweak.ValueType } else { "DWord" }
+            Type  = if ($standardTweak.PSObject.Properties['ValueType']) { $standardTweak.ValueType } else { "DWord" }
         }
         
         # Check if this setting already exists in RegistrySettings
@@ -100,7 +102,8 @@ function ConvertTo-StandardTweakFormat {
     if (-not $standardTweak.PSObject.Properties['Name'] -or [string]::IsNullOrWhiteSpace($standardTweak.Name)) {
         if ($standardTweak.PSObject.Properties['RegistryPath'] -and $standardTweak.PSObject.Properties['ValueName']) {
             $standardTweak | Add-Member -MemberType NoteProperty -Name 'Name' -Value "$($standardTweak.RegistryPath)\$($standardTweak.ValueName)" -Force
-        } else {
+        }
+        else {
             $standardTweak | Add-Member -MemberType NoteProperty -Name 'Name' -Value 'Unbenannter Tweak' -Force
         }
     }
@@ -110,7 +113,7 @@ function ConvertTo-StandardTweakFormat {
 
 function Test-TweakDefinition {
     param(
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [PSObject]$Tweak
     )
     
@@ -118,8 +121,8 @@ function Test-TweakDefinition {
     
     # Check if the tweak has a valid action
     $hasValidAction = ($Tweak.RegistryPath -and $Tweak.ValueName -ne $null) -or 
-                     ($Tweak.PSObject.Properties['RegistrySettings'] -and $Tweak.RegistrySettings -and $Tweak.RegistrySettings.Count -gt 0) -or
-                     ($Tweak.PSObject.Properties['InvokeScript'] -and $Tweak.InvokeScript -and $Tweak.InvokeScript.Count -gt 0)
+    ($Tweak.PSObject.Properties['RegistrySettings'] -and $Tweak.RegistrySettings -and $Tweak.RegistrySettings.Count -gt 0) -or
+    ($Tweak.PSObject.Properties['InvokeScript'] -and $Tweak.InvokeScript -and $Tweak.InvokeScript.Count -gt 0)
     
     # If no valid action was found, check the required properties
     if (-not $hasValidAction) {
@@ -170,11 +173,11 @@ function Test-TweakDefinition {
     }
     
     return [PSCustomObject]@{
-        Name = $Tweak.Name
+        Name                = $Tweak.Name
         HasRegistrySettings = $hasRegistrySettings
-        HasInvokeScript = $hasInvokeScript
-        Issues = $issues
-        IsValid = $issues.Count -eq 0
+        HasInvokeScript     = $hasInvokeScript
+        Issues              = $issues
+        IsValid             = $issues.Count -eq 0
     }
 }
 
@@ -274,18 +277,15 @@ $global:IgnoreCheckEvent = $false # For General tab TreeView
 $global:IgnoreCheckEventDownloads = $false # For Downloads tab TreeView
 # Form
 $form = New-Object System.Windows.Forms.Form
+$form.MinimumSize = New-Object System.Drawing.Size(600, 700)
 $form.Text = "Shag Windows Utility - Version $scriptVersion"
-$form.Size = New-Object System.Drawing.Size(700, 850)
+$form.Size = New-Object System.Drawing.Size(700, 800)
 $form.StartPosition = "CenterScreen"
 $form.FormBorderStyle = 'Sizable' #FixedDialog
 $form.MaximizeBox = $false
 $form.MinimizeBox = $true
 $form.ForeColor = [System.Drawing.Color]::Black
 $form.Font = New-Object System.Drawing.Font("Segoe UI", 11)
-
-### Form ToDo:
-# > https://learn.microsoft.com/de-de/dotnet/api/system.windows.forms.control.anchor?view=windowsdesktop-9.0
-# > https://learn.microsoft.com/de-de/dotnet/api/system.windows.forms.form.autoscalebasesize?view=windowsdesktop-8.0#system-windows-forms-form-autoscalebasesize
 
 # TabControl setup  #  > Make tab size bigger
 $tabControl = New-Object System.Windows.Forms.TabControl
@@ -326,7 +326,7 @@ $form.Add_Load({ # Form Load Event (for Update Check)
         if ($updateInfo.UpdateAvailable) {
             Clear-Host
             Write-Host ""
-            Write-Host ">>> UPDATE AVAILABLE! <<<" -ForegroundColor Yellow -BackgroundColor Red
+            Write-Host ">>> UPDATE AVAILABLE! <<<" -ForegroundColor Red
             Write-Host "A new version ($($updateInfo.RemoteVersion)) is available!" -ForegroundColor Yellow
             Write-Host "Your current version is $($updateInfo.CurrentVersion)." -ForegroundColor Yellow
             Write-Host "Run the start command again to use the new version." -ForegroundColor Yellow
@@ -505,12 +505,22 @@ function Initialize-HomeTabContent {
     $jobMonitorTimer.Start()
 }
 
-# Panel for System Information (top left)
+# Main container for the Home tab
+$homeContainer = New-Object System.Windows.Forms.TableLayoutPanel
+$homeContainer.Dock = [System.Windows.Forms.DockStyle]::Fill
+$homeContainer.RowCount = 2
+$homeContainer.ColumnCount = 1
+$homeContainer.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 440)))  # 400 + 20px padding top + 20px gap
+$homeContainer.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100)))
+$homeContainer.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100)))
+$homeContainer.Padding = New-Object System.Windows.Forms.Padding(20)
+$tabHome.Controls.Add($homeContainer)
+
+# Panel for System Information (top section)
 $systemInfoPanel = New-Object System.Windows.Forms.Panel
-$systemInfoPanel.Size = New-Object System.Drawing.Size(550, 400)
-$systemInfoPanel.Location = New-Object System.Drawing.Point(10, 10)
+$systemInfoPanel.Dock = [System.Windows.Forms.DockStyle]::Fill
 $systemInfoPanel.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
-$tabHome.Controls.Add($systemInfoPanel)
+$homeContainer.Controls.Add($systemInfoPanel, 0, 0)
 
 # Title for System Information in the panel
 $systemInfoTitle = New-Object System.Windows.Forms.Label
@@ -520,12 +530,28 @@ $systemInfoTitle.AutoSize = $true
 $systemInfoTitle.Location = New-Object System.Drawing.Point(10, 10)
 $systemInfoPanel.Controls.Add($systemInfoTitle)
 
-# Panel for Quick Links (directly below System Information)
+# Container for the bottom section (Quick Links + Contact)
+$bottomContainerPanel = New-Object System.Windows.Forms.Panel
+$bottomContainerPanel.Dock = [System.Windows.Forms.DockStyle]::Fill
+$homeContainer.Controls.Add($bottomContainerPanel, 0, 1)
+
+# Create a table layout for the bottom section
+$tableLayout = New-Object System.Windows.Forms.TableLayoutPanel
+$tableLayout.Dock = [System.Windows.Forms.DockStyle]::Fill
+$tableLayout.ColumnCount = 2
+$tableLayout.RowCount = 1
+$tableLayout.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Absolute, 240)))  # Fixed width for Quick Links
+$tableLayout.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100)))  # Rest for Contact
+$tableLayout.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100)))
+$tableLayout.CellBorderStyle = [System.Windows.Forms.TableLayoutPanelCellBorderStyle]::Single
+$bottomContainerPanel.Controls.Add($tableLayout)
+
+# Panel for Quick Links (left side)
 $quickLinksPanel = New-Object System.Windows.Forms.Panel
-$quickLinksPanel.Size = New-Object System.Drawing.Size(200, 200)
-$quickLinksPanel.Location = New-Object System.Drawing.Point(10, ($systemInfoPanel.Location.Y + $systemInfoPanel.Size.Height + 20))
-$quickLinksPanel.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
-$tabHome.Controls.Add($quickLinksPanel)
+$quickLinksPanel.Dock = [System.Windows.Forms.DockStyle]::Fill
+$quickLinksPanel.Padding = New-Object System.Windows.Forms.Padding(10)
+$quickLinksPanel.AutoScroll = $true
+$tableLayout.Controls.Add($quickLinksPanel, 0, 0)
 
 # Title for Quick Links
 $quickLinksTitle = New-Object System.Windows.Forms.Label
@@ -555,11 +581,12 @@ foreach ($link in $quickLinks) {
     $buttonYPos += 35
 }
 
+# Contact Panel (right side)
 $contactPanel = New-Object System.Windows.Forms.Panel
-$contactPanel.Size = New-Object System.Drawing.Size(200, 200)
-$contactPanel.Location = New-Object System.Drawing.Point(($quickLinksPanel.Location.X + $quickLinksPanel.Size.Width + 20), $quickLinksPanel.Location.Y)
-$contactPanel.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
-$tabHome.Controls.Add($contactPanel)
+$contactPanel.Dock = [System.Windows.Forms.DockStyle]::Fill
+$contactPanel.Padding = New-Object System.Windows.Forms.Padding(10)
+$contactPanel.AutoScroll = $true
+$tableLayout.Controls.Add($contactPanel, 1, 0)
 
 # Title for Contact
 $contactTitle = New-Object System.Windows.Forms.Label
@@ -608,7 +635,15 @@ $contactYPos += 25
 $tabTweaks = New-Object System.Windows.Forms.TabPage "Tweaks"
 $tabControl.TabPages.Add($tabTweaks)
 
+function Create-RegistryPSPath {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$Path
+    )
+    return $Path -replace '^HKLM\\', 'HKLM:\\' -replace '^HKCU\\', 'HKCU:\\' -replace '^HKU\\', 'HKU:\\' -replace '^HKCR\\', 'HKCR:\\' -replace '^HKCC\\', 'HKCC:\\'
+}
 function Get-RegistryValue {
+    [CmdletBinding()]
     param(
         [string]$Path,
         [string]$Name
@@ -617,35 +652,36 @@ function Get-RegistryValue {
         # Convert registry path to PowerShell format (add colon after HKLM, HKCU, etc.)
         $psPath = $Path -replace '^HKLM\\', 'HKLM:\' -replace '^HKCU\\', 'HKCU\' -replace '^HKU\\', 'HKU:\' -replace '^HKCR\\', 'HKCR:\' -replace '^HKCC\\', 'HKCC:\'
         
-        if (Test-Path $psPath) {
-            $value = Get-ItemProperty -Path $psPath -Name $Name -ErrorAction SilentlyContinue | Select-Object -ExpandProperty $Name
+        if (Test-Path -LiteralPath $psPath -ErrorAction SilentlyContinue) {
+            $value = Get-ItemProperty -Path $psPath -Name $Name -ErrorAction SilentlyContinue | 
+            Select-Object -ExpandProperty $Name -ErrorAction SilentlyContinue
             return $value
         }
     }
     catch {
-        # Suppress common errors like path not found or name not found for cleaner output
-        # Uncomment the line below for debugging purposes if needed
-        Write-Warning "Could not get registry value '$Name' from '$psPath': $($_.Exception.Message)"
+        # Fehler unterdrücken, keine Ausgabe erzeugen
+        # Für Debugging können Sie die folgende Zeile einkommentieren:
+        # Write-Debug "Could not get registry value '$Name' from '$psPath': $($_.Exception.Message)"
     }
     return $null # Return $null if path or name does not exist, or on error
 }
 function Set-RegistryValue {
     [CmdletBinding()]
     param(
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$Path,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [string]$Name,
-        [Parameter(Mandatory=$false)]
+        [Parameter(Mandatory = $false)]
         $Value,
-        [Parameter(Mandatory=$true)]
+        [Parameter(Mandatory = $true)]
         [ValidateSet("DWord", "String", "ExpandString", "Binary", "MultiString", "QWord")]
         [string]$Type,
         [switch]$RemoveEntry
     )
     
     # Convert registry path to PowerShell format (add colon after HKLM, HKCU, etc.)
-    $psPath = $Path -replace '^HKLM\\', 'HKLM:\' -replace '^HKCU\\', 'HKCU:\' -replace '^HKU\\', 'HKU:\' -replace '^HKCR\\', 'HKCR:\' -replace '^HKCC\\', 'HKCC:\'
+    $psPath = Create-RegistryPSPath -Path $Path
     
     # Check if running as administrator for HKLM access
     if ($psPath -like 'HKLM:*' -or $psPath -like 'HKCR:*' -or $psPath -like 'HKCC:*') {
@@ -666,7 +702,8 @@ function Set-RegistryValue {
             try {
                 $null = New-Item -Path $keyPath -Force -ErrorAction Stop
                 Write-Host "  [INFO] Created registry path: $keyPath" -ForegroundColor Green
-            } catch {
+            }
+            catch {
                 Write-Host "  [ERROR] Failed to create registry path '$keyPath': $_" -ForegroundColor Red
                 return $false
             }
@@ -680,7 +717,8 @@ function Set-RegistryValue {
                     Remove-ItemProperty -Path $psPath -Name $Name -Force -ErrorAction Stop
                     Write-Host "  [SUCCESS] Removed registry value: $Name from $Path" -ForegroundColor Green
                     return $true
-                } else {
+                }
+                else {
                     Write-Host "  [INFO] Registry value $Name does not exist in $Path" -ForegroundColor Cyan
                     return $true
                 }
@@ -703,7 +741,7 @@ function Set-RegistryValue {
         $currentValue = $null
         if (Test-Path -Path $psPath) {
             $currentValue = Get-ItemProperty -Path $psPath -Name $Name -ErrorAction SilentlyContinue | 
-                          Select-Object -ExpandProperty $Name -ErrorAction SilentlyContinue
+            Select-Object -ExpandProperty $Name -ErrorAction SilentlyContinue
         }
         
         # Compare and set if different
@@ -718,21 +756,25 @@ function Set-RegistryValue {
             
             $displayValue = if ($Type -eq "DWord" -or $Type -eq "QWord") { 
                 "0x$($valueToSet.ToString('X')) ($valueToSet)" 
-            } else { 
-                "'$valueToSet'" 
+            }
+            else { 
+                "'$valueToSet'"
             }
             Write-Host "  [SUCCESS] Set $Name to $displayValue in $Path" -ForegroundColor Green
             return $true
-        } else {
+        }
+        else {
             $displayValue = if ($Type -eq "DWord" -or $Type -eq "QWord") { 
                 "0x$($currentValue.ToString('X')) ($currentValue)" 
-            } else { 
+            }
+            else { 
                 "'$currentValue'" 
             }
             Write-Host "  [INFO] $Name is already set to $displayValue in $Path" -ForegroundColor Cyan
             return $true
         }
-    } catch {
+    }
+    catch {
         Write-Host "  [ERROR] Failed to set registry value '$Name' in '$Path': $($_.Exception.Message)" -ForegroundColor Red
         return $false
     }
@@ -774,11 +816,11 @@ function Set-ServiceStartType {
         Write-Warning ("Could not set start type for service {0} to {1}: {2}" -f $ServiceName, $StartType, $_)
         return $false
     }
-} # Hier fehlte die schließende Klammer
+}
 function ApplyTweaks {
     param([System.Windows.Forms.TreeView]$treeViewToApply)
     $selectedNodes = @($treeViewToApply.Nodes | Where-Object { $_.Checked -eq $true }) + 
-                    @($treeViewToApply.Nodes | ForEach-Object { $_.Nodes } | Where-Object { $_.Checked -eq $true })
+    @($treeViewToApply.Nodes | ForEach-Object { $_.Nodes } | Where-Object { $_.Checked -eq $true })
     
     foreach ($node in $selectedNodes) {
         $tweak = $node.Tag
@@ -792,7 +834,8 @@ function ApplyTweaks {
         
         $tweakName = if ($tweak.PSObject.Properties['Name'] -and $tweak.Name) { 
             $tweak.Name 
-        } else { 
+        }
+        else { 
             "Unnamed Tweak" 
         }
         
@@ -810,7 +853,8 @@ function ApplyTweaks {
                     Invoke-Expression $script | Out-Null
                     Write-Host "  -> Script executed successfully" -ForegroundColor Green
                     $actionTaken = $true
-                } catch {
+                }
+                catch {
                     Write-Host "  -> Error executing script: $($_.Exception.Message)" -ForegroundColor Red
                 }
             }
@@ -827,7 +871,8 @@ function ApplyTweaks {
                         Write-Host "  -> [$action] $($setting.Name) in $($setting.Path)" -ForegroundColor Green
                         $actionTaken = $true
                     }
-                } catch {
+                }
+                catch {
                     Write-Host "  -> Error applying setting $($setting.Name): $($_.Exception.Message)" -ForegroundColor Red
                 }
             }
@@ -837,9 +882,8 @@ function ApplyTweaks {
         # 3. Prüfe auf einfache Registry-Einstellungen
         if ($tweak.PSObject.Properties['RegistryPath'] -and $tweak.RegistryPath -and 
             $tweak.PSObject.Properties['ValueName'] -and $tweak.ValueName -ne $null) {
-            
             $value = if ($tweak.PSObject.Properties['TweakValue']) { $tweak.TweakValue } else { $null }
-            $type = if ($tweak.PSObject.Properties['ValueType']) { $tweak.ValueType } else { "DWord" }
+            $type = if ($tweak.PSObject.Properties['ValueType']) { $tweak.ValueType }else { "DWord" }
             
             try {
                 $result = Set-RegistryValue -Path $tweak.RegistryPath -Name $tweak.ValueName -Value $value -Type $type -RemoveEntry:($value -eq "<RemoveEntry>")
@@ -848,7 +892,8 @@ function ApplyTweaks {
                     Write-Host "  -> [$action] $($tweak.ValueName) in $($tweak.RegistryPath)" -ForegroundColor Green
                     $actionTaken = $true
                 }
-            } catch {
+            }
+            catch {
                 Write-Host "  -> Error applying setting $($tweak.ValueName): $($_.Exception.Message)" -ForegroundColor Red
             }
             if ($actionTaken) { continue }
@@ -864,7 +909,6 @@ function ApplyTweaks {
     [System.Windows.Forms.MessageBox]::Show("Selected tweaks applied. Some changes may require a system restart.", "Tweaks Applied", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
     Update-GeneralTweaksStatus -tweakNodes $allTweakNodes # Update status after applying
 }
-
 function ResetTweaks {
     param([System.Windows.Forms.TreeView]$treeViewToReset)
     $selectedNodes = @($treeViewToReset.Nodes | Where-Object { $_.Checked -eq $true }) + @($treeViewToReset.Nodes | ForEach-Object { $_.Nodes } | Where-Object { $_.Checked -eq $true })
@@ -942,7 +986,8 @@ function Update-GeneralTweaksStatus {
         
         $tweakName = if ($tweak.PSObject.Properties['Name'] -and $tweak.Name) { 
             $tweak.Name 
-        } else { 
+        }
+        else { 
             "Unnamed Tweak" 
         }
         
@@ -960,7 +1005,8 @@ function Update-GeneralTweaksStatus {
             if ($expectedValue -eq "<RemoveEntry>") {
                 $isApplied = ($currentValue -eq $null)
                 $statusText += "Entferne $($tweak.ValueName) aus $($tweak.RegistryPath): $(if ($isApplied) {'OK'} else {'Nicht angewendet'})"
-            } else {
+            }
+            else {
                 $isApplied = ($currentValue -ne $null -and $currentValue -eq $expectedValue)
                 $statusText += "Setze $($tweak.ValueName) auf '$expectedValue' in $($tweak.RegistryPath): $(if ($isApplied) {'OK'} else {'Nicht angewendet'})"
                 if (-not $isApplied -and $currentValue -ne $null) {
@@ -983,7 +1029,8 @@ function Update-GeneralTweaksStatus {
                 if ($setting.Value -eq "<RemoveEntry>") {
                     $settingApplied = ($currentValue -eq $null)
                     $statusText += "Entferne $($setting.Name) aus $($setting.Path): $(if ($settingApplied) {'OK'} else {'Nicht angewendet'})"
-                } else {
+                }
+                else {
                     $settingApplied = ($currentValue -ne $null -and $currentValue -eq $setting.Value)
                     $statusText += "Setze $($setting.Name) auf '$($setting.Value)' in $($setting.Path): $(if ($settingApplied) {'OK'} else {'Nicht angewendet'})"
                     if (-not $settingApplied -and $currentValue -ne $null) {
@@ -1005,7 +1052,8 @@ function Update-GeneralTweaksStatus {
             if ($tweak.PSObject.Properties['IsApplied'] -and $tweak.IsApplied) {
                 $isApplied = $true
                 $statusText += "Script execution: Successful (manually confirmed)"
-            } else {
+            }
+            else {
                 $isApplied = $false
                 $statusText += "Script execution: Not verified (manual verification required)"
             }
@@ -1021,7 +1069,8 @@ function Update-GeneralTweaksStatus {
                 
                 $isApplied = ($startupType -eq $expectedStartupType)
                 $statusText += "Service '$($tweak.Service)': Startup type is '$startupType' (should be: '$expectedStartupType')"
-            } catch {
+            }
+            catch {
                 $isApplied = $false
                 $statusText += "Service '$($tweak.Service)': Could not verify status: $($_.Exception.Message)"
             }
@@ -1037,7 +1086,8 @@ function Update-GeneralTweaksStatus {
         if ($isApplied) {
             $node.ForeColor = [System.Drawing.Color]::Green
             $node.ToolTipText = "Applied: $tweakName`n" + ($statusText -join "`n")
-        } else {
+        }
+        else {
             $node.ForeColor = [System.Drawing.Color]::Black
             $node.ToolTipText = "Not applied: $tweakName`n" + ($statusText -join "`n")
         }
@@ -1071,7 +1121,7 @@ function GeneralTreeView {
         $parentNode.ForeColor = [System.Drawing.Color]::RoyalBlue
         $parentNode.NodeFont = New-Object System.Drawing.Font($treeViewToPopulate.Font.FontFamily, 10, [System.Drawing.FontStyle]::Bold)
         $treeViewToPopulate.Nodes.Add($parentNode) | Out-Null
-        $parentNode.Expand() 
+        $parentNode.Expand()
         
         foreach ($tweak in $tweaksInThisCategory | Sort-Object Name) {
             $childNode = New-Object System.Windows.Forms.TreeNode ($tweak.Name)
@@ -1087,16 +1137,6 @@ function GeneralTreeView {
 
 $generalTweaks = @(
     @{
-        Category     = "Visuals"
-        Name         = "Disable Visual Effects (Adjust for best performance)"
-        Description  = "Adjusts visual effects for best performance (disables animations, shadows etc.). This typically applies multiple settings, so we'll treat it as a group or a specific set of registry changes."
-        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects"
-        ValueName    = "VisualFXSetting"
-        TweakValue   = 2 # 2 = Adjust for best performance
-        DefaultValue = 0 # 0 = Let Windows choose what's best, or a specific default
-        ValueType    = "DWord"
-    },
-    @{
         Category     = "Privacy"
         Name         = "Disable ConsumerFeatures"
         Description  = "Windows 10 will not automatically install any games, third-party apps, or application links from the Windows Store for the signed-in user. Some default Apps will be inaccessible (eg. Phone Link)"
@@ -1104,26 +1144,6 @@ $generalTweaks = @(
         ValueName    = "DisableWindowsConsumerFeatures"
         TweakValue   = 1
         DefaultValue = "<RemoveEntry>"
-        ValueType    = "DWord"
-    },
-    @{
-        Category     = "System"
-        Name         = "Enable Long Paths"
-        Description  = "Enables support for file paths longer than 260 characters."
-        RegistryPath = "HKLM\SYSTEM\CurrentControlSet\Control\FileSystem"
-        ValueName    = "LongPathsEnabled"
-        TweakValue   = 1
-        DefaultValue = 0
-        ValueType    = "DWord"
-    },
-    @{
-        Category     = "Performance"
-        Name         = "Set System Responsiveness (Multimedia)"
-        Description  = "Optimizes system responsiveness for multimedia tasks."
-        RegistryPath = "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile"
-        ValueName    = "SystemResponsiveness"
-        TweakValue   = 0
-        DefaultValue = 1
         ValueType    = "DWord"
     },
     @{
@@ -1649,21 +1669,21 @@ try {
 }
 '@
         )
-        UndoScript = @(
-@"
+        UndoScript       = @(
+            @"
     # Re-enable AutoLogger
     `$autoLoggerDir = "`$env:PROGRAMDATA\Microsoft\Diagnosis\ETLLogs\AutoLogger"
     if (Test-Path `$autoLoggerDir) {
         icacls `$autoLoggerDir /grant SYSTEM:(OI)(CI)F /T /C | Out-Null
     }
 "@,
-@"
+            @"
     # Reset SvcHostSplitThresholdInKB
     if (Test-Path 'HKLM:\SYSTEM\CurrentControlSet\Control') {
         Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control' -Name 'SvcHostSplitThresholdInKB' -Type DWord -Value 380000 -Force -ErrorAction SilentlyContinue
     }
 "@,
-@"
+            @"
     # Re-enable Windows Defender sample submission
     try {
         Set-MpPreference -SubmitSamplesConsent 1 -ErrorAction SilentlyContinue | Out-Null
@@ -1674,288 +1694,14 @@ try {
         )
     },
     @{
-        Category         = "Visuals"
-        Name             = "Set Display for Performance"
-        Description      = "Sets the system preferences to performance. You can do this manually with sysdm.cpl as well."
-        RegistrySettings = @(
-            @{
-                Path          = "HKCU\Control Panel\Desktop"
-                Name          = "DragFullWindows"
-                Value         = "0"
-                OriginalValue = "1"
-                Type          = "String"
-            },
-            @{
-                Path          = "HKCU\Control Panel\Desktop"
-                Name          = "MenuShowDelay"
-                Value         = "200"
-                OriginalValue = "400"
-                Type          = "String"
-            },
-            @{
-                Path          = "HKCU\Control Panel\Desktop\WindowMetrics"
-                Name          = "MinAnimate"
-                Value         = "0"
-                OriginalValue = "1"
-                Type          = "String"
-            },
-            @{
-                Path          = "HKCU\Control Panel\Keyboard"
-                Name          = "KeyboardDelay"
-                Value         = "0"
-                OriginalValue = "1"
-                Type          = "DWord"
-            },
-            @{
-                Path          = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
-                Name          = "ListviewAlphaSelect"
-                Value         = "0"
-                OriginalValue = "1"
-                Type          = "DWord"
-            },
-            @{
-                Path          = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
-                Name          = "ListviewShadow"
-                Value         = "0"
-                OriginalValue = "1"
-                Type          = "DWord"
-            },
-            @{
-                Path          = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
-                Name          = "TaskbarAnimations"
-                Value         = "0"
-                OriginalValue = "1"
-                Type          = "DWord"
-            },
-            @{
-                Path          = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects"
-                Name          = "VisualFXSetting"
-                Value         = "3" # 3 = Adjust for best performance
-                OriginalValue = "1" # 1 = Let Windows choose what's best
-                Type          = "DWord"
-            },
-            @{
-                Path          = "HKCU\Software\Microsoft\Windows\DWM"
-                Name          = "EnableAeroPeek"
-                Value         = "0"
-                OriginalValue = "1"
-                Type          = "DWord"
-            },
-            @{
-                Path          = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
-                Name          = "TaskbarMn" # Taskbar Multiple Monitors (vermutlich)
-                Value         = "0"
-                OriginalValue = "1"
-                Type          = "DWord"
-            },
-            @{
-                Path          = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
-                Name          = "TaskbarDa" # Taskbar Desktop Apps (vermutlich)
-                Value         = "0"
-                OriginalValue = "1"
-                Type          = "DWord"
-            },
-            @{
-                Path          = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
-                Name          = "ShowTaskViewButton"
-                Value         = "0"
-                OriginalValue = "1"
-                Type          = "DWord"
-            },
-            @{
-                Path          = "HKCU\Software\Microsoft\Windows\CurrentVersion\Search"
-                Name          = "SearchboxTaskbarMode"
-                Value         = "0" # 0 = Hidden
-                OriginalValue = "1" # 1 = Icon only, 2 = Search box
-                Type          = "DWord"
-            }
-        )
-        InvokeScript     = @(
-            @"
-    Set-ItemProperty -Path "HKCU\Control Panel\Desktop" -Name "UserPreferencesMask" -Type Binary -Value ([byte[]](144,18,3,128,16,0,0,0))
-"@
-        )
-        UndoScript       = @(
-            @"
-    Remove-ItemProperty -Path "HKCU\Control Panel\Desktop" -Name "UserPreferencesMask"
-"@
-        )
-    },
-    @{
         Category     = "Features"
         Name         = "Enable End Task With Right Click"
         Description  = "Enables a new 'End Task' option in the right-click context menu for apps on the taskbar."
-        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" # Corrected Path
+        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
         ValueName    = "TaskbarEndTask"
         TweakValue   = 1 # Value to set when enabled
         DefaultValue = 0 # Value to set when reset/disabled (assuming 0 is default or missing)
         ValueType    = "DWord"
-    },
-    @{
-        Category     = "System"
-        Name         = "Disable Storage Sense"
-        Description  = "Storage Sense deletes temp files automatically."
-        InvokeScript = @(
-            @"
-    Set-ItemProperty -Path "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy" -Name "01" -Value 0 -Type Dword -Force
-"@
-        )
-        UndoScript   = @(
-            @"
-    Set-ItemProperty -Path "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\StorageSense\Parameters\StoragePolicy" -Name "01" -Value 1 -Type Dword -Force
-"@
-        )
-    },
-    @{
-        Category         = "Privacy"
-        Name             = "Disable Microsoft Copilot"
-        Description      = "Disables Microsoft Copilot integration in Windows."
-        RegistrySettings = @(
-            @{
-                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot"
-                Name          = "TurnOffWindowsCopilot"
-                Value         = 1
-                OriginalValue = 0
-                Type          = "DWord"
-            },
-            @{
-                Path          = "HKCU\Software\Policies\Microsoft\Windows\WindowsCopilot"
-                Name          = "TurnOffWindowsCopilot"
-                Value         = 1
-                OriginalValue = 0
-                Type          = "DWord"
-            },
-            @{
-                Path          = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
-                Name          = "ShowCopilotButton"
-                Value         = 0
-                OriginalValue = 1
-                Type          = "DWord"
-            },
-            @{
-                Path          = "HKLM\SOFTWARE\Microsoft\Windows\Shell\Copilot"
-                Name          = "IsCopilotAvailable"
-                Value         = 0
-                OriginalValue = 1
-                Type          = "DWord"
-            },
-            @{
-                Path          = "HKLM\SOFTWARE\Microsoft\Windows\Shell\Copilot"
-                Name          = "CopilotDisabledReason"
-                Value         = "IsEnabledForGeographicRegionFailed"
-                OriginalValue = ""
-                Type          = "String"
-            },
-            @{
-                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsCopilot"
-                Name          = "AllowCopilotRuntime"
-                Value         = 0
-                OriginalValue = 1
-                Type          = "DWord"
-            },
-            @{
-                Path          = "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked"
-                Name          = "{CB3B0003-8088-4EDE-8769-8B354AB2FF8C}"
-                Value         = ""
-                OriginalValue = ""
-                Type          = "String"
-            },
-            @{
-                Path          = "HKLM\SOFTWARE\Microsoft\Windows\Shell\Copilot\BingChat"
-                Name          = "IsUserEligible"
-                Value         = 0
-                OriginalValue = 1
-                Type          = "DWord"
-            }
-        )
-        InvokeScript     = @(
-            @"
-    # Disable Copilot via registry
-    if (Test-Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot") {
-        Set-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot" -Name "TurnOffWindowsCopilot" -Value 1 -Type DWord -Force
-    } else {
-        New-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot" -Force | Out-Null
-        New-ItemProperty -Path "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot" -Name "TurnOffWindowsCopilot" -Value 1 -PropertyType DWord -Force | Out-Null
-    }
-
-    # Disable Copilot for current user
-    if (-not (Test-Path "HKCU\Software\Policies\Microsoft\Windows\WindowsCopilot")) {
-        New-Item -Path "HKCU\Software\Policies\Microsoft\Windows\WindowsCopilot" -Force | Out-Null
-    }
-    Set-ItemProperty -Path "HKCU\Software\Policies\Microsoft\Windows\WindowsCopilot" -Name "TurnOffWindowsCopilot" -Value 1 -Type DWord -Force
-
-    # Disable Copilot button in taskbar
-    if (-not (Test-Path "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced")) {
-        New-Item -Path "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Force | Out-Null
-    }
-    Set-ItemProperty -Path "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced" -Name "ShowCopilotButton" -Value 0 -Type DWord -Force
-
-    # Disable Copilot in Shell
-    if (-not (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\Shell\Copilot")) {
-        New-Item -Path "HKLM:\SOFTWARE\Microsoft\Windows\Shell\Copilot" -Force | Out-Null
-    }
-    Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\Shell\Copilot" -Name "IsCopilotAvailable" -Value 0 -Type DWord -Force
-    Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\Shell\Copilot" -Name "CopilotDisabledReason" -Value "IsEnabledForGeographicRegionFailed" -Type String -Force
-
-    # Block Copilot shell extension
-    if (-not (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked")) {
-        New-Item -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked" -Force | Out-Null
-    }
-    Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Shell Extensions\Blocked" -Name "{CB3B0003-8088-4EDE-8769-8B354AB2FF8C}" -Value "" -Type String -Force
-
-    # Disable Copilot runtime
-    if (-not (Test-Path "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsCopilot")) {
-        New-Item -Path "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsCopilot" -Force | Out-Null
-    }
-    Set-ItemProperty -Path "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsCopilot" -Name "AllowCopilotRuntime" -Value 0 -Type DWord -Force
-
-    # Disable Bing Chat integration
-    if (-not (Test-Path "HKLM:\SOFTWARE\Microsoft\Windows\Shell\Copilot\BingChat")) {
-        New-Item -Path "HKLM:\SOFTWARE\Microsoft\Windows\Shell\Copilot\BingChat" -Force | Out-Null
-    }
-    Set-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows\Shell\Copilot\BingChat" -Name "IsUserEligible" -Value 0 -Type DWord -Force
-"@
-        )
-    },
-    @{
-        Category         = "Privacy"
-        Name             = "Disable Windows Search and CI Policy"
-        Description      = "Disables Windows Search and Code Integrity policy settings"
-        RegistrySettings = @(
-            @{
-                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search"
-                Name          = "AllowCortana"
-                Value         = 0
-                OriginalValue = "<RemoveEntry>"
-                Type          = "DWord"
-            },
-            @{
-                Path          = "HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy"
-                Name          = "VerifiedAndReputablePolicyState"
-                Value         = 0
-                OriginalValue = "<RemoveEntry>"
-                Type          = "DWord"
-            }
-        )
-    },
-    @{
-        Category     = "Privacy"
-        Name         = "Disable Recall"
-        Description  = "Disables Windows Recall feature"
-        InvokeScript = @(
-            @"
-    Write-Host "Disable Recall"
-    DISM /Online /Disable-Feature /FeatureName:Recall /Quiet /NoRestart
-    Write-Host "Please restart your computer in order for the changes to be fully applied."
-"@
-        )
-        UndoScript = @(
-            @"
-    Write-Host "Enable Recall"
-    DISM /Online /Enable-Feature /FeatureName:Recall /Quiet /NoRestart
-    Write-Host "Please restart your computer in order for the changes to be fully applied."
-"@
-        )
     },
     @{
         Category     = "Visuals"
@@ -1974,17 +1720,6 @@ try {
     # Restarting Explorer in the Undo Script might not be necessary, as the Registry change without restarting Explorer does work, but just to make sure.
     Write-Host "Restarting explorer.exe ..."
     Stop-Process -Name "explorer" -Force
-"@
-        )
-    },
-    @{
-        Category     = "Cleanup"
-        Name         = "Delete Temporary Files"
-        Description  = "Erases TEMP Folders. Note: This action is irreversible and will permanently delete files."
-        InvokeScript = @(
-            @"
-    Get-ChildItem -Path "C:\Windows\Temp" -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
-    Get-ChildItem -Path $env:TEMP -Recurse -ErrorAction SilentlyContinue | Remove-Item -Force -Recurse -ErrorAction SilentlyContinue
 "@
         )
     },
@@ -2023,30 +1758,6 @@ try {
         )
     },
     @{
-        Category         = "Advanced - CAUTION"
-        Name             = "Disable IPv6"
-        Description      = "Disables IPv6."
-        RegistrySettings = @(
-            @{
-                Path          = "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters"
-                Name          = "DisabledComponents"
-                Value         = "255"
-                OriginalValue = "0"
-                Type          = "DWord"
-            }
-        )
-        InvokeScript     = @(
-            @"
-    Disable-NetAdapterBinding -Name "*" -ComponentID ms_tcpip6
-"@
-        )
-        UndoScript       = @(
-            @"
-    Enable-NetAdapterBinding -Name "*" -ComponentID ms_tcpip6
-"@
-        )
-    },
-    @{
         Category     = "Performance"
         Name         = "Disable Background Apps"
         Description  = "Disables all Microsoft Store apps from running in the background, which has to be done individually since Win11"
@@ -2068,12 +1779,12 @@ try {
     },
     @{
         Category     = "Privacy"
-        Name         = "Bing Search in Start Menu"
+        Name         = "Disable Bing Search in Start Menu"
         Description  = "If enabled, includes web search results from Bing in your Start Menu search."
         RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Search"
         ValueName    = "BingSearchEnabled"
-        TweakValue   = "1"
-        DefaultValue = "0" # OriginalValue aus deiner Angabe
+        TweakValue   = "0"
+        DefaultValue = "1"
         ValueType    = "DWord"
     },
     @{
@@ -2096,16 +1807,6 @@ try {
                 Type          = "DWord"
             }
         )
-    },
-    @{
-        Category     = "System"
-        Name         = "Verbose Messages During Logon"
-        Description  = "Show detailed messages during the login process for troubleshooting and diagnostics."
-        RegistryPath = "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"
-        ValueName    = "VerboseStatus"
-        TweakValue   = "1"
-        DefaultValue = "0"
-        ValueType    = "DWord"
     },
     @{
         Category         = "Privacy"
@@ -2146,34 +1847,6 @@ try {
         ValueType    = "String"
     },
     @{
-        Category         = "Gaming"
-        Name             = "Disable Mouse Acceleration"
-        Description      = "If Enabled then Cursor movement is affected by the speed of your physical mouse movements."
-        RegistrySettings = @(
-            @{
-                Path          = "HKCU\Control Panel\Mouse"
-                Name          = "MouseSpeed"
-                Value         = "1"
-                OriginalValue = "0"
-                Type          = "DWord"
-            },
-            @{
-                Path          = "HKCU\Control Panel\Mouse"
-                Name          = "MouseThreshold1"
-                Value         = "6"
-                OriginalValue = "0"
-                Type          = "DWord"
-            },
-            @{
-                Path          = "HKCU\Control Panel\Mouse"
-                Name          = "MouseThreshold2"
-                Value         = "10"
-                OriginalValue = "0"
-                Type          = "DWord"
-            }
-        )
-    },
-    @{
         Category     = "Accessibility"
         Name         = "Sticky Keys"
         Description  = "If Enabled then Sticky Keys is activated - Sticky keys is an accessibility feature of some graphical user interfaces which assists users who have physical disabilities or help users reduce repetitive strain injury."
@@ -2181,16 +1854,6 @@ try {
         ValueName    = "Flags"
         TweakValue   = "510"
         DefaultValue = "58"
-        ValueType    = "DWord"
-    },
-    @{
-        Category     = "Taskbar"
-        Name         = "Search Button in Taskbar"
-        Description  = "If Enabled Search Button will be on the taskbar."
-        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Search"
-        ValueName    = "SearchboxTaskbarMode"
-        TweakValue   = "1"
-        DefaultValue = "0"
         ValueType    = "DWord"
     },
     @{
@@ -2215,51 +1878,6 @@ try {
         )
     },
     @{
-        Category     = "Power"
-        Name         = "S3 Sleep"
-        Description  = "Toggles between Modern Standby and S3 sleep."
-        RegistryPath = "HKLM\SYSTEM\CurrentControlSet\Control\Power"
-        ValueName    = "PlatformAoAcOverride"
-        TweakValue   = "0"
-        DefaultValue = "<RemoveEntry>"
-        ValueType    = "DWord"
-    },
-    @{
-        Category     = "Performance"
-        Name         = "Disable Explorer Automatic Folder Discovery"
-        Description  = "Windows Explorer automatically tries to guess the type of the folder based on its contents, slowing down the browsing experience."
-        InvokeScript     = @(
-            @"
-    # Previously detected folders
-    $bags = "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\Bags"
-    $bagMRU = "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\BagMRU"
-    Remove-Item -Path $bags -Recurse -Force -ErrorAction SilentlyContinue
-    Write-Host "Removed $bags"
-    Remove-Item -Path $bagMRU -Recurse -Force -ErrorAction SilentlyContinue
-    Write-Host "Removed $bagMRU"
-    $allFolders = "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\Bags\AllFolders\Shell"
-    if (!(Test-Path $allFolders)) {
-        New-Item -Path $allFolders -Force | Out-Null
-        Write-Host "Created $allFolders"
-    }
-    New-ItemProperty -Path $allFolders -Name "FolderType" -Value "NotSpecified" -PropertyType String -Force | Out-Null
-    Write-Host "Set FolderType to NotSpecified"
-    Write-Host "Please sign out and back in, or restart your computer to apply the changes!"
-"@
-        )
-        UndoScript   = @(
-            @"
-    $bags = "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\Bags"
-    $bagMRU = "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\BagMRU"
-    Remove-Item -Path $bags -Recurse -Force -ErrorAction SilentlyContinue
-    Write-Host "Removed $bags"
-    Remove-Item -Path $bagMRU -Recurse -Force -ErrorAction SilentlyContinue
-    Write-Host "Removed $bagMRU"
-    Write-Host "Please sign out and back in, or restart your computer to apply the changes!"
-"@
-        )
-    },
-    @{
         Category     = "Performance"
         Name         = "Win 32 Priority Separation"
         Description  = "Adjusts how Windows allocates CPU time to foreground and background applications. Setting to '26' (hex) gives more priority to foreground applications."
@@ -2271,56 +1889,76 @@ try {
     }
 )
 
+# Main container panel for the Tweaks tab
+$tweaksMainPanel = New-Object System.Windows.Forms.TableLayoutPanel
+$tweaksMainPanel.Dock = [System.Windows.Forms.DockStyle]::Fill
+$tweaksMainPanel.RowCount = 4
+$tweaksMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100)))
+$tweaksMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 30)))
+$tweaksMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 25)))
+$tweaksMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 60)))
+$tweaksMainPanel.ColumnCount = 1
+$tweaksMainPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100)))
+$tweaksMainPanel.Padding = New-Object System.Windows.Forms.Padding(10)
+$tabTweaks.Controls.Add($tweaksMainPanel)
+
+# TreeView for tweaks
 $treeView = New-Object System.Windows.Forms.TreeView
-$treeView.Size = New-Object System.Drawing.Size(650, 550)
-$treeView.Location = New-Object System.Drawing.Point(15, 15)
+$treeView.Dock = [System.Windows.Forms.DockStyle]::Fill
 $treeView.HideSelection = $false
 $treeView.CheckBoxes = $true
 $treeView.ShowNodeToolTips = $true
-$tabTweaks.Controls.Add($treeView)
+$tweaksMainPanel.Controls.Add($treeView, 0, 0)
 $allTweakNodes = @()
 
 # Status Label (Footer)
 $statusLabel = New-Object System.Windows.Forms.Label
-$statusLabel.Size = New-Object System.Drawing.Size(650, 30)
-$statusLabel.Location = New-Object System.Drawing.Point(15, ($treeView.Location.Y + $treeView.Size.Height + 10))
+$statusLabel.Dock = [System.Windows.Forms.DockStyle]::Fill
 $statusLabel.TextAlign = 'MiddleLeft'
 $statusLabel.Text = "Status: Ready"
 $statusLabel.BackColor = [System.Drawing.Color]::LightGray
-$tabTweaks.Controls.Add($statusLabel)
+$tweaksMainPanel.Controls.Add($statusLabel, 0, 1)
+
 # Progress Bar
 $progressBar = New-Object System.Windows.Forms.ProgressBar
-$progressBar.Size = New-Object System.Drawing.Size(650, 20)
-$progressBar.Location = New-Object System.Drawing.Point(15, ($statusLabel.Location.Y + $statusLabel.Size.Height + 5))
+$progressBar.Dock = [System.Windows.Forms.DockStyle]::Fill
 $progressBar.Visible = $false
-$tabTweaks.Controls.Add($progressBar)
+$tweaksMainPanel.Controls.Add($progressBar, 0, 2)
+
 # Buttons Panel
-$buttonPanel = New-Object System.Windows.Forms.Panel
-$buttonPanel.Size = New-Object System.Drawing.Size(650, 50)
-$buttonPanel.Location = New-Object System.Drawing.Point(15, ($progressBar.Location.Y + $progressBar.Size.Height + 5))
-$tabTweaks.Controls.Add($buttonPanel)
+$buttonPanel = New-Object System.Windows.Forms.FlowLayoutPanel
+$buttonPanel.Dock = [System.Windows.Forms.DockStyle]::Fill
+$buttonPanel.FlowDirection = [System.Windows.Forms.FlowDirection]::LeftToRight
+$buttonPanel.WrapContents = $false
+$buttonPanel.AutoSize = $true
+$tweaksMainPanel.Controls.Add($buttonPanel, 0, 3)
 # Apply Button
 $applyButton = New-Object System.Windows.Forms.Button
 $applyButton.Text = "Apply tweaks(s)"
-$applyButton.Size = New-Object System.Drawing.Size(100, 30)
-$applyButton.Location = New-Object System.Drawing.Point(0, 10)
+$applyButton.Size = New-Object System.Drawing.Size(150, 30)
+$applyButton.Margin = New-Object System.Windows.Forms.Padding(0, 0, 10, 0)
 $applyButton.BackColor = [System.Drawing.Color]::LimeGreen
 $applyButton.Enabled = $false # Initially disabled
+$applyButton.Anchor = [System.Windows.Forms.AnchorStyles]::Left
 $buttonPanel.Controls.Add($applyButton)
+
 # Reset Button
 $resetButton = New-Object System.Windows.Forms.Button
 $resetButton.Text = "Reset selected to Default"
-$resetButton.AutoSize = New-Object System.Drawing.Size(180, 30)
-$resetButton.Location = New-Object System.Drawing.Point(120, 10)
+$resetButton.Size = New-Object System.Drawing.Size(180, 30)
+$resetButton.Margin = New-Object System.Windows.Forms.Padding(0, 0, 10, 0)
 $resetButton.BackColor = [System.Drawing.Color]::DarkOrange
 $resetButton.Enabled = $false # Initially disabled
+$resetButton.Anchor = [System.Windows.Forms.AnchorStyles]::Left
 $buttonPanel.Controls.Add($resetButton)
+
 # Uncheck All Button for General Tab
 $generalUncheckAllButton = New-Object System.Windows.Forms.Button
 $generalUncheckAllButton.Text = "Uncheck all"
 $generalUncheckAllButton.Size = New-Object System.Drawing.Size(100, 30)
-$generalUncheckAllButton.Location = New-Object System.Drawing.Point(320, 10)
+$generalUncheckAllButton.Margin = New-Object System.Windows.Forms.Padding(0, 0, 10, 0)
 $generalUncheckAllButton.BackColor = [System.Drawing.Color]::SlateGray
+$generalUncheckAllButton.Anchor = [System.Windows.Forms.AnchorStyles]::Left
 $buttonPanel.Controls.Add($generalUncheckAllButton)
 
 # Add "Recommended" Button
@@ -2350,14 +1988,12 @@ $treeView.Add_AfterCheck({
         # Use the global:allTweakNodes as a flat list of all tweak nodes
         $checkedTweaksCount = ($global:allTweakNodes | Where-Object { $_.Checked }).Count
         $uncheckedTweaksCount = ($global:allTweakNodes | Where-Object { -not $_.Checked }).Count
-    
         $applyButton.Enabled = $checkedTweaksCount -gt 0
         # The reset button should be enabled if there are any unchecked tweaks (implying they are currently active and can be reset)
         # Or if any of the checked tweaks are currently in a "non-default" state, even if checked for application.
         # For now, we'll stick to the existing logic which seems to imply reset applies to UNCHECKED tweaks.
         # If the user's intention is to reset *selected* tweaks to default, the logic in $resetButton.Add_Click would need to change.
         $resetButton.Enabled = $uncheckedTweaksCount -gt 0 
-
         $global:IgnoreCheckEvent = $false
     })
 
@@ -2383,12 +2019,9 @@ $applyButton.Add_Click({ # Apply Button Click for General Tab
             $progressBar.Value = 0
             $progressBar.Visible = $true
             $form.Refresh()
-    
             $global:hasChanges = $false
             $global:restartNeeded = $false
-    
             ApplyTweaks -treeViewToApply $treeView # $treeView ist dein TreeView-Objekt für die Tweaks
-    
             $progressBar.Visible = $false
             $statusLabel.Text = "Status: Tweak application complete."
             Update-GeneralTweaksStatus -tweakNodes $global:allTweakNodes # Re-check status after applying
@@ -2459,7 +2092,9 @@ $generalUncheckAllButton.Add_Click({ # Uncheck All Button Click for General Tab
         $global:IgnoreCheckEvent = $true
 
         foreach ($parentNode in $treeView.Nodes) {
-            foreach ($childNode in $parentNode.Nodes) { $childNode.Checked = $false }
+            foreach ($childNode in $parentNode.Nodes) { 
+                $childNode.Checked = $false 
+            }
             $parentNode.Checked = $false
         }
 
@@ -2538,7 +2173,9 @@ function Update-InstalledPackageIds {
             if ($line -match '^\s*---\s+---\s+---') { continue }
             if ($line -match '^\s*$') { continue }
             $cols = ($line.Trim() -split '\s{2,}')
-            if ($cols.Length -ge 2) { $global:installedPackageIds[$cols[1].Trim()] = $true }
+            if ($cols.Length -ge 2) { 
+                $global:installedPackageIds[$cols[1].Trim()] = $true
+            }
         }
         $statusLabel.Text = "Status: Winget packages loaded."
     }
@@ -2559,19 +2196,32 @@ function Test-WingetPackageInstalled {
 }
 function Update-InstalledProgramsStatus {
     # Function to update the visual status of programs in the TreeView
-    Update-InstalledPackageIds -parentForm $form -progressBar $downloadProgressBar -statusLabel $statusDownloadLabel
-
-    foreach ($node in $allProgramNodes) {
-        $pkgId = $node.Tag
-        if (Test-WingetPackageInstalled -packageId $pkgId) {
-            #$node.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font.FontFamily, 11, [System.Drawing.FontStyle]::Bold)
-            #$node.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font, [System.Drawing.FontStyle]::Bold)
-            $node.ForeColor = [System.Drawing.Color]::Green
+    $statusDownloadLabel.Text = "Updating program status..."
+    $downloadProgressBar.Style = 'Marquee'
+    $downloadProgressBar.Visible = $true
+    $form.Refresh()
+    try {
+        # Update the list of installed packages
+        Update-InstalledPackageIds -parentForm $form -progressBar $downloadProgressBar -statusLabel $statusDownloadLabel
+        # Update the visual state of each node
+        foreach ($node in $allProgramNodes) {
+            $pkgId = $node.Tag
+            if (Test-WingetPackageInstalled -packageId $pkgId) {
+                $node.ForeColor = [System.Drawing.Color]::Green
+            }
+            else {
+                $node.ForeColor = [System.Drawing.Color]::Black
+            }
         }
-        else {
-            #$node.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font.FontFamily, 11, [System.Drawing.FontStyle]::Regular)
-            #$node.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font, [System.Drawing.FontStyle]::Regular)
-        }
+        $statusDownloadLabel.Text = "Program status updated."
+    }
+    catch {
+        $statusDownloadLabel.Text = "Error updating program status: $_"
+        [System.Windows.Forms.MessageBox]::Show("An error occurred while updating program status: $_", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+    }
+    finally {
+        $downloadProgressBar.Visible = $false
+        $form.Refresh()
     }
 }
 function Get-SelectedInstallStatus {
@@ -2582,9 +2232,11 @@ function Get-SelectedInstallStatus {
 
     foreach ($node in $selected) {
         if (Test-WingetPackageInstalled -packageId $node.Tag) { 
-            $installed += $node 
+            $installed += $node
         }
-        else { $notInstalled += $node }
+        else { 
+            $notInstalled += $node 
+        }
     }
     return [PSCustomObject]@{
         Installed    = $installed
@@ -2798,20 +2450,32 @@ $programCategories = @{ # Downloads
     )
 }
 
+# Main container for Downloads tab
+$downloadsMainPanel = New-Object System.Windows.Forms.TableLayoutPanel
+$downloadsMainPanel.Dock = [System.Windows.Forms.DockStyle]::Fill
+$downloadsMainPanel.RowCount = 4
+$downloadsMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 30)))  # Label
+$downloadsMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100)))  # TreeView
+$downloadsMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 30)))  # Status
+$downloadsMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 50)))  # Buttons
+$downloadsMainPanel.ColumnCount = 1
+$downloadsMainPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100)))
+$downloadsMainPanel.Padding = New-Object System.Windows.Forms.Padding(10)
+$tabDownloads.Controls.Add($downloadsMainPanel)
+
 # Label top
 $downloadsLabel = New-Object System.Windows.Forms.Label
 $downloadsLabel.Text = "Select the programs to install via winget:"
 $downloadsLabel.AutoSize = $true
-$downloadsLabel.Location = New-Object System.Drawing.Point(15, 15)
-$tabDownloads.Controls.Add($downloadsLabel)
+$downloadsLabel.Dock = [System.Windows.Forms.DockStyle]::Fill
+$downloadsMainPanel.Controls.Add($downloadsLabel, 0, 0)
 
 # TreeView with Checkboxes and Categories
 $downloadTreeView = New-Object System.Windows.Forms.TreeView
-$downloadTreeView.Size = New-Object System.Drawing.Size(650, 600)
-$downloadTreeView.Location = New-Object System.Drawing.Point(15, 50)
+$downloadTreeView.Dock = [System.Windows.Forms.DockStyle]::Fill
 $downloadTreeView.HideSelection = $false
 $downloadTreeView.CheckBoxes = $true
-$tabDownloads.Controls.Add($downloadTreeView)
+$downloadsMainPanel.Controls.Add($downloadTreeView, 0, 1)
 $allProgramNodes = @() # List to hold all program nodes for status checks
 
 foreach ($category in $programCategories.Keys) {
@@ -2832,53 +2496,66 @@ foreach ($category in $programCategories.Keys) {
     $downloadTreeView.Nodes.Add($parentNode) | Out-Null
 }
 
+# Buttons Panel
+$downloadButtonsPanel = New-Object System.Windows.Forms.FlowLayoutPanel
+$downloadButtonsPanel.Dock = [System.Windows.Forms.DockStyle]::Fill
+$downloadButtonsPanel.FlowDirection = [System.Windows.Forms.FlowDirection]::LeftToRight
+$downloadButtonsPanel.WrapContents = $false
+$downloadButtonsPanel.AutoSize = $true
+$downloadsMainPanel.Controls.Add($downloadButtonsPanel, 0, 3)
+
 # Install Button
 $installButton = New-Object System.Windows.Forms.Button
 $installButton.Text = "Install"
-$installButton.Size = New-Object System.Drawing.Size(100, 30)
-$installButton.Location = New-Object System.Drawing.Point(15, 660)
+$installButton.Size = New-Object System.Drawing.Size(120, 30)
+$installButton.Margin = New-Object System.Windows.Forms.Padding(0, 0, 10, 0)
 $installButton.BackColor = [System.Drawing.Color]::LimeGreen
 $installButton.Enabled = $false
-$tabDownloads.Controls.Add($installButton)
-
-# Uninstall Button
-$uninstallButton = New-Object System.Windows.Forms.Button
-$uninstallButton.Text = "Uninstall"
-$uninstallButton.Size = New-Object System.Drawing.Size(100, 30)
-$uninstallButton.Location = New-Object System.Drawing.Point(245, 660)
-$uninstallButton.BackColor = [System.Drawing.Color]::Red
-$uninstallButton.Enabled = $false
-$tabDownloads.Controls.Add($uninstallButton)
+$downloadButtonsPanel.Controls.Add($installButton)
 
 # Update Button
 $updateButton = New-Object System.Windows.Forms.Button
 $updateButton.Text = "Update all"
-$updateButton.Size = New-Object System.Drawing.Size(100, 30)
-$updateButton.Location = New-Object System.Drawing.Point(130, 660)
-$updateButton.BackColor = [System.Drawing.Color]::LimeGreen
+$updateButton.Size = New-Object System.Drawing.Size(120, 30)
+$updateButton.Margin = New-Object System.Windows.Forms.Padding(0, 0, 10, 0)
+$updateButton.BackColor = [System.Drawing.Color]::LightGreen
 $updateButton.Enabled = $true
-$tabDownloads.Controls.Add($updateButton)
+$downloadButtonsPanel.Controls.Add($updateButton)
+
+# Uninstall Button
+$uninstallButton = New-Object System.Windows.Forms.Button
+$uninstallButton.Text = "Uninstall"
+$uninstallButton.Size = New-Object System.Drawing.Size(120, 30)
+$uninstallButton.Margin = New-Object System.Windows.Forms.Padding(0, 0, 10, 0)
+$uninstallButton.BackColor = [System.Drawing.Color]::LightCoral
+$uninstallButton.Enabled = $false
+$downloadButtonsPanel.Controls.Add($uninstallButton)
 
 # Uncheck All Button
 $uncheckAllButton = New-Object System.Windows.Forms.Button
 $uncheckAllButton.Text = "Uncheck all"
-$uncheckAllButton.Size = New-Object System.Drawing.Size(100, 30)
-$uncheckAllButton.Location = New-Object System.Drawing.Point(360, 660)
-$uncheckAllButton.BackColor = [System.Drawing.Color]::SlateGray
-$tabDownloads.Controls.Add($uncheckAllButton)
+$uncheckAllButton.Size = New-Object System.Drawing.Size(120, 30)
+$uncheckAllButton.Margin = New-Object System.Windows.Forms.Padding(0, 0, 10, 0)
+$uncheckAllButton.BackColor = [System.Drawing.Color]::LightGray
+$downloadButtonsPanel.Controls.Add($uncheckAllButton)
 
 # Status Label
 $statusDownloadLabel = New-Object System.Windows.Forms.Label
-$statusDownloadLabel.Size = New-Object System.Drawing.Size(600, 30)
-$statusDownloadLabel.Location = New-Object System.Drawing.Point(15, 700)
-$tabDownloads.Controls.Add($statusDownloadLabel)
+$statusDownloadLabel.Dock = [System.Windows.Forms.DockStyle]::Fill
+$statusDownloadLabel.TextAlign = 'MiddleLeft'
+$statusDownloadLabel.BackColor = [System.Drawing.Color]::LightGray
+$downloadsMainPanel.Controls.Add($statusDownloadLabel, 0, 2)
 
 # Progress Bar
 $downloadProgressBar = New-Object System.Windows.Forms.ProgressBar
-$downloadProgressBar.Size = New-Object System.Drawing.Size(600, 20)
-$downloadProgressBar.Location = New-Object System.Drawing.Point(15, 730)
+$downloadProgressBar.Dock = [System.Windows.Forms.DockStyle]::Fill
 $downloadProgressBar.Visible = $false
-$tabDownloads.Controls.Add($downloadProgressBar)
+# Add progress bar to a new row in the table layout
+$downloadsMainPanel.RowCount = 5
+$downloadsMainPanel.RowStyles.Insert(3, (New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 25)))
+$downloadsMainPanel.SetRow($downloadButtonsPanel, 4)
+$downloadsMainPanel.Controls.Add($downloadProgressBar, 0, 3)
+# ProgressBar wird bereits im vorherigen Schritt hinzugefügt
 
 $downloadTreeView.Add_AfterCheck({ # TreeView AfterCheck event
         param($sender, $e)
@@ -3022,7 +2699,9 @@ $uncheckAllButton.Add_Click({ # Uncheck All Button Click
         $global:IgnoreCheckEventDownloads = $true
     
         foreach ($parentNode in $downloadTreeView.Nodes) {
-            foreach ($childNode in $parentNode.Nodes) { $childNode.Checked = $false }
+            foreach ($childNode in $parentNode.Nodes) { 
+                $childNode.Checked = $false 
+            }
             $parentNode.Checked = $false
         }
     
@@ -3049,76 +2728,116 @@ $tabUntested.Controls.Add($untestedLabel)
 $tabAbout = New-Object System.Windows.Forms.TabPage "About"
 $tabControl.TabPages.Add($tabAbout)
 
-# About Text Labels
-$aboutLabelYPos = 15
-$aboutTextLines = @(
-    "Hello, my name is Leeshhi. I'm a hobby programmer who does this in my free time and for fun.",
-    "Additionally, I'm also a bit of a PC geek, as many would call it.",
-    "", # Empty line for spacing
-    "This tool was created to offer fellow gamers, like myself, genuine Windows optimizations",
-    "that actually deliver results and aren't just generic nonsense that doesn't even exist.",
-    "I started this project because there are so many poor tools available on the internet.",
-    "", # Empty line for spacing
-    "Only tweaks and adjustments that I personally use and/or have tested will appear here."
-)
+# Main container for the About tab with better spacing
+$aboutContainer = New-Object System.Windows.Forms.TableLayoutPanel
+$aboutContainer.Dock = [System.Windows.Forms.DockStyle]::Fill
+$aboutContainer.Padding = New-Object System.Windows.Forms.Padding(10)
+$aboutContainer.ColumnCount = 1
+$aboutContainer.RowCount = 2
+$aboutContainer.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 70)))
+$aboutContainer.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 30)))
+$tabAbout.Controls.Add($aboutContainer)
 
-foreach ($line in $aboutTextLines) {
-    $label = New-Object System.Windows.Forms.Label
-    $label.Text = $line
-    $label.AutoSize = $true
-    $label.Location = New-Object System.Drawing.Point(15, $aboutLabelYPos)
-    $tabAbout.Controls.Add($label)
-    $aboutLabelYPos += 25 # Vertical spacing between lines
+# Create a panel for the about text with better styling
+$textPanel = New-Object System.Windows.Forms.Panel
+$textPanel.Dock = [System.Windows.Forms.DockStyle]::Fill
+$textPanel.BackColor = [System.Drawing.Color]::FromArgb(245, 245, 245)
+$textPanel.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
+$textPanel.Height = 250  # Fixed height for the text panel
+$aboutContainer.Controls.Add($textPanel, 0, 0)
+
+# Create a rich text box for better text formatting
+$aboutText = New-Object System.Windows.Forms.RichTextBox
+$aboutText.Dock = [System.Windows.Forms.DockStyle]::Fill
+$aboutText.ReadOnly = $true
+$aboutText.BorderStyle = [System.Windows.Forms.BorderStyle]::None
+$aboutText.BackColor = [System.Drawing.Color]::FromArgb(245, 245, 245)
+$aboutText.Margin = New-Object System.Windows.Forms.Padding(15, 10, 15, 10)
+$aboutText.Cursor = [System.Windows.Forms.Cursors]::Default
+$aboutText.TabStop = $false
+#$aboutText.Font = New-Object System.Drawing.Font("Segoe UI", 9, [System.Drawing.FontStyle]::Regular)
+$aboutText.Text = @"
+Hello, my name is Leeshhi. I'm a hobby programmer who does this in my free time and for fun.
+
+Additionally, I'm also a bit of a PC geek, as many would call it.
+
+This tool was created to offer fellow gamers, like myself, genuine Windows optimizations that actually deliver results and aren't just generic nonsense that doesn't even exist.
+
+I started this project because there are so many poor tools available on the internet.
+
+Only tweaks and adjustments that I personally use and/or have tested will appear here.
+"@
+$textPanel.Controls.Add($aboutText)
+
+# Create a more compact button panel with better organization
+$buttonPanel = New-Object System.Windows.Forms.TableLayoutPanel
+$buttonPanel.Dock = [System.Windows.Forms.DockStyle]::Top
+$buttonPanel.ColumnCount = 2
+$buttonPanel.RowCount = 2
+$buttonPanel.AutoSize = $true
+$buttonPanel.Padding = New-Object System.Windows.Forms.Padding(0, 15, 0, 5)
+$buttonPanel.CellBorderStyle = [System.Windows.Forms.TableLayoutPanelCellBorderStyle]::None
+$buttonPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 50)))
+$buttonPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 50)))
+$aboutContainer.Controls.Add($buttonPanel, 0, 1)
+
+# Function to create styled buttons
+function New-StyledButton {
+    param([string]$text, [string]$url, [System.Drawing.Color]$color)
+    $button = New-Object System.Windows.Forms.Button
+    $button.Text = $text
+    $button.FlatStyle = [System.Windows.Forms.FlatStyle]::Flat
+    $button.BackColor = $color
+    $button.ForeColor = [System.Drawing.Color]::White
+    $button.FlatAppearance.BorderSize = 0
+    $button.Height = 35
+    $button.Margin = New-Object System.Windows.Forms.Padding(5)
+    $button.Dock = [System.Windows.Forms.DockStyle]::Fill
+    $button.Cursor = [System.Windows.Forms.Cursors]::Hand
+    $button.Add_Click({ Start-Process $url })
+    # Store the original color in the button's Tag property
+    $button.Tag = $color
+    $button.Add_MouseEnter({ # Add hover effect
+            $this.BackColor = [System.Drawing.Color]::FromArgb( 
+                [Math]::Min(($this.BackColor.R + 40), 255), 
+                [Math]::Min(($this.BackColor.G + 40), 255), 
+                [Math]::Min(($this.BackColor.B + 40), 255)) 
+        })
+    $button.Add_MouseLeave({ 
+            $this.BackColor = $this.Tag
+        })
+    return $button
 }
 
-# Buttons for links
-$aboutButtonYPos = $aboutLabelYPos + 20 # Starting position of buttons below the text
+# Add buttons in a 2x2 grid
+$discordButton = New-StyledButton -text "Discord" -url "https://discord.gg/gDmjYgydb3" -color ([System.Drawing.Color]::DodgerBlue)
+$buttonPanel.Controls.Add($discordButton, 0, 0)
 
-$discordButton = New-Object System.Windows.Forms.Button
-$discordButton.Text = "Discord"
-$discordButton.Size = New-Object System.Drawing.Size(150, 30)
-$discordButton.Location = New-Object System.Drawing.Point(15, $aboutButtonYPos)
-$discordButton.BackColor = [System.Drawing.Color]::DodgerBlue
-$discordButton.Add_Click({ Start-Process "https://discord.gg/gDmjYgydb3" })
-$tabAbout.Controls.Add($discordButton)
-$aboutButtonYPos += 35
+$botButton = New-StyledButton -text "Shag.gg" -url "https://shag.gg" -color ([System.Drawing.Color]::FromArgb(76, 175, 80))
+$buttonPanel.Controls.Add($botButton, 1, 0)
 
-$botButton = New-Object System.Windows.Forms.Button
-$botButton.Text = "Discord-bot"
-$botButton.Size = New-Object System.Drawing.Size(150, 30)
-$botButton.Location = New-Object System.Drawing.Point(15, $aboutButtonYPos)
-$botButton.BackColor = [System.Drawing.Color]::YellowGreen
-$botButton.Add_Click({ Start-Process "https://shag.gg" })
-$tabAbout.Controls.Add($botButton)
-$aboutButtonYPos += 35
+$botDcButton = New-StyledButton -text "Discord Bot" -url "https://discord.gg/qxPNcgtTqn" -color ([System.Drawing.Color]::FromArgb(76, 175, 80))
+$buttonPanel.Controls.Add($botDcButton, 0, 1)
 
-$botDcButton = New-Object System.Windows.Forms.Button
-$botDcButton.Text = "Bot web > shag.gg"
-$botDcButton.Size = New-Object System.Drawing.Size(150, 30)
-$botDcButton.Location = New-Object System.Drawing.Point(15, $aboutButtonYPos)
-$botDcButton.BackColor = [System.Drawing.Color]::YellowGreen
-$botDcButton.Add_Click({ Start-Process "https://discord.gg/qxPNcgtTqn" })
-$tabAbout.Controls.Add($botDcButton)
-$aboutButtonYPos += 35
+$githubButton = New-StyledButton -text "GitHub" -url "https://github.com/leeshhi" -color ([System.Drawing.Color]::DodgerBlue)
+$buttonPanel.Controls.Add($githubButton, 1, 1)
 
-$githubProjectButton = New-Object System.Windows.Forms.Button
-$githubProjectButton.Text = "GitHub"
-$githubProjectButton.Size = New-Object System.Drawing.Size(150, 30)
-$githubProjectButton.Location = New-Object System.Drawing.Point(15, $aboutButtonYPos)
-$githubProjectButton.BackColor = [System.Drawing.Color]::DodgerBlue
-$githubProjectButton.Add_Click({ Start-Process "https://github.com/leeshhi" })
-$tabAbout.Controls.Add($githubProjectButton)
+# Add a small footer with version info
+$footerLabel = New-Object System.Windows.Forms.Label
+$footerLabel.Dock = [System.Windows.Forms.DockStyle]::Bottom
+$footerLabel.Height = 20
+$footerLabel.TextAlign = [System.Drawing.ContentAlignment]::MiddleRight
+$footerLabel.ForeColor = [System.Drawing.Color]::Gray
+$footerLabel.Font = New-Object System.Drawing.Font("Segoe UI", 7)
+$footerLabel.Text = "ShagUtil v$scriptVersion | $(Get-Date -Format 'yyyy')"
+$tabAbout.Controls.Add($footerLabel)
 #endregion
 
 #region 10. Final Execution
 $form.Add_Shown({ # Initial calls for Home tab info and General tab setup
-        #Initialize-HomeTabContent
         Initialize-HomeTabContent -systemInfoPanel $systemInfoPanel -form $form -systemInfoTitle $systemInfoTitle
         GeneralTreeView -treeViewToPopulate $treeView # This line should call your GeneralTreeView
-        #Update-GeneralTweaksStatus
-        #Update-GeneralTweaksStatus -tweakNodes $allTweakNodes
         Update-GeneralTweaksStatus -tweakNodes $global:allTweakNodes # Ensure this uses $global:allTweakNodes
-
         if (-not $script:downloadsTabInitialized) {
             $statusDownloadLabel.Text = "Status: Initializing Winget data..."
             $downloadProgressBar.Visible = $true
@@ -3129,8 +2848,7 @@ $form.Add_Shown({ # Initial calls for Home tab info and General tab setup
         }
     })
 
-# Show form
-[void] $form.ShowDialog()
+[void] $form.ShowDialog() # Show form
 
 Write-Host "`nGoodbye! Thank you for using ShagUtil." -ForegroundColor Green
 #endregion

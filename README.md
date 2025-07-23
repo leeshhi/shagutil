@@ -23,5 +23,5 @@ irm "https://shag.my/win" | iex
 
 ### Alternatives:
 ```ps1
-irm "https://shag.my/shagutil" | iex
+irm "win.shag.my" | iex
 ```

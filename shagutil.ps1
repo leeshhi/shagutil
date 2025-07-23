@@ -209,7 +209,6 @@ function CheckUpdates {
         }
     }
 }
-
 function Invoke-WingetCommand {
     # Function: Invoke Winget Commands and Log Output
     param([string]$arguments, [int]$timeoutSeconds = 60)
@@ -643,7 +642,6 @@ function Create-RegistryPSPath {
     )
     return $Path -replace '^HKLM\\', 'HKLM:\\' -replace '^HKCU\\', 'HKCU:\\' -replace '^HKU\\', 'HKU:\\' -replace '^HKCR\\', 'HKCR:\\' -replace '^HKCC\\', 'HKCC:\\'
 }
-
 function Get-RegistryValue {
     [CmdletBinding()]
     param(
@@ -667,7 +665,6 @@ function Get-RegistryValue {
     }
     return $null # Return $null if path or name does not exist, or on error
 }
-
 function Set-RegistryValue {
     [CmdletBinding()]
     param(
@@ -782,7 +779,6 @@ function Set-RegistryValue {
         return $false
     }
 }
-
 function Get-ServiceStatus {
     # Function to get service start type
     param([string]$ServiceName)
@@ -805,7 +801,6 @@ function Get-ServiceStatus {
         return $null
     }
 }
-
 function Set-ServiceStartType {
     # Function to set service start type
     param([string]$ServiceName, [int]$StartType)
@@ -822,7 +817,6 @@ function Set-ServiceStartType {
         return $false
     }
 }
-
 function ApplyTweaks {
     param([System.Windows.Forms.TreeView]$treeViewToApply)
     $selectedNodes = @($treeViewToApply.Nodes | Where-Object { $_.Checked -eq $true }) + 
@@ -915,7 +909,6 @@ function ApplyTweaks {
     [System.Windows.Forms.MessageBox]::Show("Selected tweaks applied. Some changes may require a system restart.", "Tweaks Applied", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
     Update-GeneralTweaksStatus -tweakNodes $allTweakNodes # Update status after applying
 }
-
 function ResetTweaks {
     param([System.Windows.Forms.TreeView]$treeViewToReset)
     $selectedNodes = @($treeViewToReset.Nodes | Where-Object { $_.Checked -eq $true }) + @($treeViewToReset.Nodes | ForEach-Object { $_.Nodes } | Where-Object { $_.Checked -eq $true })
@@ -978,7 +971,6 @@ function ResetTweaks {
     [System.Windows.Forms.MessageBox]::Show("Selected tweaks reset to default. Some changes may require a system restart.", "Tweaks Reset", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
     Update-GeneralTweaksStatus -tweakNodes $allTweakNodes # Update status after resetting
 }
-
 function Update-GeneralTweaksStatus {
     param([System.Collections.Generic.List[System.Windows.Forms.TreeNode]]$tweakNodes)
     
@@ -1104,7 +1096,6 @@ function Update-GeneralTweaksStatus {
         $node.Checked = $isApplied
     }
 }
-
 function GeneralTreeView {
     param([Parameter(Mandatory = $true)][System.Windows.Forms.TreeView]$treeViewToPopulate)
     $treeViewToPopulate.Nodes.Clear()
@@ -1157,6 +1148,69 @@ $generalTweaks = @(
     },
     @{
         Category         = "Privacy"
+        Name             = "Disable Notification Center & Push Notifications"
+        Description      = "Disables the notification center, calendar, and all push notifications (toast notifications)."
+        RegistrySettings = @(
+            @{
+                Path          = "HKCU\Software\Policies\Microsoft\Windows\Explorer"
+                Name          = "DisableNotificationCenter"
+                Value         = 1
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\Software\Microsoft\Windows\CurrentVersion\PushNotifications"
+                Name          = "ToastEnabled"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            }
+        )
+    },
+    @{
+        Category         = "Gaming"
+        Name             = "Disable GameDVR"
+        Description      = "Deaktiviert GameDVR-Funktionen in Windows."
+        RegistrySettings = @(
+            @{
+                Path          = "HKCU\System\GameConfigStore"
+                Name          = "GameDVR_FSEBehavior"
+                Value         = "2"
+                OriginalValue = "1"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\System\GameConfigStore"
+                Name          = "GameDVR_Enabled"
+                Value         = "0"
+                OriginalValue = "1"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\System\GameConfigStore"
+                Name          = "GameDVR_HonorUserFSEBehaviorMode"
+                Value         = "1"
+                OriginalValue = "0"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\System\GameConfigStore"
+                Name          = "GameDVR_EFSEFeatureFlags"
+                Value         = "0"
+                OriginalValue = "1"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\GameDVR"
+                Name          = "AllowGameDVR"
+                Value         = "0"
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            }
+        )
+    },
+    @{
+        Category         = "Privacy"
         Name             = "Disable Activity History"
         Description      = "This erases recent docs, clipboard, and run history."
         RegistrySettings = @(
@@ -1179,6 +1233,50 @@ $generalTweaks = @(
                 Name          = "UploadUserActivities"
                 Value         = 0
                 OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            }
+        )
+    },
+    @{
+        Category         = "System"
+        Name             = "Disable Hibernation"
+        Description      = "Hibernation is really meant for laptops as it saves what's in memory before turning the pc off. It really should never be used, but some people are lazy and rely on it. Don't be like Bob. Bob likes hibernation."
+        RegistrySettings = @(
+            @{
+                Path          = "HKLM\System\CurrentControlSet\Control\Session Manager\Power"
+                Name          = "HibernateEnabled"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\FlyoutMenuSettings"
+                Name          = "ShowHibernateOption"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            }
+        )
+        InvokeScript     = @("powercfg.exe /hibernate off")
+        UndoScript       = @("powercfg.exe /hibernate on")
+    },
+    @{
+        Category         = "System"
+        Name             = "Disable Homegroup"
+        Description      = "Disables HomeGroup - HomeGroup is a password-protected home networking service that lets you share your stuff with other PCs that are currently running and connected to your network."
+        RegistrySettings = @(
+            @{
+                Path          = "HKLM\SYSTEM\CurrentControlSet\Services\HomeGroupListener"
+                Name          = "Start"
+                Value         = 3 # 3 = Manual
+                OriginalValue = 2 # 2 = Automatic
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM\SYSTEM\CurrentControlSet\Services\HomeGroupProvider"
+                Name          = "Start"
+                Value         = 3 # 3 = Manual
+                OriginalValue = 2 # 2 = Automatic
                 Type          = "DWord"
             }
         )
@@ -1219,6 +1317,413 @@ $generalTweaks = @(
         )
     },
     @{
+        Category         = "Privacy"
+        Name             = "Disable Telemetry"
+        Description      = "Disables Microsoft Telemetry. Note: This will lock many Edge Browser settings. Microsoft spies heavily on you on using the Edge browser."
+        RegistrySettings = @(
+            # Registry settings for telemetry and content delivery
+            @{
+                Path          = "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\DataCollection"
+                Name          = "AllowTelemetry"
+                Value         = 0
+                OriginalValue = "<RemoveEntry>" # Default is often not present or 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection"
+                Name          = "AllowTelemetry"
+                Value         = 0
+                OriginalValue = "<RemoveEntry>" # Default is often not present or 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Name          = "ContentDeliveryAllowed"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Name          = "OemPreInstalledAppsEnabled"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Name          = "PreInstalledAppsEnabled"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Name          = "PreInstalledAppsEverEnabled"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Name          = "SilentInstalledAppsEnabled"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Name          = "SubscribedContent-338387Enabled"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Name          = "SubscribedContent-338388Enabled"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Name          = "SubscribedContent-338389Enabled"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Name          = "SubscribedContent-353698Enabled"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+                Name          = "SystemPaneSuggestionsEnabled"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\SOFTWARE\Microsoft\Siuf\Rules"
+                Name          = "NumberOfSIUFInPeriod"
+                Value         = 0
+                OriginalValue = 0 # Annahme: Default ist 0 oder nicht vorhanden
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection"
+                Name          = "DoNotShowFeedbackNotifications"
+                Value         = 1
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\SOFTWARE\Policies\Microsoft\Windows\CloudContent"
+                Name          = "DisableTailoredExperiencesWithDiagnosticData"
+                Value         = 1
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\AdvertisingInfo"
+                Name          = "DisabledByGroupPolicy"
+                Value         = 1
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting"
+                Name          = "Disabled"
+                Value         = 1
+                OriginalValue = 0
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\DeliveryOptimization\Config"
+                Name          = "DODownloadMode"
+                Value         = 1 # Peer-to-peer downloads (LAN only or disabled)
+                OriginalValue = 1 # Standardwert, wenn nicht geändert
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM\SYSTEM\CurrentControlSet\Control\Remote Assistance"
+                Name          = "fAllowToGetHelp"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\OperationStatusManager"
+                Name          = "EnthusiastMode"
+                Value         = 1
+                OriginalValue = 0
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+                Name          = "ShowTaskViewButton"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced\People"
+                Name          = "PeopleBand"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+                Name          = "LaunchTo"
+                Value         = 1 # Startet im Datei-Explorer auf 'Dieser PC'
+                OriginalValue = 1 # Standardwert, wenn nicht geändert
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM\SYSTEM\CurrentControlSet\Control\FileSystem"
+                Name          = "LongPathsEnabled"
+                Value         = 1
+                OriginalValue = 0
+                Type          = "DWord"
+            },
+            @{
+                # Kommentar: "Driver searching is a function that should be left in" - Wert bleibt 1
+                Path          = "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching"
+                Name          = "SearchOrderConfig"
+                Value         = 1
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile"
+                Name          = "SystemResponsiveness"
+                Value         = 0 # Optimiert für Multimedia
+                OriginalValue = 1 # Standardwert
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile"
+                Name          = "NetworkThrottlingIndex"
+                Value         = 4294967295 # Deaktiviert Drosselung (FFFFFFFF in Hex)
+                OriginalValue = 10 # Standardwert (oder 10 für Gaming)
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\Control Panel\Desktop"
+                Name          = "AutoEndTasks"
+                Value         = 1 # Task beenden, wenn nicht reagiert
+                OriginalValue = 0 # Standardwert
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"
+                Name          = "ClearPageFileAtShutdown"
+                Value         = 0 # Deaktiviert das Löschen der Auslagerungsdatei beim Herunterfahren
+                OriginalValue = 0 # Standardwert
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM\SYSTEM\ControlSet001\Services\Ndu"
+                Name          = "Start"
+                Value         = 2 # NDU (Network Diagnostic Usage) auf Manuell setzen (2=Automatic, 3=Manual, 4=Disabled)
+                OriginalValue = 1 # Standardwert (Boot)
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters"
+                Name          = "IRPStackSize"
+                Value         = 30 # Erhöht IRPStackSize für größere Netzwerkpakete
+                OriginalValue = 20 # Standardwert
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\SOFTWARE\Policies\Microsoft\Windows\Windows Feeds"
+                Name          = "EnableFeeds"
+                Value         = 0
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\Software\Microsoft\Windows\CurrentVersion\Feeds"
+                Name          = "ShellFeedsTaskbarViewMode"
+                Value         = 2 # Ausblenden des News and Interests-Buttons
+                OriginalValue = 1 # Standardwert
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer"
+                Name          = "HideSCAMeetNow"
+                Value         = 1
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\Software\Microsoft\Windows\CurrentVersion\UserProfileEngagement"
+                Name          = "ScoobeSystemSettingEnabled"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            }
+        )
+        InvokeScript     = @(
+            @'
+# Set boot menu policy to Legacy
+bcdedit /set {current} bootmenupolicy Legacy | Out-Null
+
+# Update Task Manager preferences for older Windows versions
+try {
+    $currentBuild = (Get-ItemProperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion" -Name CurrentBuild -ErrorAction Stop).CurrentBuild
+    if ($currentBuild -lt 22557) {
+        $taskmgr = Start-Process -WindowStyle Hidden -FilePath taskmgr.exe -PassThru
+        
+        # Wait for Task Manager to initialize preferences
+        $preferences = $null
+        $attempts = 0
+        $maxAttempts = 10
+        
+        while ($null -eq $preferences -and $attempts -lt $maxAttempts) {
+            Start-Sleep -Milliseconds 100
+            $preferences = Get-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\TaskManager" -Name "Preferences" -ErrorAction SilentlyContinue
+            $attempts = $attempts + 1
+        }
+        
+        if ($null -ne $preferences) {
+            Stop-Process $taskmgr -Force -ErrorAction SilentlyContinue
+            try {
+                $preferences.Preferences[28] = 0
+                Set-ItemProperty -Path "HKCU:\Software\Microsoft\Windows\CurrentVersion\TaskManager" -Name "Preferences" -Type Binary -Value $preferences.Preferences -Force -ErrorAction Stop
+            } catch {
+                Write-Warning "Failed to update Task Manager preferences: $_"
+            }
+        } else {
+            Write-Warning "Failed to update Task Manager preferences after $maxAttempts attempts"
+            Stop-Process $taskmgr -Force -ErrorAction SilentlyContinue
+        }
+    }
+} catch {
+    Write-Warning "Error checking Windows version or updating Task Manager: $_"
+    if ($taskmgr -and -not $taskmgr.HasExited) {
+        Stop-Process $taskmgr -Force -ErrorAction SilentlyContinue
+    }
+}
+
+# Remove 3D Objects from This PC
+try {
+    $path = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\MyComputer\NameSpace\{0DB7E03F-FC29-4DC6-9020-FF41B59E513A}"
+    if (Test-Path $path) {
+        Remove-Item -Path $path -Recurse -Force -ErrorAction Stop
+    }
+} catch {
+    Write-Warning "Failed to remove 3D Objects from This PC: $_"
+}
+
+# Remove Edge policies if they exist
+if (Test-Path "HKLM:\SOFTWARE\Policies\Microsoft\Edge") {
+    try {
+        Remove-Item -Path "HKLM:\SOFTWARE\Policies\Microsoft\Edge" -Recurse -Force -ErrorAction Stop
+    } catch {
+        Write-Warning "Failed to remove Edge policies: $_"
+    }
+}
+
+# Optimize SvcHost split threshold based on installed RAM
+try {
+    $ram = (Get-CimInstance -ClassName Win32_PhysicalMemory | Measure-Object -Property Capacity -Sum).Sum / 1kb
+    if ($ram -gt 0) {
+        try {
+            New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control" -Name "SvcHostSplitThresholdInKB" -Value $ram -Force -ErrorAction Stop | Out-Null
+        } catch {
+            Set-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control" -Name "SvcHostSplitThresholdInKB" -Value $ram -Force -ErrorAction Stop
+        }
+    }
+} catch {
+    Write-Warning "Failed to set SvcHostSplitThresholdInKB: $_"
+}
+    
+# Disable AutoLogger
+$autoLoggerDir = "$env:PROGRAMDATA\Microsoft\Diagnosis\ETLLogs\AutoLogger"
+try {
+    if (Test-Path "$autoLoggerDir\AutoLogger-Diagtrack-Listener.etl") {
+        Remove-Item -Path "$autoLoggerDir\AutoLogger-Diagtrack-Listener.etl" -Force -ErrorAction SilentlyContinue
+    }
+    
+    # Deny SYSTEM access to AutoLogger directory
+    if (Test-Path $autoLoggerDir) {
+        icacls $autoLoggerDir /deny "SYSTEM:(OI)(CI)F" /T /C | Out-Null
+    }
+} catch {
+    Write-Warning "Failed to configure AutoLogger: $_"
+}
+
+# Disable sample submission in Windows Defender
+try {
+    if (Get-Command -Name Set-MpPreference -ErrorAction SilentlyContinue) {
+        Set-MpPreference -SubmitSamplesConsent 2 -ErrorAction SilentlyContinue | Out-Null
+    }
+} catch {
+    Write-Warning "Failed to set Windows Defender sample submission preference: $_"
+}
+'@
+        )
+        UndoScript       = @(
+            @"
+    # Re-enable AutoLogger
+    `$autoLoggerDir = "`$env:PROGRAMDATA\Microsoft\Diagnosis\ETLLogs\AutoLogger"
+    if (Test-Path `$autoLoggerDir) {
+        icacls `$autoLoggerDir /grant SYSTEM:(OI)(CI)F /T /C | Out-Null
+    }
+"@,
+            @"
+    # Reset SvcHostSplitThresholdInKB
+    if (Test-Path 'HKLM:\SYSTEM\CurrentControlSet\Control') {
+        Set-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Control' -Name 'SvcHostSplitThresholdInKB' -Type DWord -Value 380000 -Force -ErrorAction SilentlyContinue
+    }
+"@,
+            @"
+    # Re-enable Windows Defender sample submission
+    try {
+        Set-MpPreference -SubmitSamplesConsent 1 -ErrorAction SilentlyContinue | Out-Null
+    } catch {
+        Write-Warning "Failed to re-enable Windows Defender sample submission: `$_"
+    }
+"@
+        )
+    },
+    @{
+        Category     = "Features"
+        Name         = "Enable End Task With Right Click"
+        Description  = "Enables a new 'End Task' option in the right-click context menu for apps on the taskbar."
+        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+        ValueName    = "TaskbarEndTask"
+        TweakValue   = 1 # Value to set when enabled
+        DefaultValue = 0 # Value to set when reset/disabled (assuming 0 is default or missing)
+        ValueType    = "DWord"
+    },
+    @{
+        Category     = "Visuals"
+        Name         = "Set Classic Right-Click Menu"
+        Description  = "Great Windows 11 tweak to bring back good context menus when right clicking things in explorer."
+        InvokeScript = @(
+            @"
+    New-Item -Path "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}" -Name "InprocServer32" -force -value ""
+    Write-Host "Restarting explorer.exe ..."
+    Stop-Process -Name "explorer" -Force
+"@
+        )
+        UndoScript   = @(
+            @"
+    Remove-Item -Path "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}" -Recurse -Confirm:$false -Force
+    # Restarting Explorer in the Undo Script might not be necessary, as the Registry change without restarting Explorer does work, but just to make sure.
+    Write-Host "Restarting explorer.exe ..."
+    Stop-Process -Name "explorer" -Force
+"@
+        )
+    },
+    @{
         Category     = "Network"
         Name         = "Prefer IPv4 over IPv6"
         Description  = "To set the IPv4 preference can have latency and security benefits on private networks where IPv6 is not configured."
@@ -1227,6 +1732,150 @@ $generalTweaks = @(
         TweakValue   = "32"
         DefaultValue = "0"
         ValueType    = "DWord"
+    },
+    @{
+        Category         = "Advanced - CAUTION"
+        Name             = "Disable Teredo"
+        Description      = "Teredo network tunneling is a ipv6 feature that can cause additional latency, but may cause problems with some games"
+        RegistrySettings = @(
+            @{
+                Path          = "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters"
+                Name          = "DisabledComponents"
+                Value         = "1"
+                OriginalValue = "0"
+                Type          = "DWord"
+            }
+        )
+        InvokeScript     = @(
+            @"
+    netsh interface teredo set state disabled
+"@
+        )
+        UndoScript       = @(
+            @"
+    netsh interface teredo set state default
+"@
+        )
+    },
+    @{
+        Category     = "Performance"
+        Name         = "Disable Background Apps"
+        Description  = "Disables all Microsoft Store apps from running in the background, which has to be done individually since Win11"
+        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications"
+        ValueName    = "GlobalUserDisabled"
+        TweakValue   = "1"
+        DefaultValue = "0"
+        ValueType    = "DWord"
+    },
+    @{
+        Category     = "Gaming"
+        Name         = "Disable Fullscreen Optimizations"
+        Description  = "Disables FSO in all applications. NOTE: This will disable Color Management in Exclusive Fullscreen"
+        RegistryPath = "HKCU\System\GameConfigStore"
+        ValueName    = "GameDVR_DXGIHonorFSEWindowsCompatible"
+        TweakValue   = "1"
+        DefaultValue = "0"
+        ValueType    = "DWord"
+    },
+    @{
+        Category     = "Privacy"
+        Name         = "Disable Bing Search in Start Menu"
+        Description  = "If enabled, includes web search results from Bing in your Start Menu search."
+        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Search"
+        ValueName    = "BingSearchEnabled"
+        TweakValue   = "0"
+        DefaultValue = "1"
+        ValueType    = "DWord"
+    },
+    @{
+        Category         = "System"
+        Name             = "NumLock on Startup"
+        Description      = "Toggle the Num Lock key state when your computer starts."
+        RegistrySettings = @(
+            @{
+                Path          = "HKU\.Default\Control Panel\Keyboard"
+                Name          = "InitialKeyboardIndicators"
+                Value         = "2"
+                OriginalValue = "0"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\Control Panel\Keyboard"
+                Name          = "InitialKeyboardIndicators"
+                Value         = "2"
+                OriginalValue = "0"
+                Type          = "DWord"
+            }
+        )
+    },
+    @{
+        Category         = "Privacy"
+        Name             = "Recommendations in Start Menu"
+        Description      = "If disabled then you will not see recommendations in the Start Menu. | Enables 'iseducationenvironment' | Relogin Required. | WARNING: This will also disable Windows Spotlight on your Lock Screen as a side effect."
+        RegistrySettings = @(
+            @{
+                Path          = "HKLM\SOFTWARE\Microsoft\PolicyManager\current\device\Start"
+                Name          = "HideRecommendedSection"
+                Value         = "0"
+                OriginalValue = "1"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM\SOFTWARE\Microsoft\PolicyManager\current\device\Education"
+                Name          = "IsEducationEnvironment"
+                Value         = "0"
+                OriginalValue = "1"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\Explorer"
+                Name          = "HideRecommendedSection"
+                Value         = "0"
+                OriginalValue = "1"
+                Type          = "DWord"
+            }
+        )
+    },
+    @{
+        Category     = "Visuals"
+        Name         = "Remove Settings Home Page"
+        Description  = "Removes the Home page in the Windows Settings app."
+        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer"
+        ValueName    = "SettingsPageVisibility"
+        TweakValue   = "hide:home"
+        DefaultValue = "show:home"
+        ValueType    = "String"
+    },
+    @{
+        Category     = "Accessibility"
+        Name         = "Sticky Keys"
+        Description  = "If Enabled then Sticky Keys is activated - Sticky keys is an accessibility feature of some graphical user interfaces which assists users who have physical disabilities or help users reduce repetitive strain injury."
+        RegistryPath = "HKCU\Control Panel\Accessibility\StickyKeys"
+        ValueName    = "Flags"
+        TweakValue   = "510"
+        DefaultValue = "58"
+        ValueType    = "DWord"
+    },
+    @{
+        Category         = "System"
+        Name             = "Detailed BSoD"
+        Description      = "If Enabled then you will see a detailed Blue Screen of Death (BSOD) with more information."
+        RegistrySettings = @(
+            @{
+                Path          = "HKLM\SYSTEM\CurrentControlSet\Control\CrashControl"
+                Name          = "DisplayParameters"
+                Value         = "1"
+                OriginalValue = "0"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM\SYSTEM\CurrentControlSet\Control\CrashControl"
+                Name          = "DisableEmoticon"
+                Value         = "1"
+                OriginalValue = "0"
+                Type          = "DWord"
+            }
+        )
     },
     @{
         Category     = "Performance"

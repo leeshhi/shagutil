@@ -2,7 +2,7 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Security # Needed ?
-$scriptVersion = "0.3.1"
+$scriptVersion = "0.3.0"
 
 #region 1. Initial Script Setup & Admin Check
 if (-not ([Security.Principal.WindowsPrincipal][System.Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltinRole] "Administrator")) {
@@ -209,6 +209,7 @@ function CheckUpdates {
         }
     }
 }
+
 function Invoke-WingetCommand {
     # Function: Invoke Winget Commands and Log Output
     param([string]$arguments, [int]$timeoutSeconds = 60)
@@ -642,6 +643,7 @@ function Create-RegistryPSPath {
     )
     return $Path -replace '^HKLM\\', 'HKLM:\\' -replace '^HKCU\\', 'HKCU:\\' -replace '^HKU\\', 'HKU:\\' -replace '^HKCR\\', 'HKCR:\\' -replace '^HKCC\\', 'HKCC:\\'
 }
+
 function Get-RegistryValue {
     [CmdletBinding()]
     param(
@@ -665,6 +667,7 @@ function Get-RegistryValue {
     }
     return $null # Return $null if path or name does not exist, or on error
 }
+
 function Set-RegistryValue {
     [CmdletBinding()]
     param(
@@ -779,6 +782,7 @@ function Set-RegistryValue {
         return $false
     }
 }
+
 function Get-ServiceStatus {
     # Function to get service start type
     param([string]$ServiceName)
@@ -801,6 +805,7 @@ function Get-ServiceStatus {
         return $null
     }
 }
+
 function Set-ServiceStartType {
     # Function to set service start type
     param([string]$ServiceName, [int]$StartType)
@@ -817,6 +822,7 @@ function Set-ServiceStartType {
         return $false
     }
 }
+
 function ApplyTweaks {
     param([System.Windows.Forms.TreeView]$treeViewToApply)
     $selectedNodes = @($treeViewToApply.Nodes | Where-Object { $_.Checked -eq $true }) + 
@@ -909,6 +915,7 @@ function ApplyTweaks {
     [System.Windows.Forms.MessageBox]::Show("Selected tweaks applied. Some changes may require a system restart.", "Tweaks Applied", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
     Update-GeneralTweaksStatus -tweakNodes $allTweakNodes # Update status after applying
 }
+
 function ResetTweaks {
     param([System.Windows.Forms.TreeView]$treeViewToReset)
     $selectedNodes = @($treeViewToReset.Nodes | Where-Object { $_.Checked -eq $true }) + @($treeViewToReset.Nodes | ForEach-Object { $_.Nodes } | Where-Object { $_.Checked -eq $true })
@@ -971,6 +978,7 @@ function ResetTweaks {
     [System.Windows.Forms.MessageBox]::Show("Selected tweaks reset to default. Some changes may require a system restart.", "Tweaks Reset", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
     Update-GeneralTweaksStatus -tweakNodes $allTweakNodes # Update status after resetting
 }
+
 function Update-GeneralTweaksStatus {
     param([System.Collections.Generic.List[System.Windows.Forms.TreeNode]]$tweakNodes)
     
@@ -1096,6 +1104,7 @@ function Update-GeneralTweaksStatus {
         $node.Checked = $isApplied
     }
 }
+
 function GeneralTreeView {
     param([Parameter(Mandatory = $true)][System.Windows.Forms.TreeView]$treeViewToPopulate)
     $treeViewToPopulate.Nodes.Clear()
@@ -1694,36 +1703,6 @@ try {
         )
     },
     @{
-        Category     = "Features"
-        Name         = "Enable End Task With Right Click"
-        Description  = "Enables a new 'End Task' option in the right-click context menu for apps on the taskbar."
-        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
-        ValueName    = "TaskbarEndTask"
-        TweakValue   = 1 # Value to set when enabled
-        DefaultValue = 0 # Value to set when reset/disabled (assuming 0 is default or missing)
-        ValueType    = "DWord"
-    },
-    @{
-        Category     = "Visuals"
-        Name         = "Set Classic Right-Click Menu"
-        Description  = "Great Windows 11 tweak to bring back good context menus when right clicking things in explorer."
-        InvokeScript = @(
-            @"
-    New-Item -Path "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}" -Name "InprocServer32" -force -value ""
-    Write-Host "Restarting explorer.exe ..."
-    Stop-Process -Name "explorer" -Force
-"@
-        )
-        UndoScript   = @(
-            @"
-    Remove-Item -Path "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}" -Recurse -Confirm:$false -Force
-    # Restarting Explorer in the Undo Script might not be necessary, as the Registry change without restarting Explorer does work, but just to make sure.
-    Write-Host "Restarting explorer.exe ..."
-    Stop-Process -Name "explorer" -Force
-"@
-        )
-    },
-    @{
         Category     = "Network"
         Name         = "Prefer IPv4 over IPv6"
         Description  = "To set the IPv4 preference can have latency and security benefits on private networks where IPv6 is not configured."
@@ -1732,81 +1711,6 @@ try {
         TweakValue   = "32"
         DefaultValue = "0"
         ValueType    = "DWord"
-    },
-    @{
-        Category         = "Advanced - CAUTION"
-        Name             = "Disable Teredo"
-        Description      = "Teredo network tunneling is a ipv6 feature that can cause additional latency, but may cause problems with some games"
-        RegistrySettings = @(
-            @{
-                Path          = "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters"
-                Name          = "DisabledComponents"
-                Value         = "1"
-                OriginalValue = "0"
-                Type          = "DWord"
-            }
-        )
-        InvokeScript     = @(
-            @"
-    netsh interface teredo set state disabled
-"@
-        )
-        UndoScript       = @(
-            @"
-    netsh interface teredo set state default
-"@
-        )
-    },
-    @{
-        Category     = "Performance"
-        Name         = "Disable Background Apps"
-        Description  = "Disables all Microsoft Store apps from running in the background, which has to be done individually since Win11"
-        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications"
-        ValueName    = "GlobalUserDisabled"
-        TweakValue   = "1"
-        DefaultValue = "0"
-        ValueType    = "DWord"
-    },
-    @{
-        Category     = "Gaming"
-        Name         = "Disable Fullscreen Optimizations"
-        Description  = "Disables FSO in all applications. NOTE: This will disable Color Management in Exclusive Fullscreen"
-        RegistryPath = "HKCU\System\GameConfigStore"
-        ValueName    = "GameDVR_DXGIHonorFSEWindowsCompatible"
-        TweakValue   = "1"
-        DefaultValue = "0"
-        ValueType    = "DWord"
-    },
-    @{
-        Category     = "Privacy"
-        Name         = "Disable Bing Search in Start Menu"
-        Description  = "If enabled, includes web search results from Bing in your Start Menu search."
-        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Search"
-        ValueName    = "BingSearchEnabled"
-        TweakValue   = "0"
-        DefaultValue = "1"
-        ValueType    = "DWord"
-    },
-    @{
-        Category         = "System"
-        Name             = "NumLock on Startup"
-        Description      = "Toggle the Num Lock key state when your computer starts."
-        RegistrySettings = @(
-            @{
-                Path          = "HKU\.Default\Control Panel\Keyboard"
-                Name          = "InitialKeyboardIndicators"
-                Value         = "2"
-                OriginalValue = "0"
-                Type          = "DWord"
-            },
-            @{
-                Path          = "HKCU\Control Panel\Keyboard"
-                Name          = "InitialKeyboardIndicators"
-                Value         = "2"
-                OriginalValue = "0"
-                Type          = "DWord"
-            }
-        )
     },
     @{
         Category         = "Privacy"
@@ -1832,47 +1736,6 @@ try {
                 Name          = "HideRecommendedSection"
                 Value         = "0"
                 OriginalValue = "1"
-                Type          = "DWord"
-            }
-        )
-    },
-    @{
-        Category     = "Visuals"
-        Name         = "Remove Settings Home Page"
-        Description  = "Removes the Home page in the Windows Settings app."
-        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer"
-        ValueName    = "SettingsPageVisibility"
-        TweakValue   = "hide:home"
-        DefaultValue = "show:home"
-        ValueType    = "String"
-    },
-    @{
-        Category     = "Accessibility"
-        Name         = "Sticky Keys"
-        Description  = "If Enabled then Sticky Keys is activated - Sticky keys is an accessibility feature of some graphical user interfaces which assists users who have physical disabilities or help users reduce repetitive strain injury."
-        RegistryPath = "HKCU\Control Panel\Accessibility\StickyKeys"
-        ValueName    = "Flags"
-        TweakValue   = "510"
-        DefaultValue = "58"
-        ValueType    = "DWord"
-    },
-    @{
-        Category         = "System"
-        Name             = "Detailed BSoD"
-        Description      = "If Enabled then you will see a detailed Blue Screen of Death (BSOD) with more information."
-        RegistrySettings = @(
-            @{
-                Path          = "HKLM\SYSTEM\CurrentControlSet\Control\CrashControl"
-                Name          = "DisplayParameters"
-                Value         = "1"
-                OriginalValue = "0"
-                Type          = "DWord"
-            },
-            @{
-                Path          = "HKLM\SYSTEM\CurrentControlSet\Control\CrashControl"
-                Name          = "DisableEmoticon"
-                Value         = "1"
-                OriginalValue = "0"
                 Type          = "DWord"
             }
         )

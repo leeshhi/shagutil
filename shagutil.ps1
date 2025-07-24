@@ -1061,13 +1061,12 @@ function Update-GeneralTweaksStatus {
         $tweak = $node.Tag
         if (-not $tweak) { continue }
         
-        # Convert Hashtable to PSCustomObject if necessary
-        if ($tweak -is [System.Collections.Hashtable] -or $tweak -is [System.Collections.Specialized.OrderedDictionary]) {
+        if ($tweak -is [System.Collections.Hashtable] -or $tweak -is [System.Collections.Specialized.OrderedDictionary]) { # Convert Hashtable to PSCustomObject if necessary
             $tweak = [PSCustomObject]$tweak
             $node.Tag = $tweak  # Update the tag with the converted object
         }
         
-        $tweakName = if ($tweak.PSObject.Properties['Name'] -and $tweak.Name) { 
+        $tweakName = if ($tweak.PSObject.Properties['Name'] -and $tweak.Name) { # Get tweak name
             $tweak.Name 
         }
         else { 
@@ -1079,8 +1078,7 @@ function Update-GeneralTweaksStatus {
         $statusText = @()
         $hasAnyCheck = $false
         
-        # 1. Check for simple registry settings
-        if ($tweak.RegistryPath -and $tweak.ValueName -ne $null) {
+        if ($tweak.RegistryPath -and $tweak.ValueName -ne $null) { # 1. Check for simple registry settings
             $hasAnyCheck = $true
             $currentValue = Get-RegistryValue -Path $tweak.RegistryPath -Name $tweak.ValueName
             $expectedValue = if ($tweak.PSObject.Properties['TweakValue']) { $tweak.TweakValue } else { $null }
@@ -1097,11 +1095,9 @@ function Update-GeneralTweaksStatus {
                 $isApplied = ($currentValue -eq $null)
                 $statusText += "Remove $($tweak.ValueName) from $($tweak.RegistryPath): $(if ($isApplied) {'✓ Applied'} else {'✗ Not applied'})"
             }
-            else {
-                # Improved comparison handling different data types
+            else { # Improved comparison handling different data types
                 $isApplied = $false
-                if ($currentValue -ne $null) {
-                    # Handle different data types properly
+                if ($currentValue -ne $null) { # Handle different data types properly
                     if ($expectedValue -is [int] -or $expectedValue -is [long]) {
                         $isApplied = ([int]$currentValue -eq [int]$expectedValue)
                     }
@@ -1119,26 +1115,22 @@ function Update-GeneralTweaksStatus {
             }
         }
         
-        # 2. Check for RegistrySettings array
-        elseif ($tweak.PSObject.Properties['RegistrySettings'] -and $tweak.RegistrySettings) {
+        elseif ($tweak.PSObject.Properties['RegistrySettings'] -and $tweak.RegistrySettings) { # 2. Check for RegistrySettings array
             $allSettingsApplied = $true
             $hasSettings = $false
             
             foreach ($setting in $tweak.RegistrySettings) {
                 $hasSettings = $true
                 $hasAnyCheck = $true
-                
                 $currentValue = Get-RegistryValue -Path $setting.Path -Name $setting.Name
                 
                 if ($setting.Value -eq "<RemoveEntry>") {
                     $settingApplied = ($currentValue -eq $null)
                     $statusText += "Remove $($setting.Name) from $($setting.Path): $(if ($settingApplied) {'✓ Applied'} else {'✗ Not applied'})"
                 }
-                else {
-                    # Improved comparison for RegistrySettings
+                else { # Improved comparison for RegistrySettings
                     $settingApplied = $false
-                    if ($currentValue -ne $null) {
-                        # Handle different data types properly
+                    if ($currentValue -ne $null) { # Handle different data types properly
                         if ($setting.Value -is [int] -or $setting.Value -is [long]) {
                             $settingApplied = ([int]$currentValue -eq [int]$setting.Value)
                         }
@@ -1163,8 +1155,7 @@ function Update-GeneralTweaksStatus {
             $isApplied = $hasSettings -and $allSettingsApplied
         }
         
-        # 3. Check for InvokeScript (cannot be reliably verified)
-        if ($tweak.PSObject.Properties['InvokeScript'] -and $tweak.InvokeScript) {
+        if ($tweak.PSObject.Properties['InvokeScript'] -and $tweak.InvokeScript) { # 3. Check for InvokeScript (cannot be reliably verified)
             $hasAnyCheck = $true
             if ($tweak.PSObject.Properties['IsApplied'] -and $tweak.IsApplied) {
                 $isApplied = $true
@@ -1176,8 +1167,7 @@ function Update-GeneralTweaksStatus {
             }
         }
         
-        # 4. Special handling for Service tweaks
-        if ($tweak.Action -eq "Service" -and $tweak.Service) {
+        if ($tweak.Action -eq "Service" -and $tweak.Service) { # 4. Special handling for Service tweaks
             $hasAnyCheck = $true
             try {
                 $service = Get-Service -Name $tweak.Service -ErrorAction Stop
@@ -1193,14 +1183,12 @@ function Update-GeneralTweaksStatus {
             }
         }
         
-        # If no verification was possible, indicate that the status is unknown
-        if (-not $hasAnyCheck) {
+        if (-not $hasAnyCheck) { # If no verification was possible, indicate that the status is unknown
             $statusText += "No verification method available for this tweak."
             $isApplied = $false
         }
         
-        # Set the color based on the status
-        if ($isApplied) {
+        if ($isApplied) { # Set the color based on the status
             $node.ForeColor = [System.Drawing.Color]::Green
             $node.ToolTipText = "Applied: $tweakName`n" + ($statusText -join "`n")
         }
@@ -1209,8 +1197,7 @@ function Update-GeneralTweaksStatus {
             $node.ToolTipText = "Not applied: $tweakName`n" + ($statusText -join "`n")
         }
         
-        # Set the checkmark based on the status
-        $node.Checked = $isApplied
+        #$node.Checked = $isApplied # Set the checkmark based on the status
     }
 }
 
@@ -1239,7 +1226,7 @@ function GeneralTreeView {
         $parentNode.ForeColor = [System.Drawing.Color]::RoyalBlue
         $parentNode.NodeFont = New-Object System.Drawing.Font($treeViewToPopulate.Font.FontFamily, 10, [System.Drawing.FontStyle]::Bold)
         [void]$treeViewToPopulate.Nodes.Add($parentNode)
-        $parentNode.Expand()
+        #$parentNode.Expand()
         
         foreach ($tweak in $tweaksInThisCategory | Sort-Object Name) {
             $childNode = New-Object System.Windows.Forms.TreeNode ($tweak.Name)

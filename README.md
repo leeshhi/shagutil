@@ -27,7 +27,7 @@ irm "win.shag.my" | iex
 ```
 
 ## 💖 Support
-- To morally and mentally support the project, make sure to leave a ⭐️!
+- To support the project, make sure to leave a ⭐️!
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/H2H0K8V3U)
 

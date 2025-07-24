@@ -1828,7 +1828,7 @@ $buttonPanel.AutoSize = $true
 $tweaksMainPanel.Controls.Add($buttonPanel, 0, 3)
 # Apply Button
 $applyButton = New-Object System.Windows.Forms.Button
-$applyButton.Text = "Apply tweaks(s)"
+$applyButton.Text = "Apply"
 $applyButton.Size = New-Object System.Drawing.Size(150, 30)
 $applyButton.Margin = New-Object System.Windows.Forms.Padding(0, 0, 10, 0)
 $applyButton.BackColor = [System.Drawing.Color]::LimeGreen
@@ -1838,7 +1838,7 @@ $buttonPanel.Controls.Add($applyButton)
 
 # Reset Button
 $resetButton = New-Object System.Windows.Forms.Button
-$resetButton.Text = "Reset selected to Default"
+$resetButton.Text = "Reset selected"
 $resetButton.Size = New-Object System.Drawing.Size(180, 30)
 $resetButton.Margin = New-Object System.Windows.Forms.Padding(0, 0, 10, 0)
 $resetButton.BackColor = [System.Drawing.Color]::DarkOrange
@@ -1855,21 +1855,77 @@ $generalUncheckAllButton.BackColor = [System.Drawing.Color]::SlateGray
 $generalUncheckAllButton.Anchor = [System.Windows.Forms.AnchorStyles]::Left
 $buttonPanel.Controls.Add($generalUncheckAllButton)
 
-# Add "Recommended" Button
+# Recommended Button
+$recommendedButton = New-Object System.Windows.Forms.Button
+$recommendedButton.Text = "Recommended"
+$recommendedButton.Size = New-Object System.Drawing.Size(120, 30)
+$recommendedButton.Margin = New-Object System.Windows.Forms.Padding(0, 0, 10, 0)
+$recommendedButton.BackColor = [System.Drawing.Color]::LightBlue
+$recommendedButton.Anchor = [System.Windows.Forms.AnchorStyles]::Left
+$buttonPanel.Controls.Add($recommendedButton)
+
+# Function to set recommended tweaks
+function Set-RecommendedTweaks {
+    $global:IgnoreCheckEvent = $true
+    
+    # First, uncheck all tweaks
+    foreach ($node in $global:allTweakNodes) {
+        $node.Checked = $false
+    }
+    
+    # Define recommended tweaks by their names
+    $recommendedTweakNames = @(
+        "Disable ConsumerFeatures",
+        "Disable Activity History",
+        "Disable Location Tracking",
+        "Prefer IPv4 over IPv6",
+        "Win 32 Priority Separation",
+        "Disable App Suggestions",
+        "Disable Mouse Pointer Trails",
+        "Disable Sync Provider Notifications",
+        "Show File Extensions",
+        "Enable End Task in Taskbar",
+        "Disable Windows Copilot",
+        "Disable Last Access Time Stamp",
+        "Disable Enhance Pointer Precision",
+        "Disable GameDVR",
+        "Disable Background Apps",
+        "Disable Bing Search in Start Menu",
+        "Disable Recommendations in Start Menu",
+        "Remove Settings Home Page",
+        "Disable Sticky Keys"
+    )
+    
+    # Check the recommended tweaks
+    foreach ($node in $global:allTweakNodes) {
+        if ($node.Text -in $recommendedTweakNames) {
+            $node.Checked = $true
+        }
+    }
+    
+    # Update the UI
+    $applyButton.Enabled = $true
+    $resetButton.Enabled = $true
+    $global:IgnoreCheckEvent = $false
+    $statusLabel.Text = "Status: Recommended tweaks selected. Click 'Apply' to apply them."
+}
+
+# Add click handler for Recommended button
+$recommendedButton.Add_Click({
+    Set-RecommendedTweaks
+})
 
 $treeView.Add_AfterCheck({
         param($sender, $e)
         if ($global:IgnoreCheckEvent) { return }
         $global:IgnoreCheckEvent = $true
 
-        if ($e.Node.Nodes.Count -gt 0) {
-            # Category node: Check/Uncheck all children
+        if ($e.Node.Nodes.Count -gt 0) { # Category node: Check/Uncheck all children
             foreach ($child in $e.Node.Nodes) {
                 $child.Checked = $e.Node.Checked
             }
         }
-        else {
-            # Tweak node: Update parent's checked state if all children are checked/unchecked
+        else { # Tweak node: Update parent's checked state if all children are checked/unchecked
             $parent = $e.Node.Parent
             if ($parent -ne $null) {
                 $checkedChildrenCount = ($parent.Nodes | Where-Object { $_.Checked }).Count

@@ -2,7 +2,7 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Security # Needed ?
-$scriptVersion = "25.07.24"
+$scriptVersion = "25.07.25"
 
 #region 1. Initial Script Setup & Compatibility Checks
 if (-not ([Security.Principal.WindowsPrincipal][System.Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltinRole] "Administrator")) { # Check for Administrator privileges
@@ -30,11 +30,12 @@ if ($displayVersion -and -not (@("23H2", "24H2", "25H2") -contains $displayVersi
 
 Clear-Host
 Write-Host ""
-Write-Host "█████   █   █    ███  █████     █████ █████" -ForegroundColor White
-Write-Host "█       █   █   █   █ █         █     █" -ForegroundColor White
-Write-Host "█████   █████   █████ █ ███     █ ███ █ ███" -ForegroundColor White
-Write-Host "    █   █   █   █   █ █   █     █   █ █   █" -ForegroundColor White
-Write-Host "█████   █   █   █   █ █████ █   █████ █████" -ForegroundColor White
+Write-Host "  _________.__                    ____ ___   __  .__.__   " -ForegroundColor White
+Write-Host " /   _____/|  |__ _____     ____ |    |   \_/  |_|__|  |  " -ForegroundColor White
+Write-Host " \_____  \ |  |  \\__  \   / ___\|    |   /\   __\  |  |  " -ForegroundColor White
+Write-Host " /        \|   Y  \/ __ \_/ /_/  >    |  /  |  | |  |  |__" -ForegroundColor White
+Write-Host "/_______  /|___|  (____  /\___  /|______/   |__| |__|____/" -ForegroundColor White
+Write-Host "        \/      \/     \//_____/                          " -ForegroundColor White
 Write-Host ""
 Write-Host "==== Welcome to ShagUtil v$scriptVersion! ====" -ForegroundColor Cyan
 Write-Host "==== Windows Toolbox ====`n" -ForegroundColor White
@@ -3294,5 +3295,5 @@ $form.Add_Shown({ # Initial calls for Home tab info and General tab setup
 
 [void]$form.ShowDialog() # Show form
 
-Write-Host "`nGoodbye! Thank you for using ShagUtil." -ForegroundColor Green
+Write-Host "`nGoodbye!`nThank you for using ShagUtil. <3" -ForegroundColor DarkCyan
 #endregion

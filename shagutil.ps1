@@ -1780,6 +1780,46 @@ $generalTweaks = @(
                 Type          = "DWord"
             }
         )
+    },
+    @{
+        Category     = "Customize Preferences"
+        Name         = "Use small taskbar buttons"
+        Description  = "Enables smaller taskbar buttons for a more compact taskbar"
+        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+        ValueName    = "TaskbarSmallIcons"
+        TweakValue   = 0
+        DefaultValue = 1
+        ValueType    = "DWord"
+    },
+    @{
+        Category     = "Customize Preferences"
+        Name         = "Disable Snap Assist Flyout"
+        Description  = "If enabled then Snap preview is disabled when maximize button is hovered."
+        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+        ValueName    = "EnableSnapAssistFlyout"
+        TweakValue   = 0
+        DefaultValue = 1
+        ValueType    = "DWord"
+    },
+    @{
+        Category     = "Customize Preferences"
+        Name         = "Disable Snap Assist Suggestion"
+        Description  = "If enabled then you will get suggestions to snap other applications in the left over spaces."
+        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+        ValueName    = "SnapAssist"
+        TweakValue   = 0
+        DefaultValue = 1
+        ValueType    = "DWord"
+    },
+    @{
+        Category     = "Customize Preferences"
+        Name         = "Disable Message 'Let Windows and apps access your location'"
+        Description  = "If enabled then you will not see the message 'Let Windows and apps access your location'"
+        RegistryPath = "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location"
+        ValueName    = "ShowGlobalPrompts"
+        TweakValue   = 0
+        DefaultValue = 1
+        ValueType    = "DWord"
     }
 )
 
@@ -1873,8 +1913,7 @@ function Set-RecommendedTweaks {
         $node.Checked = $false
     }
     
-    # Define recommended tweaks by their names
-    $recommendedTweakNames = @(
+    $recommendedTweakNames = @( # Define recommended tweaks by their names
         "Disable ConsumerFeatures",
         "Disable Activity History",
         "Disable Location Tracking",
@@ -1910,13 +1949,12 @@ function Set-RecommendedTweaks {
     $statusLabel.Text = "Status: Recommended tweaks selected. Click 'Apply' to apply them."
 }
 
-# Add click handler for Recommended button
-$recommendedButton.Add_Click({
+$recommendedButton.Add_Click({ # Add click handler for Recommended button
     Set-RecommendedTweaks
 })
 
-$treeView.Add_AfterCheck({
-        param($sender, $e)
+$treeView.Add_AfterCheck({ # Add AfterCheck event handler
+    param($sender, $e)
         if ($global:IgnoreCheckEvent) { return }
         $global:IgnoreCheckEvent = $true
 
@@ -1945,7 +1983,7 @@ $treeView.Add_AfterCheck({
         # If the user's intention is to reset *selected* tweaks to default, the logic in $resetButton.Add_Click would need to change.
         $resetButton.Enabled = $uncheckedTweaksCount -gt 0 
         $global:IgnoreCheckEvent = $false
-    })
+})
 
 $applyButton.Add_Click({ # Apply Button Click for General Tab
         $checkedTweaks = $global:allTweakNodes | Where-Object { $_.Checked }

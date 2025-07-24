@@ -1608,6 +1608,48 @@ $generalTweaks = @(
         TweakValue   = "0"
         DefaultValue = "1"
         ValueType    = "String"
+    },
+    @{
+        Category         = "Gaming"
+        Name             = "Disable GameDVR"
+        Description      = "GameDVR is a Windows App that is a dependency for some Store Games. I've never met someone that likes it, but it's there for the XBOX crowd."
+        RegistrySettings = @(
+             @{
+                Path          = "HKCU\System\GameConfigStore"
+                Name          = "GameDVR_FSEBehavior"
+                Value         = 2
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\System\GameConfigStore"
+                Name          = "GameDVR_Enabled"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\System\GameConfigStore"
+                Name          = "GameDVR_HonorUserFSEBehaviorMode"
+                Value         = 1
+                OriginalValue = 0
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\System\GameConfigStore"
+                Name          = "GameDVR_EFSEFeatureFlags"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\GameDVR"
+                Name          = "AllowGameDVR"
+                Value         = 0
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            }
+        )
     }
 )
 
@@ -2678,7 +2720,7 @@ $aboutContainer.ColumnCount = 1
 $aboutContainer.RowCount = 2
 $aboutContainer.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 70))) | Out-Null
 $aboutContainer.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 30))) | Out-Null
-$tabAbout.Controls.Add($aboutContainer) | Out-Null
+[void]$tabAbout.Controls.Add($aboutContainer)
 
 # Create a panel for the about text with better styling
 $textPanel = New-Object System.Windows.Forms.Panel
@@ -2686,7 +2728,7 @@ $textPanel.Dock = [System.Windows.Forms.DockStyle]::Fill
 $textPanel.BackColor = [System.Drawing.Color]::FromArgb(245, 245, 245)
 $textPanel.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
 $textPanel.Height = 250  # Fixed height for the text panel
-$aboutContainer.Controls.Add($textPanel, 0, 0) | Out-Null
+[void]$aboutContainer.Controls.Add($textPanel, 0, 0)
 
 # Create a rich text box for better text formatting
 $aboutText = New-Object System.Windows.Forms.RichTextBox

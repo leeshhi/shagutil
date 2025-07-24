@@ -904,8 +904,7 @@ function ApplyTweaks {
         $tweak = $node.Tag
         if (-not $tweak) { continue }
         
-        # Convert Hashtable to PSCustomObject if necessary
-        if ($tweak -is [System.Collections.Hashtable] -or $tweak -is [System.Collections.Specialized.OrderedDictionary]) {
+        if ($tweak -is [System.Collections.Hashtable] -or $tweak -is [System.Collections.Specialized.OrderedDictionary]) { # Convert Hashtable to PSCustomObject if necessary
             $tweak = [PSCustomObject]$tweak
             $node.Tag = $tweak  # Update the tag with the converted object
         }
@@ -919,12 +918,9 @@ function ApplyTweaks {
         
         Write-Host "Applying tweak: $tweakName" -ForegroundColor Cyan
         $actionTaken = $false
+        #Write-Host "Processing tweak: $tweakName" -ForegroundColor Cyan # Debug output
         
-        # Debug output
-        Write-Host "Processing tweak: $tweakName" -ForegroundColor Cyan
-        
-        # 1. Prüfe auf InvokeScript (hat Vorrang)
-        if ($tweak.PSObject.Properties['InvokeScript'] -and $tweak.InvokeScript) {
+        if ($tweak.PSObject.Properties['InvokeScript'] -and $tweak.InvokeScript) { # 1. Prüfe auf InvokeScript (hat Vorrang)
             Write-Host "  -> Executing InvokeScript..." -ForegroundColor Yellow
             foreach ($script in $tweak.InvokeScript) {
                 try {
@@ -939,8 +935,7 @@ function ApplyTweaks {
             if ($actionTaken) { continue }
         }
         
-        # 2. Prüfe auf RegistrySettings (Array von Einstellungen)
-        if ($tweak.PSObject.Properties['RegistrySettings'] -and $tweak.RegistrySettings) {
+        if ($tweak.PSObject.Properties['RegistrySettings'] -and $tweak.RegistrySettings) { # 2. Prüfe auf RegistrySettings (Array von Einstellungen)
             foreach ($setting in $tweak.RegistrySettings) {
                 try {
                     $result = Set-RegistryValue -Path $setting.Path -Name $setting.Name -Value $setting.Value -Type $setting.Type -RemoveEntry:($setting.Value -eq "<RemoveEntry>")
@@ -957,9 +952,8 @@ function ApplyTweaks {
             if ($actionTaken) { continue }
         }
         
-        # 3. Prüfe auf einfache Registry-Einstellungen
         if ($tweak.PSObject.Properties['RegistryPath'] -and $tweak.RegistryPath -and 
-            $tweak.PSObject.Properties['ValueName'] -and $tweak.ValueName -ne $null) {
+            $tweak.PSObject.Properties['ValueName'] -and $tweak.ValueName -ne $null) { # 3. Prüfe auf einfache Registry-Einstellungen
             $value = if ($tweak.PSObject.Properties['TweakValue']) { $tweak.TweakValue } else { $null }
             $type = if ($tweak.PSObject.Properties['ValueType']) { $tweak.ValueType }else { "DWord" }
             
@@ -977,8 +971,7 @@ function ApplyTweaks {
             if ($actionTaken) { continue }
         }
         
-        # 4. If nothing else worked
-        if (-not $actionTaken) {
+        if (-not $actionTaken) { # 4. If nothing else worked
             Write-Host "  -> No executable action found for this tweak. Required properties may be missing." -ForegroundColor Yellow
             Write-Host "     Available properties: $($tweak.PSObject.Properties.Name -join ', ')" -ForegroundColor Gray
         }
@@ -2919,7 +2912,239 @@ $uncheckAllButton.Add_Click({ # Uncheck All Button Click
     })
 #endregion
 
-#region 8. Tab: Untested
+#region 8. Tab: Debloat
+$tabDebloat = New-Object System.Windows.Forms.TabPage "Debloat"
+# Main container for Debloat tab
+$debloatMainPanel = New-Object System.Windows.Forms.TableLayoutPanel
+$debloatMainPanel.Dock = [System.Windows.Forms.DockStyle]::Fill
+$debloatMainPanel.RowCount = 4
+[void]$debloatMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::AutoSize)))
+[void]$debloatMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100)))
+[void]$debloatMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::AutoSize)))
+[void]$debloatMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::AutoSize)))
+$debloatMainPanel.ColumnCount = 1
+[void]$debloatMainPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100)))
+# Description label
+$debloatDescriptionLabel = New-Object System.Windows.Forms.Label
+$debloatDescriptionLabel.Text = "Select the Windows apps you want to remove and click 'Remove Selected'."
+$debloatDescriptionLabel.Dock = [System.Windows.Forms.DockStyle]::Top
+$debloatDescriptionLabel.Padding = New-Object System.Windows.Forms.Padding(0, 0, 0, 10)
+# TreeView for debloat options
+$debloatTreeView = New-Object System.Windows.Forms.TreeView
+$debloatTreeView.Dock = [System.Windows.Forms.DockStyle]::Fill
+$debloatTreeView.CheckBoxes = $true
+$debloatTreeView.ShowNodeToolTips = $true
+$debloatTreeView.ShowRootLines = $false
+$debloatTreeView.ShowPlusMinus = $false
+$debloatTreeView.HideSelection = $false
+$debloatTreeView.FullRowSelect = $false
+$debloatTreeView.Indent = 15
+$debloatTreeView.ItemHeight = 20
+$debloatTreeView.PathSeparator = "\"
+$debloatTreeView.Sorted = $false
+# Status label
+$debloatStatusLabel = New-Object System.Windows.Forms.Label
+$debloatStatusLabel.Text = "Ready. Select apps to remove and click 'Remove Selected'."
+$debloatStatusLabel.Dock = [System.Windows.Forms.DockStyle]::Bottom
+$debloatStatusLabel.Height = 20
+$debloatStatusLabel.TextAlign = [System.Drawing.ContentAlignment]::MiddleLeft
+# Buttons panel
+$debloatButtonsPanel = New-Object System.Windows.Forms.FlowLayoutPanel
+$debloatButtonsPanel.Dock = [System.Windows.Forms.DockStyle]::Bottom
+$debloatButtonsPanel.Height = 40
+$debloatButtonsPanel.FlowDirection = [System.Windows.Forms.FlowDirection]::LeftToRight
+$debloatButtonsPanel.Padding = New-Object System.Windows.Forms.Padding(5)
+# Remove Selected button
+$removeSelectedButton = New-Object System.Windows.Forms.Button
+$removeSelectedButton.Text = "Remove Selected"
+$removeSelectedButton.Width = 150
+$removeSelectedButton.Height = 30
+$removeSelectedButton.Margin = New-Object System.Windows.Forms.Padding(0, 0, 10, 0)
+# Check All button
+$debloatCheckAllButton = New-Object System.Windows.Forms.Button
+$debloatCheckAllButton.Text = "Select All"
+$debloatCheckAllButton.Width = 120
+$debloatCheckAllButton.Height = 30
+$debloatCheckAllButton.Margin = New-Object System.Windows.Forms.Padding(0, 0, 10, 0)
+$debloatCheckAllButton.BackColor = [System.Drawing.Color]::LightGray
+# Uncheck All button
+$debloatUncheckAllButton = New-Object System.Windows.Forms.Button
+$debloatUncheckAllButton.Text = "Deselect All"
+$debloatUncheckAllButton.Width = 120
+$debloatUncheckAllButton.Height = 30
+$debloatUncheckAllButton.BackColor = [System.Drawing.Color]::LightGray
+
+# Add buttons to panel
+[void]$debloatButtonsPanel.Controls.Add($removeSelectedButton)
+[void]$debloatButtonsPanel.Controls.Add($debloatCheckAllButton)
+[void]$debloatButtonsPanel.Controls.Add($debloatUncheckAllButton)
+# Add controls to main panel
+[void]$debloatMainPanel.Controls.Add($debloatDescriptionLabel, 0, 0)
+[void]$debloatMainPanel.Controls.Add($debloatTreeView, 0, 1)
+[void]$debloatMainPanel.Controls.Add($debloatStatusLabel, 0, 2)
+[void]$debloatMainPanel.Controls.Add($debloatButtonsPanel, 0, 3)
+
+# Add main panel to tab
+$tabDebloat.Controls.Add($debloatMainPanel)
+
+# List of safely removable Windows 11 apps
+# Only includes apps that can be safely removed without breaking Windows functionality
+$bloatwareApps = @(
+    # Entertainment & Social Media
+    @{ Name = "3D Viewer"; PackageName = "Microsoft.Microsoft3DViewer" },
+    @{ Name = "Bing Weather"; PackageName = "Microsoft.BingWeather" },
+    @{ Name = "Bing Finance"; PackageName = "Microsoft.BingFinance" },
+    @{ Name = "Bing News"; PackageName = "Microsoft.BingNews" },
+    @{ Name = "Bing Sports"; PackageName = "Microsoft.BingSports" },
+    @{ Name = "Candy Crush Saga"; PackageName = "king.com.CandyCrushSaga" },
+    @{ Name = "Candy Crush Soda"; PackageName = "king.com.CandyCrushSodaSaga" },
+    @{ Name = "Disney+"; PackageName = "Disney.37853FC22B2CE" },
+    @{ Name = "Facebook"; PackageName = "Facebook.Facebook" },
+    @{ Name = "Spotify"; PackageName = "SpotifyAB.SpotifyMusic" },
+    # Microsoft Apps (safely removable)
+    @{ Name = "Feedback Hub"; PackageName = "Microsoft.WindowsFeedbackHub" },
+    @{ Name = "Get Help"; PackageName = "Microsoft.GetHelp" },
+    @{ Name = "People"; PackageName = "Microsoft.People" },
+    @{ Name = "Mail and Calendar"; PackageName = "microsoft.windowscommunicationsapps" },
+    @{ Name = "Maps"; PackageName = "Microsoft.WindowsMaps" },
+    @{ Name = "Microsoft Solitaire Collection"; PackageName = "Microsoft.MicrosoftSolitaireCollection" },
+    @{ Name = "Microsoft To Do"; PackageName = "Microsoft.Todos" },
+    @{ Name = "Mixed Reality Portal"; PackageName = "Microsoft.MixedReality.Portal" },
+    @{ Name = "MSN Weather"; PackageName = "Microsoft.BingWeather" },
+    @{ Name = "MSN Sports"; PackageName = "Microsoft.BingSports" },
+    @{ Name = "MSN News"; PackageName = "Microsoft.BingNews" },
+    @{ Name = "Office Hub"; PackageName = "Microsoft.MicrosoftOfficeHub" },
+    @{ Name = "OneNote"; PackageName = "Microsoft.Office.OneNote" },
+    @{ Name = "Paint 3D"; PackageName = "Microsoft.MSPaint" },
+    @{ Name = "Power Automate"; PackageName = "Microsoft.Flow" },
+    @{ Name = "PowerShell (Preview)"; PackageName = "Microsoft.PowerShell.Preview" },
+    @{ Name = "Voice Recorder"; PackageName = "Microsoft.WindowsSoundRecorder" },
+    @{ Name = "Sway"; PackageName = "Microsoft.Office.Sway" },
+    @{ Name = "Tips"; PackageName = "Microsoft.Getstarted" },
+    @{ Name = "Windows Camera"; PackageName = "Microsoft.WindowsCamera" },
+    @{ Name = "Xbox"; PackageName = "Microsoft.XboxApp" },
+    @{ Name = "Your Phone"; PackageName = "Microsoft.YourPhone" },
+    @{ Name = "Groove Music"; PackageName = "Microsoft.ZuneMusic" },
+    @{ Name = "Movies & TV"; PackageName = "Microsoft.ZuneVideo" }
+    # Note: Microsoft Store has been removed from the list as it's required for system updates and app installations
+    # @{ Name = "Microsoft Store"; PackageName = "Microsoft.WindowsStore" },
+)
+
+# Populate the TreeView with bloatware apps
+foreach ($app in $bloatwareApps) {
+    $node = New-Object System.Windows.Forms.TreeNode
+    $node.Text = $app.Name
+    $node.ToolTipText = "Package: $($app.PackageName)"
+    $node.Tag = $app.PackageName
+    [void]$debloatTreeView.Nodes.Add($node)
+}
+
+# Check All button click event
+$debloatCheckAllButton.Add_Click({
+    $global:IgnoreCheckEvent = $true
+    foreach ($node in $debloatTreeView.Nodes) {
+        $node.Checked = $true
+    }
+    $global:IgnoreCheckEvent = $false
+})
+
+# Uncheck All button click event
+$debloatUncheckAllButton.Add_Click({
+    $global:IgnoreCheckEvent = $true
+    foreach ($node in $debloatTreeView.Nodes) {
+        $node.Checked = $false
+    }
+    $global:IgnoreCheckEvent = $false
+})
+
+# Function to remove selected apps
+function Remove-SelectedApps {
+    $selectedNodes = @($debloatTreeView.Nodes | Where-Object { $_.Checked })
+    
+    if ($selectedNodes.Count -eq 0) {
+        [System.Windows.Forms.MessageBox]::Show("Please select at least one app to remove.", "No Apps Selected", 
+            [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+        return
+    }
+    
+    $result = [System.Windows.Forms.MessageBox]::Show("Are you sure you want to remove the selected apps? This action cannot be undone.", 
+        "Confirmation", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+    
+    if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+        $progressForm = New-Object System.Windows.Forms.Form
+        $progressForm.Text = "Removing Apps..."
+        $progressForm.Size = New-Object System.Drawing.Size(400, 150)
+        $progressForm.StartPosition = "CenterParent"
+        $progressForm.FormBorderStyle = [System.Windows.Forms.FormBorderStyle]::FixedDialog
+        $progressForm.MaximizeBox = $false
+        $progressForm.MinimizeBox = $false
+        $progressForm.ControlBox = $false
+        
+        $progressLabel = New-Object System.Windows.Forms.Label
+        $progressLabel.Text = "Preparing to remove selected apps..."
+        $progressLabel.Location = New-Object System.Drawing.Point(10, 20)
+        $progressLabel.Width = 380
+        
+        $progressBar = New-Object System.Windows.Forms.ProgressBar
+        $progressBar.Location = New-Object System.Drawing.Point(10, 50)
+        $progressBar.Width = 370
+        $progressBar.Style = [System.Windows.Forms.ProgressBarStyle]::Continuous
+        
+        $progressForm.Controls.Add($progressLabel)
+        $progressForm.Controls.Add($progressBar)
+        $progressForm.Show()
+        $progressForm.Refresh()
+        
+        $progressBar.Maximum = $selectedNodes.Count
+        $progressBar.Value = 0
+        
+        $removedCount = 0
+        $failedApps = @()
+        
+        foreach ($node in $selectedNodes) {
+            $progressLabel.Text = "Removing: $($node.Text)"
+            $progressForm.Refresh()
+            
+            try {
+                $packageName = $node.Tag
+                Get-AppxPackage -Name $packageName -AllUsers | Remove-AppxPackage -ErrorAction Stop
+                Get-AppxProvisionedPackage -Online | Where-Object { $_.PackageName -like "$packageName*" } | 
+                    ForEach-Object { Remove-AppxProvisionedPackage -Online -PackageName $_.PackageName -ErrorAction SilentlyContinue }
+                $removedCount++
+            }
+            catch {
+                $failedApps += "$($node.Text) ($($_.Exception.Message))"
+            }
+            
+            $progressBar.Value++
+            [System.Windows.Forms.Application]::DoEvents()
+        }
+        
+        $progressForm.Close()
+        
+        $message = "Successfully removed $removedCount of $($selectedNodes.Count) apps."
+        if ($failedApps.Count -gt 0) {
+            $message += "`n`nFailed to remove the following apps:`n" + ($failedApps -join "`n")
+        }
+        
+        [System.Windows.Forms.MessageBox]::Show($message, "Removal Complete", 
+            [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+        
+        # Update status label
+        $debloatStatusLabel.Text = "Removal complete. $removedCount of $($selectedNodes.Count) apps were removed."
+    }
+}
+
+# Add click handler for remove button
+$removeSelectedButton.Add_Click({
+    Remove-SelectedApps
+})
+
+# Add the tab to the tab control
+[void]$tabControl.TabPages.Add($tabDebloat)
+#endregion
+
+#region 9. Tab: Untested
 $tabUntested = New-Object System.Windows.Forms.TabPage "Untested"
 $tabControl.TabPages.Add($tabUntested) | Out-Null
 # Example Label in Untested Tab
@@ -2930,7 +3155,7 @@ $untestedLabel.Location = New-Object System.Drawing.Point(15, 15)
 $tabUntested.Controls.Add($untestedLabel) | Out-Null
 #endregion
 
-#region 9. Tab: About
+#region 10. Tab: About
 $tabAbout = New-Object System.Windows.Forms.TabPage "About"
 $tabControl.TabPages.Add($tabAbout) | Out-Null
 
@@ -3039,7 +3264,7 @@ $footerLabel.Text = "ShagUtil v$scriptVersion | $(Get-Date -Format 'yyyy')"
 $tabAbout.Controls.Add($footerLabel)
 #endregion
 
-#region 10. Final Execution
+#region 11. Final Execution
 $form.Add_Shown({ # Initial calls for Home tab info and General tab setup
         Initialize-HomeTabContent -systemInfoPanel $systemInfoPanel -form $form -systemInfoTitle $systemInfoTitle
         GeneralTreeView -treeViewToPopulate $treeView # This line should call your GeneralTreeView

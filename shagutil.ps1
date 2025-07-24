@@ -2,7 +2,7 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Security # Needed ?
-$scriptVersion = "0.4.0"
+$scriptVersion = "25.07.24"
 
 #region 1. Initial Script Setup & Admin Check
 if (-not ([Security.Principal.WindowsPrincipal][System.Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltinRole] "Administrator")) {
@@ -210,62 +210,138 @@ function CheckUpdates {
     }
 }
 
+<#
+.SYNOPSIS
+    Executes a winget command with timeout and error handling.
+.DESCRIPTION
+    Runs winget with the specified arguments, captures output and errors, and handles timeouts.
+    Writes detailed logs to a temporary file for debugging purposes.
+.PARAMETER arguments
+    The arguments to pass to winget
+.PARAMETER timeoutSeconds
+    Maximum time to wait for the command to complete (default: 120 seconds)
+.OUTPUTS
+    Returns a PSCustomObject with the following properties:
+    - ExitCode: The exit code from winget (or $null if error/timeout)
+    - Output: Standard output from the command
+    - Errors: Standard error output
+    - TimedOut: Boolean indicating if the command timed out
+    - LogPath: Path to the log file with full command details
+#>
 function Invoke-WingetCommand {
-    # Function: Invoke Winget Commands and Log Output
-    param([string]$arguments, [int]$timeoutSeconds = 60)
-    $tempDir = [System.IO.Path]::GetTempPath()
-    $outputFile = [System.IO.Path]::Combine($tempDir, "winget_output_$(Get-Date -Format 'yyyyMMdd_HHmmss').log")
-    $errorFile = [System.IO.Path]::Combine($tempDir, "winget_error_$(Get-Date -Format 'yyyyMMdd_HHmmss').log")
-    $processInfo = New-Object System.Diagnostics.ProcessStartInfo
-    $processInfo.FileName = "winget"
-    $processInfo.Arguments = $arguments
-    $processInfo.RedirectStandardOutput = $true
-    $processInfo.RedirectStandardError = $true
-    $processInfo.UseShellExecute = $false
-    $processInfo.CreateNoWindow = $true
-    $process = New-Object System.Diagnostics.Process
-    $process.StartInfo = $processInfo
-
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNullOrEmpty()]
+        [string]$arguments,
+        
+        [Parameter()]
+        [ValidateRange(10, 600)] # 10 seconds to 10 minutes
+        [int]$timeoutSeconds = 120
+    )
+    
+    # Check if winget is available
+    if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
+        return [PSCustomObject]@{
+            ExitCode   = $null
+            Output     = ""
+            Errors     = "Winget is not installed or not available in PATH."
+            TimedOut   = $false
+            LogPath    = $null
+        }
+    }
+    
+    $logPath = [System.IO.Path]::GetTempFileName()
+    $process = $null
+    
     try {
+        $processInfo = New-Object System.Diagnostics.ProcessStartInfo
+        $processInfo.FileName = "winget"
+        $processInfo.Arguments = $arguments
+        $processInfo.RedirectStandardOutput = $true
+        $processInfo.RedirectStandardError = $true
+        $processInfo.UseShellExecute = $false
+        $processInfo.CreateNoWindow = $true
+        $processInfo.StandardOutputEncoding = [System.Text.Encoding]::UTF8
+        $processInfo.StandardErrorEncoding = [System.Text.Encoding]::UTF8
+        
+        $process = New-Object System.Diagnostics.Process
+        $process.StartInfo = $processInfo
+        
+        # Log command start
+        "[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] Starting: winget $arguments" | Out-File -FilePath $logPath -Force
+        
+        $startTime = Get-Date
         $process.Start() | Out-Null
+        
+        # Read output asynchronously
         $outputTask = $process.StandardOutput.ReadToEndAsync()
         $errorTask = $process.StandardError.ReadToEndAsync()
-
+        
         if ($process.WaitForExit($timeoutSeconds * 1000)) {
             $output = $outputTask.Result
             $errors = $errorTask.Result
-            $output | Out-File -FilePath $outputFile -Encoding UTF8
-            $errors | Out-File -FilePath $errorFile -Encoding UTF8
-
-            [PSCustomObject]@{
-                ExitCode   = $process.ExitCode
+            $exitCode = $process.ExitCode
+            $duration = (Get-Date) - $startTime
+            
+            # Log results
+            "`n[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] Exit Code: $exitCode" | Out-File -FilePath $logPath -Append
+            "Duration: $($duration.TotalSeconds.ToString('0.00')) seconds" | Out-File -FilePath $logPath -Append
+            "`n--- OUTPUT ---`n$output`n" | Out-File -FilePath $logPath -Append
+            
+            if (-not [string]::IsNullOrWhiteSpace($errors)) {
+                "`n--- ERRORS ---`n$errors`n" | Out-File -FilePath $logPath -Append
+            }
+            
+            return [PSCustomObject]@{
+                ExitCode   = $exitCode
                 Output     = $output
                 Errors     = $errors
-                OutputFile = $outputFile
-                ErrorFile  = $errorFile
                 TimedOut   = $false
+                LogPath    = $logPath
             }
         }
         else {
+            # Command timed out
             $process.Kill()
-            [PSCustomObject]@{
+            $errorMsg = "Winget command timed out after ${timeoutSeconds} seconds. See log for details: $logPath"
+            
+            "`n[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] COMMAND TIMED OUT" | Out-File -FilePath $logPath -Append
+            $errorMsg | Out-File -FilePath $logPath -Append
+            
+            return [PSCustomObject]@{
                 ExitCode   = $null
                 Output     = ""
-                Errors     = "Winget command timed out ($($timeoutSeconds)s)."
-                OutputFile = $outputFile
-                ErrorFile  = $errorFile
+                Errors     = $errorMsg
                 TimedOut   = $true
+                LogPath    = $logPath
             }
         }
     }
-    catch {
-        [PSCustomObject]@{
+    catch [System.Exception] {
+        $errorMsg = "Unexpected error when running winget: $_"
+        "`n[$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss')] ERROR: $errorMsg" | Out-File -FilePath $logPath -Append
+        $_.ScriptStackTrace | Out-File -FilePath $logPath -Append
+        
+        return [PSCustomObject]@{
             ExitCode   = $null
             Output     = ""
-            Errors     = "Unexpected error when running winget: $_"
-            OutputFile = $outputFile
-            ErrorFile  = $errorFile
+            Errors     = $errorMsg
             TimedOut   = $false
+            LogPath    = $logPath
+        }
+    }
+    finally {
+        if ($null -ne $process) {
+            try {
+                if (-not $process.HasExited) {
+                    $process.Kill()
+                }
+                $process.Dispose()
+            }
+            catch {
+                # Ignore errors during cleanup
+            }
         }
     }
 }
@@ -1763,30 +1839,133 @@ $tabMisc.Controls.Add($miscLabel)
 #endregion
 
 #region 7. Tab: Downloads
-if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-    [System.Windows.Forms.MessageBox]::Show("winget was not found. Attempting to install the app installer (using winget) from the Microsoft Store.", "winget not found", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
-    try {
-        $process = Start-Process -FilePath "ms-windows-store://pdp/?ProductId=9NBLGGH4NNS1" -PassThru -NoNewWindow -ErrorAction Stop
-        [System.Windows.Forms.MessageBox]::Show("Please install the 'App Installer' (Package ID: 9NBLGGH4NNS1) from the Microsoft Store window that opens. Then click 'OK' here when the installation is complete.", "Installing winget", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
-        Start-Sleep -Seconds 5
-        if (-not (Get-Command winget -ErrorAction SilentlyContinue)) {
-            [System.Windows.Forms.MessageBox]::Show("winget could not be found after installation. Please restart the script or make sure winget is installed correctly.", "Error in winget", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+function Ensure-LatestWinget {
+    param(
+        [string]$MinVersion = "1.7.0"
+    )
+    # 1. Existenz prüfen
+    $wingetCmd = Get-Command winget -ErrorAction SilentlyContinue
+    if (-not $wingetCmd) {
+        [System.Windows.Forms.MessageBox]::Show(
+            "winget was not found. Attempting to install the App Installer (winget) from the Microsoft Store.",
+            "winget not found", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information
+        )
+        try {
+            Start-Process -FilePath "ms-windows-store://pdp/?ProductId=9NBLGGH4NNS1"
+            [System.Windows.Forms.MessageBox]::Show(
+                "Please install the 'App Installer' from the Microsoft Store window that opens. Then click OK when the installation is complete.",
+                "Installing winget", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information
+            )
+            Start-Sleep -Seconds 5
+            $wingetCmd = Get-Command winget -ErrorAction SilentlyContinue
+            if (-not $wingetCmd) {
+                [System.Windows.Forms.MessageBox]::Show(
+                    "winget could not be found after installation. Please restart the script or make sure winget is installed correctly.",
+                    "Error in winget", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error
+                )
+                exit
+            }
+        } catch {
+            [System.Windows.Forms.MessageBox]::Show(
+                "An error occurred while attempting to open the Microsoft Store for winget installation: $_. Please install winget manually.",
+                "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error
+            )
             exit
         }
-        else {
-            [System.Windows.Forms.MessageBox]::Show("winget was successfully detected. The script will continue.", "winget found", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
-        }
     }
-    catch {
-        [System.Windows.Forms.MessageBox]::Show("An error occurred while attempting to open the Microsoft Store for winget installation: $_. Please install winget manually.", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-        exit
+
+    # 2. Version prüfen
+    $wingetVersion = & winget --version 2>$null
+    if ($wingetVersion -and ($wingetVersion -match '([0-9]+\.[0-9]+\.[0-9]+)')) {
+        $current = [version]$Matches[1]
+        $required = [version]$MinVersion
+        if ($current -lt $required) {
+            $msg = "Your winget version is $current. The minimum required version is $required.`n`nWould you like to update winget now?"
+            $result = [System.Windows.Forms.MessageBox]::Show($msg, "winget update recommended", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Information)
+            if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
+                # Versuche Update via Store
+                try {
+                    Start-Process -FilePath "ms-windows-store://pdp/?ProductId=9NBLGGH4NNS1"
+                    [System.Windows.Forms.MessageBox]::Show(
+                        "Please update the 'App Installer' in the Microsoft Store. Click OK when done.",
+                        "Update winget", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information
+                    )
+                } catch {
+                    [System.Windows.Forms.MessageBox]::Show(
+                        "Could not open Microsoft Store. Please update winget manually from https://github.com/microsoft/winget-cli/releases",
+                        "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error
+                    )
+                }
+                Start-Sleep -Seconds 5
+            }
+        }
     }
 }
 
 $global:installedPackageIds = @{}
+<#
+.SYNOPSIS
+    Updates the global list of installed winget packages.
+.DESCRIPTION
+    Queries winget for all installed packages and updates the global $installedPackageIds hashtable.
+    Provides UI feedback through progress bar and status label.
+.PARAMETER parentForm
+    The parent Windows Form for UI updates (required for cross-thread operations)
+.PARAMETER progressBar
+    ProgressBar control to show operation progress
+.PARAMETER statusLabel
+    Label control to show status messages
+.OUTPUTS
+    Boolean indicating success ($true) or failure ($false) of the operation
+#>
+# Hilfsfunktion für sicheres UI-Update
+function SafeInvoke {
+    param(
+        [Parameter(Mandatory=$true)]
+        [object]$Form,
+        [Parameter(Mandatory=$true)]
+        [scriptblock]$Action
+    )
+    if ($null -ne $Form -and $Form.PSObject.Properties['Invoke']) {
+        try { $Form.Invoke($Action) } catch { & $Action }
+    } else {
+        & $Action
+    }
+}
+
 function Update-InstalledPackageIds {
-    # Function to update the list of installed Winget packages
-    param([System.Windows.Forms.Form]$parentForm, [System.Windows.Forms.ProgressBar]$progressBar, [System.Windows.Forms.Label]$statusLabel)
+    [CmdletBinding()]
+    param(
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNull()]
+        [System.Windows.Forms.Form]$parentForm,
+        
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNull()]
+        [System.Windows.Forms.ProgressBar]$progressBar,
+        
+        [Parameter(Mandatory=$true)]
+        [ValidateNotNull()]
+        [System.Windows.Forms.Label]$statusLabel
+    )
+    
+    Ensure-LatestWinget # Stelle sicher, dass winget installiert und aktuell ist
+    
+    # Sicherstellen, dass die UI-Elemente existieren
+    if ($null -eq $parentForm -or $parentForm.IsDisposed) {
+        Write-Error "Parent form is not available or has been disposed."
+        return $false
+    }
+    
+    if ($null -eq $progressBar -or $progressBar.IsDisposed) {
+        Write-Error "Progress bar is not available or has been disposed."
+        return $false
+    }
+    
+    if ($null -eq $statusLabel -or $statusLabel.IsDisposed) {
+        Write-Error "Status label is not available or has been disposed."
+        return $false
+    }
     $progressBar.Style = 'Marquee'
     $progressBar.Visible = $true
     $statusLabel.Text = "Loading installed Winget packages (may take some time)..."
@@ -1799,47 +1978,114 @@ function Update-InstalledPackageIds {
             $statusLabel.Text = "Status: Loading failed (timeout)."
             return
         }
-        if ($wingetResult.ExitCode -ne 0) {
-            $errorMessage = "Winget 'list' command failed with error code $($wingetResult.ExitCode). "
-            if (![string]::IsNullOrEmpty($wingetResult.Errors)) { $errorMessage += "Error: $($wingetResult.Errors)." }
-            $errorMessage += "`n`nDetails in: $($wingetResult.ErrorFile)"
-            [System.Windows.Forms.MessageBox]::Show($errorMessage, "Winget error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-            $statusLabel.Text = "Status: Loading failed."
-            return
+        elseif ($wingetResult.ExitCode -ne 0) {
+            $errorDetails = if ([string]::IsNullOrWhiteSpace($wingetResult.Errors)) {
+                "No error details available. Exit code: $($wingetResult.ExitCode)"
+            } else {
+                $wingetResult.Errors.Trim()
+            }
+            throw "Failed to check installed packages. $errorDetails"
         }
-        if ([string]::IsNullOrEmpty($wingetResult.Output)) {
-            [System.Windows.Forms.MessageBox]::Show("The winget 'list' command returned no output. Possibly a configuration issue.", "Winget warning", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)
-            $statusLabel.Text = "Status: Loading failed."
-            return
+        elseif ([string]::IsNullOrWhiteSpace($wingetResult.Output)) {
+            throw "No package information was returned. Winget may not be properly configured."
         }
+        
+        # Parse the winget output
         $installedPackagesRaw = $wingetResult.Output -split "`n"
-        $global:installedPackageIds.Clear()
+        $packageCount = 0
+        $processedCount = 0
+        $totalLines = $installedPackagesRaw.Count
+        
+        # Update progress to determinate mode
+        SafeInvoke -Form $parentForm -Action {
+            $progressBar.Style = [System.Windows.Forms.ProgressBarStyle]::Continuous
+            $progressBar.Maximum = $totalLines
+            $progressBar.Value = 0
+        }
+        
         foreach ($line in $installedPackagesRaw) {
-            if ($line -match '^\s*Name\s+Id\s+Version') { continue }
-            if ($line -match '^\s*---\s+---\s+---') { continue }
-            if ($line -match '^\s*$') { continue }
-            $cols = ($line.Trim() -split '\s{2,}')
-            if ($cols.Length -ge 2) { 
-                $global:installedPackageIds[$cols[1].Trim()] = $true
+            $processedCount++
+            
+            # Update progress every 10 packages for better performance
+            if (($processedCount % 10) -eq 0) {
+                SafeInvoke -Form $parentForm -Action {
+                    $progressBar.Value = [Math]::Min($processedCount, $progressBar.Maximum)
+                    $statusLabel.Text = "Processing packages: $processedCount of $totalLines"
+                }
+            }
+            
+            # Skip header, separator and empty lines
+            if ($line -match '^\s*Name\s+Id\s+Version' -or 
+                $line -match '^\s*---\s+---\s+---' -or 
+                [string]::IsNullOrWhiteSpace($line)) {
+                continue
+            }
+            
+            # Extract package ID (second column)
+            $cols = ($line.Trim() -split '\s{2,}', 3)  # Split into max 3 columns
+            if ($cols.Length -ge 2) {
+                $packageId = $cols[1].Trim()
+                if (-not [string]::IsNullOrWhiteSpace($packageId)) {
+                    $global:installedPackageIds[$packageId] = $true
+                    $packageCount++
+                }
             }
         }
-        $statusLabel.Text = "Status: Winget packages loaded."
+        
+        # Final UI update
+        SafeInvoke -Form $parentForm -Action {
+            $statusLabel.Text = "Found $packageCount installed packages."
+            $progressBar.Value = $progressBar.Maximum
+        }
+        
+        Write-Verbose "Successfully updated installed packages list. Found $packageCount packages."
+        return $true
     }
-    catch {
-        [System.Windows.Forms.MessageBox]::Show("An unexpected error occurred while retrieving the winget package list: $_", "Winget error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
-        $statusLabel.Text = "Status: Loading failed."
+    catch [System.Exception] {
+        $errorMsg = "ERROR: $($_.Exception.Message)"
+        Write-Error $errorMsg -ErrorAction Continue
+        
+        SafeInvoke -Form $parentForm -Action {
+            $statusLabel.Text = $errorMsg
+            $statusLabel.ForeColor = [System.Drawing.Color]::Red
+            $progressBar.Style = [System.Windows.Forms.ProgressBarStyle]::Continuous
+            $progressBar.Value = 0
+        }
+        
+        return $false
     }
     finally {
-        $progressBar.Visible = $false
-        $progressBar.Style = 'Blocks'
-        $parentForm.Refresh()
+        # Hide progress bar after a delay using a timer
+        $timer = New-Object System.Windows.Forms.Timer
+        $timer.Interval = 3000  # 3 seconds
+
+        $timer.Add_Tick({
+            try {
+                if ($null -ne $parentForm -and $parentForm.PSObject.Properties['Invoke']) {
+                    $parentForm.Invoke([System.Windows.Forms.MethodInvoker]{
+                        $progressBar.Visible = $false
+                        $statusLabel.Visible = $false
+                        $statusLabel.ForeColor = [System.Drawing.SystemColors]::ControlText
+                    })
+                } else {
+                    $progressBar.Visible = $false
+                    $statusLabel.Visible = $false
+                    $statusLabel.ForeColor = [System.Drawing.SystemColors]::ControlText
+                }
+            } catch {}
+            try { $timer.Stop(); $timer.Dispose() } catch {}
+        })
+
+        $timer.Start()
     }
 }
+
 function Test-WingetPackageInstalled {
     # Function to test if a Winget package is installed
     param([string]$packageId)
     return $global:installedPackageIds.ContainsKey($packageId)
 }
+
 function Update-InstalledProgramsStatus {
     # Function to update the visual status of programs in the TreeView
     $statusDownloadLabel.Text = "Updating program status..."
@@ -1870,6 +2116,7 @@ function Update-InstalledProgramsStatus {
         $form.Refresh()
     }
 }
+
 function Get-SelectedInstallStatus {
     # Function to get selected installation status
     $selected = $allProgramNodes | Where-Object { $_.Checked }
@@ -1890,6 +2137,7 @@ function Get-SelectedInstallStatus {
         AllSelected  = $selected
     }
 }
+
 function Install-WingetProgram {
     # Function to install/update programs via winget
     param([string]$packageId)
@@ -1917,6 +2165,7 @@ function Install-WingetProgram {
         return $true
     }
 }
+
 function Install-OrUpdate {
     # Function to install or update selected nodes
     param([System.Windows.Forms.TreeNode[]]$nodes)
@@ -1941,6 +2190,7 @@ function Install-OrUpdate {
     $statusDownloadLabel.Text = "Install/Update process completed."
     Update-InstalledProgramsStatus
 }
+
 function Uninstall-Programs {
     # Function to uninstall programs
     param([System.Windows.Forms.TreeNode[]]$nodes)
@@ -1996,7 +2246,9 @@ $programCategories = @{ # Downloads
         @{Name = "LibreWolf"; Id = "LibreWolf.LibreWolf" },
         @{Name = "Mozilla Firefox"; Id = "Mozilla.Firefox" },
         @{Name = "Mozilla Firefox ESR"; Id = "Mozilla.Firefox.ESR" },
-        @{Name = "Vivaldi"; Id = "Vivaldi.Vivaldi" }
+        @{Name = "Vivaldi"; Id = "Vivaldi.Vivaldi" },
+        @{Name = "Opera"; Id = "Opera.Opera" },
+        @{Name = "Opera GX"; Id = "Opera.OperaGX" }
     )
     "Communication"         = @(
         @{Name = "Discord"; Id = "Discord.Discord" },
@@ -2038,7 +2290,10 @@ $programCategories = @{ # Downloads
         @{Name = "EA app"; Id = "ElectronicArts.EADesktop" },
         @{Name = "Epic Games Launcher"; Id = "EpicGames.EpicGamesLauncher" },
         @{Name = "Steam"; Id = "Valve.Steam" },
-        @{Name = "Ubisoft Connect"; Id = "Ubisoft.Connect" }
+        @{Name = "Ubisoft Connect"; Id = "Ubisoft.Connect" },
+        @{Name = "Xbox"; Id = "9MV0B5HZVK9Z" },
+        @{Name = "Game Bar"; Id = "9NZKPSTSNW4P" },
+        @{Name = "FACEIT"; Id = "FACEITLTD.FACEITClient" }
     )
     "Media"                 = @(
         @{Name = "Audacity"; Id = "Audacity.Audacity" },
@@ -2074,7 +2329,9 @@ $programCategories = @{ # Downloads
         @{Name = "Revo Uninstaller"; Id = "RevoUninstaller.RevoUninstaller" },
         @{Name = "Rufus"; Id = "Rufus.Rufus" },
         @{Name = "Snappy Driver Installer Origin"; Id = "GlennDelahoy.SnappyDriverInstallerOrigin" },
-        @{Name = "Wintoys"; Id = "9P8LTPGCBZXD" }
+        @{Name = "Wintoys"; Id = "9P8LTPGCBZXD" },
+        @{Name = "ParkControl"; Id = "BitSum.ParkControl" },
+        @{Name = "Display Driver Uninstaller"; Id = "Wagnardsoft.DisplayDriverUninstaller" }
     )
     "Utilities"             = @(
         @{Name = "EarTrumpet"; Id = "File-New-Project.EarTrumpet" },
@@ -2087,7 +2344,10 @@ $programCategories = @{ # Downloads
         @{Name = "Proton Pass"; Id = "Proton.ProtonPass" },
         @{Name = "ShareX"; Id = "ShareX.ShareX" },
         @{Name = "Spotify"; Id = "Spotify.Spotify" },
-        @{Name = "TranslucentTB"; Id = "CharlesMilette.TranslucentTB" }
+        @{Name = "TranslucentTB"; Id = "CharlesMilette.TranslucentTB" },
+        @{Name = "KeePassXC"; Id = "KeePassXCTeam.KeePassXC" },
+        @{Name = "1Password"; Id = "AgileBits.1Password" },
+        @{Name = "Bitwarden"; Id = "Bitwarden.Bitwarden" }
     )
     "Virtualization"        = @(
         @{Name = "QEMU"; Id = "qemu.qemu" },
@@ -2107,7 +2367,7 @@ $downloadsMainPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([Sys
 $downloadsMainPanel.ColumnCount = 1
 $downloadsMainPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
 $downloadsMainPanel.Padding = New-Object System.Windows.Forms.Padding(10)
-$tabDownloads.Controls.Add($downloadsMainPanel)| Out-Null
+$tabDownloads.Controls.Add($downloadsMainPanel) | Out-Null
 
 # Label top
 $downloadsLabel = New-Object System.Windows.Forms.Label
@@ -2130,7 +2390,7 @@ foreach ($category in $programCategories.Keys) {
     foreach ($prog in $programCategories[$category]) {
         $childNode = New-Object System.Windows.Forms.TreeNode $prog.Name
         $childNode.Tag = $prog.Id
-        # Highlight installed programs (bold + green)
+        # Highlight installed programs
         if (Test-WingetPackageInstalled -packageId $prog.Id) {
             #$childNode.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font.FontFamily, 11, [System.Drawing.FontStyle]::Bold)
             #$childNode.NodeFont = New-Object System.Drawing.Font($downloadTreeView.Font, [System.Drawing.FontStyle]::Bold)
@@ -2177,6 +2437,15 @@ $uninstallButton.BackColor = [System.Drawing.Color]::LightCoral
 $uninstallButton.Enabled = $false
 [void]$downloadButtonsPanel.Controls.Add($uninstallButton)
 
+# Get Installed Button
+$getInstalledButton = New-Object System.Windows.Forms.Button
+$getInstalledButton.Text = "Get Installed"
+$getInstalledButton.Size = New-Object System.Drawing.Size(120, 30)
+$getInstalledButton.Margin = New-Object System.Windows.Forms.Padding(0, 0, 10, 0)
+$getInstalledButton.BackColor = [System.Drawing.Color]::DodgerBlue
+$getInstalledButton.ForeColor = [System.Drawing.Color]::White
+[void]$downloadButtonsPanel.Controls.Add($getInstalledButton)
+
 # Uncheck All Button
 $uncheckAllButton = New-Object System.Windows.Forms.Button
 $uncheckAllButton.Text = "Uncheck all"
@@ -2206,10 +2475,7 @@ $downloadsMainPanel.Controls.Add($downloadProgressBar, 0, 3)
 $downloadTreeView.Add_AfterCheck({ # TreeView AfterCheck event
         param($sender, $e)
 
-        if ($global:IgnoreCheckEventDownloads) { 
-            return 
-        }
-
+        if ($global:IgnoreCheckEventDownloads) { return }
         $global:IgnoreCheckEventDownloads = $true
 
         if ($e.Node.Nodes.Count -gt 0) {
@@ -2285,7 +2551,15 @@ $installButton.Add_Click({ # Install Button Click
 
 $updateButton.Add_Click({ # Update Button Click
         try {
-            $selectedNodes = $downloadTreeView.Nodes.Find("Installed", $true) | Where-Object { $_.Checked } # This "Installed" tag logic is problematic, fix later.
+            # Get all checked nodes (programs) from the TreeView
+            $selectedNodes = @()
+            foreach ($parentNode in $downloadTreeView.Nodes) {
+                foreach ($childNode in $parentNode.Nodes) {
+                    if ($childNode.Checked) {
+                        $selectedNodes += $childNode
+                    }
+                }
+            }
 
             if ($selectedNodes.Count -eq 0) {
                 # No specific programs selected, so "Update all"
@@ -2338,6 +2612,28 @@ $updateButton.Add_Click({ # Update Button Click
         }
         finally {
             Update-InstalledProgramsStatus -parentForm $form -progressBar $downloadProgressBar -statusLabel $statusDownloadLabel
+        }
+    })
+
+$getInstalledButton.Add_Click({ # Get Installed Button Click
+        $statusDownloadLabel.Text = "Loading installed programs..."
+        $downloadProgressBar.Visible = $true
+        $downloadProgressBar.Style = 'Marquee'
+        $getInstalledButton.Enabled = $false
+        $form.Refresh()
+        
+        try {
+            Update-InstalledProgramsStatus -parentForm $form -progressBar $downloadProgressBar -statusLabel $statusDownloadLabel
+            $statusDownloadLabel.Text = "Installed programs loaded successfully."
+        }
+        catch {
+            $statusDownloadLabel.Text = "Error loading installed programs: $_"
+            [System.Windows.Forms.MessageBox]::Show("An error occurred while loading installed programs: $_", "Error", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error)
+        }
+        finally {
+            $getInstalledButton.Enabled = $true
+            $downloadProgressBar.Visible = $false
+            $form.Refresh()
         }
     })
 
@@ -2485,11 +2781,7 @@ $form.Add_Shown({ # Initial calls for Home tab info and General tab setup
         GeneralTreeView -treeViewToPopulate $treeView # This line should call your GeneralTreeView
         Update-GeneralTweaksStatus -tweakNodes $global:allTweakNodes # Ensure this uses $global:allTweakNodes
         if (-not $script:downloadsTabInitialized) {
-            $statusDownloadLabel.Text = "Status: Initializing Winget data..."
-            $downloadProgressBar.Visible = $true
-            $downloadProgressBar.Style = 'Marquee'
-            $form.Refresh()
-            Update-InstalledProgramsStatus -parentForm $form -progressBar $downloadProgressBar -statusLabel $statusDownloadLabel
+            $statusDownloadLabel.Text = "Ready. Click 'Get Installed' to load installed programs."
             $script:downloadsTabInitialized = $true
         }
     })

@@ -1720,22 +1720,22 @@ $generalTweaks = @(
              @{
                 Path          = "HKLM\SOFTWARE\Microsoft\PolicyManager\current\device\Start"
                 Name          = "HideRecommendedSection"
-                Value         = 0
-                OriginalValue = 1
+                Value         = 1
+                OriginalValue = 0
                 Type          = "DWord"
             },
             @{
                 Path          = "HKLM\SOFTWARE\Microsoft\PolicyManager\current\device\Education"
                 Name          = "IsEducationEnvironment"
-                Value         = 0
-                OriginalValue = 1
+                Value         = 1
+                OriginalValue = 0
                 Type          = "DWord"
             },
             @{
                 Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\Explorer"
                 Name          = "HideRecommendedSection"
-                Value         = 0
-                OriginalValue = 1
+                Value         = 1
+                OriginalValue = 0
                 Type          = "DWord"
             }
         )

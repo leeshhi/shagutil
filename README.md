@@ -15,7 +15,7 @@ ShagUtil must be run in Admin mode because it performs system-wide tweaks. To ac
 
 ### Launch Command
 
-#### Stable Branch (Recommended)
+#### Recommended
 
 ```ps1
 irm "https://shag.my/win" | iex

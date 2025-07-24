@@ -2,7 +2,7 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 Add-Type -AssemblyName System.Security # Needed ?
-$scriptVersion = "0.3.2"
+$scriptVersion = "0.4.0"
 
 #region 1. Initial Script Setup & Admin Check
 if (-not ([Security.Principal.WindowsPrincipal][System.Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltinRole] "Administrator")) {
@@ -652,7 +652,7 @@ function Get-RegistryValue {
     )
     try {
         # Convert registry path to PowerShell format (add colon after HKLM, HKCU, etc.)
-        $psPath = $Path -replace '^HKLM\\', 'HKLM:\' -replace '^HKCU\\', 'HKCU\' -replace '^HKU\\', 'HKU:\' -replace '^HKCR\\', 'HKCR:\' -replace '^HKCC\\', 'HKCC:\'
+        $psPath = Create-RegistryPSPath -Path $Path
         
         if (Test-Path -LiteralPath $psPath -ErrorAction SilentlyContinue) {
             $value = Get-ItemProperty -Path $psPath -Name $Name -ErrorAction SilentlyContinue | 
@@ -696,18 +696,14 @@ function Set-RegistryValue {
     }
     
     try {
-        # Split the path into parent and key name
-        $keyPath = Split-Path -Path $psPath -Parent
-        $keyName = Split-Path -Path $psPath -Leaf
-        
-        # Create parent key if it doesn't exist
-        if (-not (Test-Path -Path $keyPath)) {
+        # Create the registry key if it doesn't exist
+        if (-not (Test-Path -Path $psPath)) {
             try {
-                $null = New-Item -Path $keyPath -Force -ErrorAction Stop
-                Write-Host "  [INFO] Created registry path: $keyPath" -ForegroundColor Green
+                $null = New-Item -Path $psPath -Force -ErrorAction Stop
+                Write-Host "  [INFO] Created registry path: $psPath" -ForegroundColor Green
             }
             catch {
-                Write-Host "  [ERROR] Failed to create registry path '$keyPath': $_" -ForegroundColor Red
+                Write-Host "  [ERROR] Failed to create registry path '$psPath': $_" -ForegroundColor Red
                 return $false
             }
         }
@@ -980,7 +976,10 @@ function ResetTweaks {
 }
 
 function Update-GeneralTweaksStatus {
-    param([System.Collections.Generic.List[System.Windows.Forms.TreeNode]]$tweakNodes)
+    param(
+        [System.Collections.Generic.List[System.Windows.Forms.TreeNode]]$tweakNodes,
+        [switch]$Verbose
+    )
     
     foreach ($node in $tweakNodes) {
         $tweak = $node.Tag
@@ -1010,15 +1009,36 @@ function Update-GeneralTweaksStatus {
             $currentValue = Get-RegistryValue -Path $tweak.RegistryPath -Name $tweak.ValueName
             $expectedValue = if ($tweak.PSObject.Properties['TweakValue']) { $tweak.TweakValue } else { $null }
             
+            if ($Verbose) {
+                Write-Host "[DEBUG] Checking $tweakName" -ForegroundColor Cyan
+                Write-Host "  Path: $($tweak.RegistryPath)" -ForegroundColor Gray
+                Write-Host "  ValueName: $($tweak.ValueName)" -ForegroundColor Gray
+                Write-Host "  Expected: $expectedValue (Type: $($expectedValue.GetType().Name))" -ForegroundColor Gray
+                Write-Host "  Current: $currentValue (Type: $(if($currentValue){$currentValue.GetType().Name}else{'null'}))" -ForegroundColor Gray
+            }
+            
             if ($expectedValue -eq "<RemoveEntry>") {
                 $isApplied = ($currentValue -eq $null)
-                $statusText += "Entferne $($tweak.ValueName) aus $($tweak.RegistryPath): $(if ($isApplied) {'OK'} else {'Nicht angewendet'})"
+                $statusText += "Remove $($tweak.ValueName) from $($tweak.RegistryPath): $(if ($isApplied) {'✓ Applied'} else {'✗ Not applied'})"
             }
             else {
-                $isApplied = ($currentValue -ne $null -and $currentValue -eq $expectedValue)
-                $statusText += "Setze $($tweak.ValueName) auf '$expectedValue' in $($tweak.RegistryPath): $(if ($isApplied) {'OK'} else {'Nicht angewendet'})"
+                # Improved comparison handling different data types
+                $isApplied = $false
+                if ($currentValue -ne $null) {
+                    # Handle different data types properly
+                    if ($expectedValue -is [int] -or $expectedValue -is [long]) {
+                        $isApplied = ([int]$currentValue -eq [int]$expectedValue)
+                    }
+                    elseif ($expectedValue -is [string]) {
+                        $isApplied = ([string]$currentValue -eq [string]$expectedValue)
+                    }
+                    else {
+                        $isApplied = ($currentValue -eq $expectedValue)
+                    }
+                }
+                $statusText += "Set $($tweak.ValueName) to '$expectedValue' in $($tweak.RegistryPath): $(if ($isApplied) {'✓ Applied'} else {'✗ Not applied'})"
                 if (-not $isApplied -and $currentValue -ne $null) {
-                    $statusText += "Aktueller Wert: $currentValue"
+                    $statusText += "Current value: $currentValue (Type: $($currentValue.GetType().Name))"
                 }
             }
         }
@@ -1036,13 +1056,26 @@ function Update-GeneralTweaksStatus {
                 
                 if ($setting.Value -eq "<RemoveEntry>") {
                     $settingApplied = ($currentValue -eq $null)
-                    $statusText += "Entferne $($setting.Name) aus $($setting.Path): $(if ($settingApplied) {'OK'} else {'Nicht angewendet'})"
+                    $statusText += "Remove $($setting.Name) from $($setting.Path): $(if ($settingApplied) {'✓ Applied'} else {'✗ Not applied'})"
                 }
                 else {
-                    $settingApplied = ($currentValue -ne $null -and $currentValue -eq $setting.Value)
-                    $statusText += "Setze $($setting.Name) auf '$($setting.Value)' in $($setting.Path): $(if ($settingApplied) {'OK'} else {'Nicht angewendet'})"
+                    # Improved comparison for RegistrySettings
+                    $settingApplied = $false
+                    if ($currentValue -ne $null) {
+                        # Handle different data types properly
+                        if ($setting.Value -is [int] -or $setting.Value -is [long]) {
+                            $settingApplied = ([int]$currentValue -eq [int]$setting.Value)
+                        }
+                        elseif ($setting.Value -is [string]) {
+                            $settingApplied = ([string]$currentValue -eq [string]$setting.Value)
+                        }
+                        else {
+                            $settingApplied = ($currentValue -eq $setting.Value)
+                        }
+                    }
+                    $statusText += "Set $($setting.Name) to '$($setting.Value)' in $($setting.Path): $(if ($settingApplied) {'✓ Applied'} else {'✗ Not applied'})"
                     if (-not $settingApplied -and $currentValue -ne $null) {
-                        $statusText += "Aktueller Wert: $currentValue"
+                        $statusText += "Current value: $currentValue (Type: $($currentValue.GetType().Name))"
                     }
                 }
                 
@@ -1237,6 +1270,268 @@ $generalTweaks = @(
         TweakValue   = 0x26 # Hexadecimal value (38 in decimal)
         DefaultValue = 0x2   # Common default for Win32PrioritySeparation (2 in decimal)
         ValueType    = "DWord"
+    },
+    @{
+        Category     = "System"
+        Name         = "Enable Long Paths"
+        Description  = "Enables support for file paths longer than 260 characters"
+        RegistryPath = "HKLM\SYSTEM\CurrentControlSet\Control\FileSystem"
+        ValueName    = "LongPathsEnabled"
+        TweakValue   = 1
+        DefaultValue = 0
+        ValueType    = "DWord"
+    },
+    @{
+        Category     = "Updates"
+        Name         = "Prevent Windows Update Reboots"
+        Description  = "Sets active hours to prevent automatic reboots during Windows Updates"
+        RegistrySettings = @(
+            @{
+                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate"
+                Name          = "SetActiveHours"
+                Value         = 1
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate"
+                Name          = "ActiveHoursStart"
+                Value         = 8
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate"
+                Name          = "ActiveHoursEnd"
+                Value         = 17
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            }
+        )
+    },
+    @{
+        Category     = "Privacy"
+        Name         = "Disable App Suggestions"
+        Description  = "Disables app suggestions and Content Delivery Manager silent installs"
+        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+        ValueName    = "SilentInstalledAppsEnabled"
+        TweakValue   = 0
+        DefaultValue = 1
+        ValueType    = "DWord"
+    },
+    @{
+        Category     = "Performance"
+        Name         = "Disable Startup Delay"
+        Description  = "Removes the delay when running startup apps in Windows 11"
+        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize"
+        ValueName    = "Startupdelayinmsec"
+        TweakValue   = 0
+        DefaultValue = "<RemoveEntry>"
+        ValueType    = "DWord"
+    },
+    @{
+        Category     = "Explorer"
+        Name         = "Restore Classic File Explorer"
+        Description  = "Restores the classic File Explorer with ribbon in Windows 11"
+        RegistrySettings = @(
+            @{
+                Path          = "HKCU\Software\Classes\CLSID\{2aa9162e-c906-4dd9-ad0b-3d24a8eef5a0}"
+                Name          = "(Default)"
+                Value         = "CLSID_ItemsViewAdapter"
+                OriginalValue = "<RemoveEntry>"
+                Type          = "String"
+            },
+            @{
+                Path          = "HKCU\Software\Classes\CLSID\{2aa9162e-c906-4dd9-ad0b-3d24a8eef5a0}\InProcServer32"
+                Name          = "(Default)"
+                Value         = "C:\\Windows\\System32\\Windows.UI.FileExplorer.dll_"
+                OriginalValue = "<RemoveEntry>"
+                Type          = "String"
+            },
+            @{
+                Path          = "HKCU\Software\Classes\CLSID\{2aa9162e-c906-4dd9-ad0b-3d24a8eef5a0}\InProcServer32"
+                Name          = "ThreadingModel"
+                Value         = "Apartment"
+                OriginalValue = "<RemoveEntry>"
+                Type          = "String"
+            },
+            @{
+                Path          = "HKCU\Software\Classes\CLSID\{6480100b-5a83-4d1e-9f69-8ae5a88e9a33}"
+                Name          = "(Default)"
+                Value         = "File Explorer Xaml Island View Adapter"
+                OriginalValue = "<RemoveEntry>"
+                Type          = "String"
+            },
+            @{
+                Path          = "HKCU\Software\Classes\CLSID\{6480100b-5a83-4d1e-9f69-8ae5a88e9a33}\InProcServer32"
+                Name          = "(Default)"
+                Value         = "C:\\Windows\\System32\\Windows.UI.FileExplorer.dll_"
+                OriginalValue = "<RemoveEntry>"
+                Type          = "String"
+            },
+            @{
+                Path          = "HKCU\Software\Classes\CLSID\{6480100b-5a83-4d1e-9f69-8ae5a88e9a33}\InProcServer32"
+                Name          = "ThreadingModel"
+                Value         = "Apartment"
+                OriginalValue = "<RemoveEntry>"
+                Type          = "String"
+            },
+            @{
+                Path          = "HKCU\Software\Microsoft\Internet Explorer\Toolbar\ShellBrowser"
+                Name          = "ITBar7Layout"
+                Value         = @(0x13,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x20,0x00,0x00,0x00,0x10,0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x01,0x00,0x00,0x00,0x01,0x07,0x00,0x00,0x5e,0x01,0x00,0x00)
+                OriginalValue = "<RemoveEntry>"
+                Type          = "Binary"
+            }
+        )
+    },
+    @{
+        Category     = "Power"
+        Name         = "Disable Modern Standby"
+        Description  = "Disables Modern Standby in Windows 10 and Windows 11"
+        RegistryPath = "HKLM\SYSTEM\CurrentControlSet\Control\Power"
+        ValueName    = "PlatformAoAcOverride"
+        TweakValue   = 0
+        DefaultValue = "<RemoveEntry>"
+        ValueType    = "DWord"
+    },
+    @{
+        Category     = "Mouse"
+        Name         = "Disable Mouse Pointer Trails"
+        Description  = "Disables mouse pointer trails in Windows 11"
+        RegistryPath = "HKCU\Control Panel\Mouse"
+        ValueName    = "MouseTrails"
+        TweakValue   = "0"
+        DefaultValue = "2"
+        ValueType    = "String"
+    },
+    @{
+        Category     = "Explorer"
+        Name         = "Disable AutoSuggest in Run Dialog"
+        Description  = "Disables AutoSuggest in Run and File Explorer Address Bar"
+        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\AutoComplete"
+        ValueName    = "AutoSuggest"
+        TweakValue   = "no"
+        DefaultValue = "<RemoveEntry>"
+        ValueType    = "String"
+    },
+    @{
+        Category     = "Explorer"
+        Name         = "Disable Sync Provider Notifications"
+        Description  = "Disables sync provider notifications in File Explorer"
+        RegistryPath = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+        ValueName    = "ShowSyncProviderNotifications"
+        TweakValue   = 0
+        DefaultValue = 1
+        ValueType    = "DWord"
+    },
+    @{
+        Category     = "Explorer"
+        Name         = "Show File Extensions"
+        Description  = "Shows file name extensions for known file types"
+        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+        ValueName    = "HideFileExt"
+        TweakValue   = 0
+        DefaultValue = 1
+        ValueType    = "DWord"
+    },
+    @{
+        Category     = "Taskbar"
+        Name         = "Enable End Task in Taskbar"
+        Description  = "Enables End Task option in taskbar right-click menu"
+        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings"
+        ValueName    = "TaskbarEndTask"
+        TweakValue   = 1
+        DefaultValue = 0
+        ValueType    = "DWord"
+    },
+    @{
+        Category     = "Privacy"
+        Name         = "Disable Windows Copilot"
+        Description  = "Disables Windows Copilot in Windows 11"
+        RegistrySettings = @(
+            @{
+                Path          = "HKCU\Software\Policies\Microsoft\Windows\WindowsCopilot"
+                Name          = "TurnOffWindowsCopilot"
+                Value         = 1
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot"
+                Name          = "TurnOffWindowsCopilot"
+                Value         = 1
+                OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            }
+        )
+    },
+    @{
+        Category     = "Taskbar"
+        Name         = "Use Classic Alt+Tab"
+        Description  = "Uses classic icons instead of thumbnails in Alt+Tab"
+        RegistryPath = "HKCU\Software\Policies\Microsoft\Windows\Explorer"
+        ValueName    = "AltTabSettings"
+        TweakValue   = 1
+        DefaultValue = "<RemoveEntry>"
+        ValueType    = "DWord"
+    },
+    @{
+        Category     = "Storage"
+        Name         = "Disable Reserved Storage"
+        Description  = "Disables Windows 11 reserved storage feature"
+        RegistrySettings = @(
+            @{
+                Path          = "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\ReserveManager"
+                Name          = "MiscPolicyInfo"
+                Value         = 2
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\ReserveManager"
+                Name          = "PassedPolicy"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\ReserveManager"
+                Name          = "ShippedWithReserves"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            }
+        )
+    },
+    @{
+        Category     = "Performance"
+        Name         = "Disable Last Access Time Stamp"
+        Description  = "Disables NTFS last access time stamp updates for better performance"
+        InvokeScript = @(
+            "fsutil.exe behavior set disableLastAccess 1"
+        )
+        ResetScript  = @(
+            "fsutil.exe behavior set disableLastAccess 0"
+        )
+    },
+    @{
+        Category     = "Performance"
+        Name         = "Disable Search Indexing"
+        Description  = "Disables Windows Search Indexing service for better performance"
+        Service      = "wsearch"
+        TweakValue   = "Disabled"
+        DefaultValue = "Automatic"
+    },
+    @{
+        Category     = "Mouse"
+        Name         = "Disable Enhance Pointer Precision"
+        Description  = "Disables mouse acceleration (Enhance Pointer Precision)"
+        RegistryPath = "HKCU\Control Panel\Mouse"
+        ValueName    = "MouseSpeed"
+        TweakValue   = "0"
+        DefaultValue = "1"
+        ValueType    = "String"
     }
 )
 

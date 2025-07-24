@@ -1343,8 +1343,8 @@ $generalTweaks = @(
         Description  = "Adjusts how Windows allocates CPU time to foreground and background applications. Setting to '26' (hex) gives more priority to foreground applications."
         RegistryPath = "HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl"
         ValueName    = "Win32PrioritySeparation"
-        TweakValue   = 0x26 # Hexadecimal value (38 in decimal)
-        DefaultValue = 0x2   # Common default for Win32PrioritySeparation (2 in decimal)
+        TweakValue   = 0x26
+        DefaultValue = 0x2
         ValueType    = "DWord"
     },
     @{
@@ -1647,6 +1647,136 @@ $generalTweaks = @(
                 Name          = "AllowGameDVR"
                 Value         = 0
                 OriginalValue = "<RemoveEntry>"
+                Type          = "DWord"
+            }
+        )
+    },
+    @{
+        Category     = "Advanced Tweaks"
+        Name         = "Disable Background Apps"
+        Description  = "Disables all Microsoft Store apps from running in the background, which has to be done individually since Win11"
+        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications"
+        ValueName    = "GlobalUserDisabled"
+        TweakValue   = 1
+        DefaultValue = 0
+        ValueType    = "DWord"
+    },
+    @{
+        Category     = "Gaming"
+        Name         = "Disable Fullscreen Optimizations"
+        Description  = "Disables FSO in all applications. NOTE: This will disable Color Management in Exclusive Fullscreen"
+        RegistryPath = "HKCU\System\GameConfigStore"
+        ValueName    = "GameDVR_DXGIHonorFSEWindowsCompatible"
+        TweakValue   = 1
+        DefaultValue = 0
+        ValueType    = "DWord"
+    },
+    @{
+        Category     = "Customize Preferences"
+        Name         = "Disable Bing Search in Start Menu"
+        Description  = "If enable then includes web search results from Bing in your Start Menu search."
+        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Search"
+        ValueName    = "BingSearchEnabled"
+        TweakValue   = 0
+        DefaultValue = 1
+        ValueType    = "DWord"
+    },
+    @{
+        Category         = "Customize Preferences"
+        Name             = "Enable NumLock on Startup"
+        Description      = "Toggle the Num Lock key state when your computer starts."
+        RegistrySettings = @(
+             @{
+                Path          = "HKU\.Default\Control Panel\Keyboard"
+                Name          = "InitialKeyboardIndicators"
+                Value         = 2
+                OriginalValue = 0
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKCU\Control Panel\Keyboard"
+                Name          = "InitialKeyboardIndicators"
+                Value         = 2
+                OriginalValue = 0
+                Type          = "DWord"
+            }
+        )
+    },
+    @{
+        Category     = "Customize Preferences"
+        Name         = "Verbose Messages During Logon"
+        Description  = "Show detailed messages during the login process for troubleshooting and diagnostics."
+        RegistryPath = "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"
+        ValueName    = "VerboseStatus"
+        TweakValue   = 1
+        DefaultValue = 0
+        ValueType    = "DWord"
+    },
+    @{
+        Category         = "Customize Preferences"
+        Name             = "Disable Recommendations in Start Menu"
+        Description      = "If disabled then you will not see recommendations in the Start Menu. | Enables 'iseducationenvironment' | Relogin Required. | WARNING: This will also disable Windows Spotlight on your Lock Screen as a side effect."
+        RegistrySettings = @(
+             @{
+                Path          = "HKLM\SOFTWARE\Microsoft\PolicyManager\current\device\Start"
+                Name          = "HideRecommendedSection"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM\SOFTWARE\Microsoft\PolicyManager\current\device\Education"
+                Name          = "IsEducationEnvironment"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\Explorer"
+                Name          = "HideRecommendedSection"
+                Value         = 0
+                OriginalValue = 1
+                Type          = "DWord"
+            }
+        )
+    },
+    @{
+        Category     = "Customize Preferences"
+        Name         = "Remove Settings Home Page"
+        Description  = "Removes the Home page in the Windows Settings app."
+        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer"
+        ValueName    = "SettingsPageVisibility"
+        TweakValue   = "hide:home"
+        DefaultValue = "show:home"
+        ValueType    = "String"
+    },
+    @{
+        Category     = "Customize Preferences"
+        Name         = "Disable Sticky Keys"
+        Description  = "If Enabled then Sticky Keys is activated - Sticky keys is an accessibility feature of some graphical user interfaces which assists users who have physical disabilities or help users reduce repetitive strain injury."
+        RegistryPath = "HKCU\Control Panel\Accessibility\StickyKeys"
+        ValueName    = "Flags"
+        TweakValue   = 510
+        DefaultValue = 58
+        ValueType    = "DWord"
+    },
+    @{
+        Category         = "Customize Preferences"
+        Name             = "Detailed BSoD"
+        Description      = "If Enabled then you will see a detailed Blue Screen of Death (BSOD) with more information."
+        RegistrySettings = @(
+             @{
+                Path          = "HKLM\SYSTEM\CurrentControlSet\Control\CrashControl"
+                Name          = "DisplayParameters"
+                Value         = 1
+                OriginalValue = 0
+                Type          = "DWord"
+            },
+            @{
+                Path          = "HKLM\SYSTEM\CurrentControlSet\Control\CrashControl"
+                Name          = "DisableEmoticon"
+                Value         = 1
+                OriginalValue = 0
                 Type          = "DWord"
             }
         )

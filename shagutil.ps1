@@ -5,50 +5,27 @@ Add-Type -AssemblyName System.Security # Needed ?
 $scriptVersion = "25.07.24"
 
 #region 1. Initial Script Setup & Compatibility Checks
-# Check for Administrator privileges
-if (-not ([Security.Principal.WindowsPrincipal][System.Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltinRole] "Administrator")) {
+if (-not ([Security.Principal.WindowsPrincipal][System.Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltinRole] "Administrator")) { # Check for Administrator privileges
     [System.Windows.Forms.MessageBox]::Show("This script must be run as an Administrator. Please restart PowerShell or the script file with administrative privileges.", "Administrator Privileges Required", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Stop)
     exit
 }
 
-# Check for Windows 11 and specific versions
+# Windows Version Check
 $buildNumber = [System.Environment]::OSVersion.Version.Build
-$releaseId = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion").ReleaseId
-$displayVersion = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion").DisplayVersion
-$supportedVersions = @("22H2", "23H2", "24H2", "25H2")
-$osName = (Get-CimInstance -ClassName Win32_OperatingSystem).Caption
-$versionInfo = "$osName (Build $buildNumber)"
-if ($displayVersion) {
-    $versionInfo = "$osName $displayVersion (Build $buildNumber)"
-} elseif ($releaseId) {
-    $versionInfo = "$osName $releaseId (Build $buildNumber)"
+$osName = (Get-CimInstance Win32_OperatingSystem).Caption
+try { $displayVersion = (Get-ItemProperty "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion").DisplayVersion } catch { $displayVersion = "" }
+$versionInfo = if ($displayVersion) { "$osName $displayVersion (Build $buildNumber)" } else { "$osName (Build $buildNumber)" }
+
+if ($buildNumber -lt 22000) { # Exit if not Windows 11 or unsupported version
+    [System.Windows.Forms.MessageBox]::Show("This script requires Windows 11 or newer.`n`nDetected OS: $versionInfo", "Unsupported Windows Version", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
+    [System.Windows.Forms.Application]::Exit()
+    [System.Environment]::Exit(1)
 }
 
-if ($buildNumber -lt 22000) {
-    [System.Windows.Forms.MessageBox]::Show("This script is designed for Windows 11 only.`n`nDetected OS: $versionInfo`n`nSome features may not work correctly or at all on older Windows versions.`n`nPress OK to exit.", "Unsupported Windows Version", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)
-    if ($Host.Name -eq "Windows PowerShell ISE Host") {
-        [System.Windows.Forms.MessageBox]::Show("Please close this window manually.", "Close Window", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
-    }
-    exit 1
-} else {
-    $isSupportedVersion = $false
-    $versionCheckMessage = ""
-    foreach ($version in $supportedVersions) {
-        if ($displayVersion -eq $version -Or $releaseId -eq $version) {
-            $isSupportedVersion = $true
-            break
-        }
-    }
-    if ($supportedVersions.Count -eq 0) {
-        $isSupportedVersion = $true
-    }
-    if (-not $isSupportedVersion) {
-        $supportedList = $supportedVersions -join ", "
-        $message = "This script is optimized for the following Windows 11 versions: $supportedList`n`n" +
-                  "Detected OS: $versionInfo`n`n" +
-                  "Some features may not work as expected on this version."
-        [System.Windows.Forms.MessageBox]::Show($message, "Untested Windows Version", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Warning)
-    }
+if ($displayVersion -and -not (@("23H2", "24H2", "25H2") -contains $displayVersion)) { # Check supported versions
+    [System.Windows.Forms.MessageBox]::Show("Unsupported Windows version.`n`nDetected: $versionInfo`nSupported: 23H2, 24H2, 25H2", "Unsupported Version", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Error) | Out-Null
+    [System.Windows.Forms.Application]::Exit()
+    [System.Environment]::Exit(1)
 }
 
 Clear-Host
@@ -60,8 +37,7 @@ Write-Host "    █   █   █   █   █ █   █     █   █ █   █" -
 Write-Host "█████   █   █   █   █ █████ █   █████ █████" -ForegroundColor White
 Write-Host ""
 Write-Host "==== Welcome to ShagUtil v$scriptVersion! ====" -ForegroundColor Cyan
-Write-Host "==== Windows Toolbox ====" -ForegroundColor White
-Write-Host ""
+Write-Host "==== Windows Toolbox ====`n" -ForegroundColor White
 #endregion
 
 #region 2. Global Helper Functions

@@ -12,14 +12,14 @@ if (-not ([Security.Principal.WindowsPrincipal][System.Security.Principal.Window
 
 Clear-Host
 Write-Host ""
-Write-Host "█████   █   █    ███  █████     █████ █████" -ForegroundColor Green
-Write-Host "█       █   █   █   █ █         █     █" -ForegroundColor Green
-Write-Host "█████   █████   █████ █ ███     █ ███ █ ███" -ForegroundColor Green
-Write-Host "    █   █   █   █   █ █   █     █   █ █   █" -ForegroundColor Green
-Write-Host "█████   █   █   █   █ █████ █   █████ █████" -ForegroundColor Green
+Write-Host "█████   █   █    ███  █████     █████ █████" -ForegroundColor White
+Write-Host "█       █   █   █   █ █         █     █" -ForegroundColor White
+Write-Host "█████   █████   █████ █ ███     █ ███ █ ███" -ForegroundColor White
+Write-Host "    █   █   █   █   █ █   █     █   █ █   █" -ForegroundColor White
+Write-Host "█████   █   █   █   █ █████ █   █████ █████" -ForegroundColor White
 Write-Host ""
 Write-Host "==== Welcome to ShagUtil v$scriptVersion! ====" -ForegroundColor Cyan
-Write-Host "==== Windows Toolbox ====" -ForegroundColor Cyan
+Write-Host "==== Windows Toolbox ====" -ForegroundColor White
 Write-Host ""
 #endregion
 
@@ -1255,7 +1255,7 @@ function GeneralTreeView {
 
 $generalTweaks = @(
     @{
-        Category     = "Privacy"
+        Category     = "Privacy & Security"
         Name         = "Disable ConsumerFeatures"
         Description  = "Windows 10 will not automatically install any games, third-party apps, or application links from the Windows Store for the signed-in user. Some default Apps will be inaccessible (eg. Phone Link)"
         RegistryPath = "HKLM\SOFTWARE\Policies\Microsoft\Windows\CloudContent"
@@ -1265,7 +1265,7 @@ $generalTweaks = @(
         ValueType    = "DWord"
     },
     @{
-        Category         = "Privacy"
+        Category         = "Privacy & Security"
         Name             = "Disable Activity History"
         Description      = "This erases recent docs, clipboard, and run history."
         RegistrySettings = @(
@@ -1293,7 +1293,7 @@ $generalTweaks = @(
         )
     },
     @{
-        Category         = "Privacy"
+        Category         = "Privacy & Security"
         Name             = "Disable Location Tracking"
         Description      = "Disables Location Tracking."
         RegistrySettings = @(
@@ -1328,7 +1328,7 @@ $generalTweaks = @(
         )
     },
     @{
-        Category     = "Network"
+        Category     = "Gaming"
         Name         = "Prefer IPv4 over IPv6"
         Description  = "To set the IPv4 preference can have latency and security benefits on private networks where IPv6 is not configured."
         RegistryPath = "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters"
@@ -1348,7 +1348,7 @@ $generalTweaks = @(
         ValueType    = "DWord"
     },
     @{
-        Category     = "System"
+        Category     = "System & Storage"
         Name         = "Enable Long Paths"
         Description  = "Enables support for file paths longer than 260 characters"
         RegistryPath = "HKLM\SYSTEM\CurrentControlSet\Control\FileSystem"
@@ -1358,7 +1358,7 @@ $generalTweaks = @(
         ValueType    = "DWord"
     },
     @{
-        Category     = "Updates"
+        Category     = "Customize Preferences"
         Name         = "Prevent Windows Update Reboots"
         Description  = "Sets active hours to prevent automatic reboots during Windows Updates"
         RegistrySettings = @(
@@ -1386,7 +1386,7 @@ $generalTweaks = @(
         )
     },
     @{
-        Category     = "Privacy"
+        Category     = "Privacy & Security"
         Name         = "Disable App Suggestions"
         Description  = "Disables app suggestions and Content Delivery Manager silent installs"
         RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
@@ -1406,7 +1406,7 @@ $generalTweaks = @(
         ValueType    = "DWord"
     },
     @{
-        Category     = "Explorer"
+        Category     = "File Explorer & UI"
         Name         = "Restore Classic File Explorer"
         Description  = "Restores the classic File Explorer with ribbon in Windows 11"
         RegistrySettings = @(
@@ -1462,7 +1462,7 @@ $generalTweaks = @(
         )
     },
     @{
-        Category     = "Power"
+        Category     = "Performance"
         Name         = "Disable Modern Standby"
         Description  = "Disables Modern Standby in Windows 10 and Windows 11"
         RegistryPath = "HKLM\SYSTEM\CurrentControlSet\Control\Power"
@@ -1472,7 +1472,7 @@ $generalTweaks = @(
         ValueType    = "DWord"
     },
     @{
-        Category     = "Mouse"
+        Category     = "Customize Preferences"
         Name         = "Disable Mouse Pointer Trails"
         Description  = "Disables mouse pointer trails in Windows 11"
         RegistryPath = "HKCU\Control Panel\Mouse"
@@ -1482,7 +1482,7 @@ $generalTweaks = @(
         ValueType    = "String"
     },
     @{
-        Category     = "Explorer"
+        Category     = "File Explorer & UI"
         Name         = "Disable AutoSuggest in Run Dialog"
         Description  = "Disables AutoSuggest in Run and File Explorer Address Bar"
         RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\AutoComplete"
@@ -1492,7 +1492,7 @@ $generalTweaks = @(
         ValueType    = "String"
     },
     @{
-        Category     = "Explorer"
+        Category     = "File Explorer & UI"
         Name         = "Disable Sync Provider Notifications"
         Description  = "Disables sync provider notifications in File Explorer"
         RegistryPath = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
@@ -1502,7 +1502,7 @@ $generalTweaks = @(
         ValueType    = "DWord"
     },
     @{
-        Category     = "Explorer"
+        Category     = "File Explorer & UI"
         Name         = "Show File Extensions"
         Description  = "Shows file name extensions for known file types"
         RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
@@ -1512,7 +1512,7 @@ $generalTweaks = @(
         ValueType    = "DWord"
     },
     @{
-        Category     = "Taskbar"
+        Category     = "File Explorer & UI"
         Name         = "Enable End Task in Taskbar"
         Description  = "Enables End Task option in taskbar right-click menu"
         RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings"
@@ -1522,7 +1522,7 @@ $generalTweaks = @(
         ValueType    = "DWord"
     },
     @{
-        Category     = "Privacy"
+        Category     = "Privacy & Security"
         Name         = "Disable Windows Copilot"
         Description  = "Disables Windows Copilot in Windows 11"
         RegistrySettings = @(
@@ -1543,7 +1543,7 @@ $generalTweaks = @(
         )
     },
     @{
-        Category     = "Taskbar"
+        Category     = "File Explorer & UI"
         Name         = "Use Classic Alt+Tab"
         Description  = "Uses classic icons instead of thumbnails in Alt+Tab"
         RegistryPath = "HKCU\Software\Policies\Microsoft\Windows\Explorer"
@@ -1553,7 +1553,7 @@ $generalTweaks = @(
         ValueType    = "DWord"
     },
     @{
-        Category     = "Storage"
+        Category     = "System & Storage"
         Name         = "Disable Reserved Storage"
         Description  = "Disables Windows 11 reserved storage feature"
         RegistrySettings = @(
@@ -1600,7 +1600,7 @@ $generalTweaks = @(
         DefaultValue = "Automatic"
     },
     @{
-        Category     = "Mouse"
+        Category     = "Customize Preferences"
         Name         = "Disable Enhance Pointer Precision"
         Description  = "Disables mouse acceleration (Enhance Pointer Precision)"
         RegistryPath = "HKCU\Control Panel\Mouse"
@@ -1652,7 +1652,7 @@ $generalTweaks = @(
         )
     },
     @{
-        Category     = "Advanced Tweaks"
+        Category     = "Advanced - CAUTION"
         Name         = "Disable Background Apps"
         Description  = "Disables all Microsoft Store apps from running in the background, which has to be done individually since Win11"
         RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications"
@@ -1787,12 +1787,12 @@ $generalTweaks = @(
         Description  = "Enables smaller taskbar buttons for a more compact taskbar"
         RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
         ValueName    = "TaskbarSmallIcons"
-        TweakValue   = 0
-        DefaultValue = 1
+        TweakValue   = 1
+        DefaultValue = 0
         ValueType    = "DWord"
     },
     @{
-        Category     = "Customize Preferences"
+        Category     = "File Explorer & UI"
         Name         = "Disable Snap Assist Flyout"
         Description  = "If enabled then Snap preview is disabled when maximize button is hovered."
         RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
@@ -1802,7 +1802,7 @@ $generalTweaks = @(
         ValueType    = "DWord"
     },
     @{
-        Category     = "Customize Preferences"
+        Category     = "File Explorer & UI"
         Name         = "Disable Snap Assist Suggestion"
         Description  = "If enabled then you will get suggestions to snap other applications in the left over spaces."
         RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
@@ -1817,6 +1817,16 @@ $generalTweaks = @(
         Description  = "If enabled then you will not see the message 'Let Windows and apps access your location'"
         RegistryPath = "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location"
         ValueName    = "ShowGlobalPrompts"
+        TweakValue   = 0
+        DefaultValue = 1
+        ValueType    = "DWord"
+    },
+    @{
+        Category     = "Advanced - CAUTION"
+        Name         = "Enable Network Acceleration (TCP Offload)"
+        Description  = "Enables TCP Offloading and RSS for better network performance (may cause issues with some network cards)"
+        RegistryPath = "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"
+        ValueName    = "DisableTaskOffload"
         TweakValue   = 0
         DefaultValue = 1
         ValueType    = "DWord"
@@ -1932,7 +1942,8 @@ function Set-RecommendedTweaks {
         "Disable Bing Search in Start Menu",
         "Disable Recommendations in Start Menu",
         "Remove Settings Home Page",
-        "Disable Sticky Keys"
+        "Disable Sticky Keys",
+        "Enable Network Acceleration (TCP Offload)"
     )
     
     # Check the recommended tweaks

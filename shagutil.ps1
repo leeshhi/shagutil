@@ -1264,7 +1264,7 @@ $generalTweaks = @(
         Category     = "Privacy & Security"
         Name         = "Disable ConsumerFeatures"
         Description  = "Windows 10 will not automatically install any games, third-party apps, or application links from the Windows Store for the signed-in user. Some default Apps will be inaccessible (eg. Phone Link)"
-        RegistryPath = "HKLM\SOFTWARE\Policies\Microsoft\Windows\CloudContent"
+        RegistryPath = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\CloudContent"
         ValueName    = "DisableWindowsConsumerFeatures"
         TweakValue   = 1
         DefaultValue = "<RemoveEntry>"
@@ -1276,21 +1276,21 @@ $generalTweaks = @(
         Description      = "This erases recent docs, clipboard, and run history."
         RegistrySettings = @(
             @{
-                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\System"
+                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\System"
                 Name          = "EnableActivityFeed"
                 Value         = 0
                 OriginalValue = "<RemoveEntry>"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\System"
+                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\System"
                 Name          = "PublishUserActivities"
                 Value         = 0
                 OriginalValue = "<RemoveEntry>"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\System"
+                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\System"
                 Name          = "UploadUserActivities"
                 Value         = 0
                 OriginalValue = "<RemoveEntry>"
@@ -1304,28 +1304,28 @@ $generalTweaks = @(
         Description      = "Disables Location Tracking."
         RegistrySettings = @(
             @{
-                Path          = "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location"
+                Path          = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location"
                 Name          = "Value"
                 Value         = "Deny"
                 OriginalValue = "Allow"
                 Type          = "String"
             },
             @{
-                Path          = "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Sensor\Overrides\{BFA794E4-F964-4FDB-90F6-51056BFE4B44}"
+                Path          = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Sensor\Overrides\{BFA794E4-F964-4FDB-90F6-51056BFE4B44}"
                 Name          = "SensorPermissionState"
                 Value         = 0
                 OriginalValue = 1
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM\SYSTEM\CurrentControlSet\Services\lfsvc\Service\Configuration"
+                Path          = "HKLM:\SYSTEM\CurrentControlSet\Services\lfsvc\Service\Configuration"
                 Name          = "Status"
                 Value         = 0
                 OriginalValue = 1
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM\SYSTEM\Maps"
+                Path          = "HKLM:\SYSTEM\Maps"
                 Name          = "AutoUpdateEnabled"
                 Value         = 0
                 OriginalValue = 1
@@ -1337,7 +1337,7 @@ $generalTweaks = @(
         Category     = "Gaming"
         Name         = "Prefer IPv4 over IPv6"
         Description  = "To set the IPv4 preference can have latency and security benefits on private networks where IPv6 is not configured."
-        RegistryPath = "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters"
+        RegistryPath = "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip6\Parameters"
         ValueName    = "DisabledComponents"
         TweakValue   = "32"
         DefaultValue = "0"
@@ -1347,7 +1347,7 @@ $generalTweaks = @(
         Category     = "Performance"
         Name         = "Win 32 Priority Separation"
         Description  = "Adjusts how Windows allocates CPU time to foreground and background applications. Setting to '26' (hex) gives more priority to foreground applications."
-        RegistryPath = "HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl"
+        RegistryPath = "HKLM:\SYSTEM\CurrentControlSet\Control\PriorityControl"
         ValueName    = "Win32PrioritySeparation"
         TweakValue   = 0x26
         DefaultValue = 0x2
@@ -1357,7 +1357,7 @@ $generalTweaks = @(
         Category     = "System & Storage"
         Name         = "Enable Long Paths"
         Description  = "Enables support for file paths longer than 260 characters"
-        RegistryPath = "HKLM\SYSTEM\CurrentControlSet\Control\FileSystem"
+        RegistryPath = "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem"
         ValueName    = "LongPathsEnabled"
         TweakValue   = 1
         DefaultValue = 0
@@ -1369,21 +1369,21 @@ $generalTweaks = @(
         Description  = "Sets active hours to prevent automatic reboots during Windows Updates"
         RegistrySettings = @(
             @{
-                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate"
+                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate"
                 Name          = "SetActiveHours"
                 Value         = 1
                 OriginalValue = "<RemoveEntry>"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate"
+                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate"
                 Name          = "ActiveHoursStart"
                 Value         = 8
                 OriginalValue = "<RemoveEntry>"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate"
+                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate"
                 Name          = "ActiveHoursEnd"
                 Value         = 17
                 OriginalValue = "<RemoveEntry>"
@@ -1395,7 +1395,7 @@ $generalTweaks = @(
         Category     = "Privacy & Security"
         Name         = "Disable App Suggestions"
         Description  = "Disables app suggestions and Content Delivery Manager silent installs"
-        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
+        RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager"
         ValueName    = "SilentInstalledAppsEnabled"
         TweakValue   = 0
         DefaultValue = 1
@@ -1405,7 +1405,7 @@ $generalTweaks = @(
         Category     = "Performance"
         Name         = "Disable Startup Delay"
         Description  = "Removes the delay when running startup apps in Windows 11"
-        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize"
+        RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Serialize"
         ValueName    = "Startupdelayinmsec"
         TweakValue   = 0
         DefaultValue = "<RemoveEntry>"
@@ -1417,49 +1417,49 @@ $generalTweaks = @(
         Description  = "Restores the classic File Explorer with ribbon in Windows 11"
         RegistrySettings = @(
             @{
-                Path          = "HKCU\Software\Classes\CLSID\{2aa9162e-c906-4dd9-ad0b-3d24a8eef5a0}"
+                Path          = "HKCU:\Software\Classes\CLSID\{2aa9162e-c906-4dd9-ad0b-3d24a8eef5a0}"
                 Name          = "(Default)"
                 Value         = "CLSID_ItemsViewAdapter"
                 OriginalValue = "<RemoveEntry>"
                 Type          = "String"
             },
             @{
-                Path          = "HKCU\Software\Classes\CLSID\{2aa9162e-c906-4dd9-ad0b-3d24a8eef5a0}\InProcServer32"
+                Path          = "HKCU:\Software\Classes\CLSID\{2aa9162e-c906-4dd9-ad0b-3d24a8eef5a0}\InProcServer32"
                 Name          = "(Default)"
                 Value         = "C:\\Windows\\System32\\Windows.UI.FileExplorer.dll_"
                 OriginalValue = "<RemoveEntry>"
                 Type          = "String"
             },
             @{
-                Path          = "HKCU\Software\Classes\CLSID\{2aa9162e-c906-4dd9-ad0b-3d24a8eef5a0}\InProcServer32"
+                Path          = "HKCU:\Software\Classes\CLSID\{2aa9162e-c906-4dd9-ad0b-3d24a8eef5a0}\InProcServer32"
                 Name          = "ThreadingModel"
                 Value         = "Apartment"
                 OriginalValue = "<RemoveEntry>"
                 Type          = "String"
             },
             @{
-                Path          = "HKCU\Software\Classes\CLSID\{6480100b-5a83-4d1e-9f69-8ae5a88e9a33}"
+                Path          = "HKCU:\Software\Classes\CLSID\{6480100b-5a83-4d1e-9f69-8ae5a88e9a33}"
                 Name          = "(Default)"
                 Value         = "File Explorer Xaml Island View Adapter"
                 OriginalValue = "<RemoveEntry>"
                 Type          = "String"
             },
             @{
-                Path          = "HKCU\Software\Classes\CLSID\{6480100b-5a83-4d1e-9f69-8ae5a88e9a33}\InProcServer32"
+                Path          = "HKCU:\Software\Classes\CLSID\{6480100b-5a83-4d1e-9f69-8ae5a88e9a33}\InProcServer32"
                 Name          = "(Default)"
                 Value         = "C:\\Windows\\System32\\Windows.UI.FileExplorer.dll_"
                 OriginalValue = "<RemoveEntry>"
                 Type          = "String"
             },
             @{
-                Path          = "HKCU\Software\Classes\CLSID\{6480100b-5a83-4d1e-9f69-8ae5a88e9a33}\InProcServer32"
+                Path          = "HKCU:\Software\Classes\CLSID\{6480100b-5a83-4d1e-9f69-8ae5a88e9a33}\InProcServer32"
                 Name          = "ThreadingModel"
                 Value         = "Apartment"
                 OriginalValue = "<RemoveEntry>"
                 Type          = "String"
             },
             @{
-                Path          = "HKCU\Software\Microsoft\Internet Explorer\Toolbar\ShellBrowser"
+                Path          = "HKCU:\Software\Microsoft\Internet Explorer\Toolbar\ShellBrowser"
                 Name          = "ITBar7Layout"
                 Value         = @(0x13,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x20,0x00,0x00,0x00,0x10,0x00,0x01,0x00,0x00,0x00,0x00,0x00,0x01,0x00,0x00,0x00,0x01,0x07,0x00,0x00,0x5e,0x01,0x00,0x00)
                 OriginalValue = "<RemoveEntry>"
@@ -1471,7 +1471,7 @@ $generalTweaks = @(
         Category     = "Performance"
         Name         = "Disable Modern Standby"
         Description  = "Disables Modern Standby in Windows 10 and Windows 11"
-        RegistryPath = "HKLM\SYSTEM\CurrentControlSet\Control\Power"
+        RegistryPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Power"
         ValueName    = "PlatformAoAcOverride"
         TweakValue   = 0
         DefaultValue = "<RemoveEntry>"
@@ -1481,7 +1481,7 @@ $generalTweaks = @(
         Category     = "Customize Preferences"
         Name         = "Disable Mouse Pointer Trails"
         Description  = "Disables mouse pointer trails in Windows 11"
-        RegistryPath = "HKCU\Control Panel\Mouse"
+        RegistryPath = "HKCU:\Control Panel\Mouse"
         ValueName    = "MouseTrails"
         TweakValue   = "0"
         DefaultValue = "2"
@@ -1491,7 +1491,7 @@ $generalTweaks = @(
         Category     = "File Explorer & UI"
         Name         = "Disable AutoSuggest in Run Dialog"
         Description  = "Disables AutoSuggest in Run and File Explorer Address Bar"
-        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\AutoComplete"
+        RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\AutoComplete"
         ValueName    = "AutoSuggest"
         TweakValue   = "no"
         DefaultValue = "<RemoveEntry>"
@@ -1501,7 +1501,7 @@ $generalTweaks = @(
         Category     = "File Explorer & UI"
         Name         = "Disable Sync Provider Notifications"
         Description  = "Disables sync provider notifications in File Explorer"
-        RegistryPath = "HKCU\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+        RegistryPath = "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
         ValueName    = "ShowSyncProviderNotifications"
         TweakValue   = 0
         DefaultValue = 1
@@ -1511,7 +1511,7 @@ $generalTweaks = @(
         Category     = "File Explorer & UI"
         Name         = "Show File Extensions"
         Description  = "Shows file name extensions for known file types"
-        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+        RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
         ValueName    = "HideFileExt"
         TweakValue   = 0
         DefaultValue = 1
@@ -1521,7 +1521,7 @@ $generalTweaks = @(
         Category     = "File Explorer & UI"
         Name         = "Enable End Task in Taskbar"
         Description  = "Enables End Task option in taskbar right-click menu"
-        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings"
+        RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced\TaskbarDeveloperSettings"
         ValueName    = "TaskbarEndTask"
         TweakValue   = 1
         DefaultValue = 0
@@ -1533,14 +1533,14 @@ $generalTweaks = @(
         Description  = "Disables Windows Copilot in Windows 11"
         RegistrySettings = @(
             @{
-                Path          = "HKCU\Software\Policies\Microsoft\Windows\WindowsCopilot"
+                Path          = "HKCU:\Software\Policies\Microsoft\Windows\WindowsCopilot"
                 Name          = "TurnOffWindowsCopilot"
                 Value         = 1
                 OriginalValue = "<RemoveEntry>"
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot"
+                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot"
                 Name          = "TurnOffWindowsCopilot"
                 Value         = 1
                 OriginalValue = "<RemoveEntry>"
@@ -1552,7 +1552,7 @@ $generalTweaks = @(
         Category     = "File Explorer & UI"
         Name         = "Use Classic Alt+Tab"
         Description  = "Uses classic icons instead of thumbnails in Alt+Tab"
-        RegistryPath = "HKCU\Software\Policies\Microsoft\Windows\Explorer"
+        RegistryPath = "HKCU:\Software\Policies\Microsoft\Windows\Explorer"
         ValueName    = "AltTabSettings"
         TweakValue   = 1
         DefaultValue = "<RemoveEntry>"
@@ -1564,21 +1564,21 @@ $generalTweaks = @(
         Description  = "Disables Windows 11 reserved storage feature"
         RegistrySettings = @(
             @{
-                Path          = "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\ReserveManager"
+                Path          = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\ReserveManager"
                 Name          = "MiscPolicyInfo"
                 Value         = 2
                 OriginalValue = 1
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\ReserveManager"
+                Path          = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\ReserveManager"
                 Name          = "PassedPolicy"
                 Value         = 0
                 OriginalValue = 1
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\ReserveManager"
+                Path          = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\ReserveManager"
                 Name          = "ShippedWithReserves"
                 Value         = 0
                 OriginalValue = 1
@@ -1609,7 +1609,7 @@ $generalTweaks = @(
         Category     = "Customize Preferences"
         Name         = "Disable Enhance Pointer Precision"
         Description  = "Disables mouse acceleration (Enhance Pointer Precision)"
-        RegistryPath = "HKCU\Control Panel\Mouse"
+        RegistryPath = "HKCU:\Control Panel\Mouse"
         ValueName    = "MouseSpeed"
         TweakValue   = "0"
         DefaultValue = "1"
@@ -1621,35 +1621,35 @@ $generalTweaks = @(
         Description      = "GameDVR is a Windows App that is a dependency for some Store Games. I've never met someone that likes it, but it's there for the XBOX crowd."
         RegistrySettings = @(
              @{
-                Path          = "HKCU\System\GameConfigStore"
+                Path          = "HKCU:\System\GameConfigStore"
                 Name          = "GameDVR_FSEBehavior"
                 Value         = 2
                 OriginalValue = 1
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU\System\GameConfigStore"
+                Path          = "HKCU:\System\GameConfigStore"
                 Name          = "GameDVR_Enabled"
                 Value         = 0
                 OriginalValue = 1
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU\System\GameConfigStore"
+                Path          = "HKCU:\System\GameConfigStore"
                 Name          = "GameDVR_HonorUserFSEBehaviorMode"
                 Value         = 1
                 OriginalValue = 0
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU\System\GameConfigStore"
+                Path          = "HKCU:\System\GameConfigStore"
                 Name          = "GameDVR_EFSEFeatureFlags"
                 Value         = 0
                 OriginalValue = 1
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\GameDVR"
+                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\GameDVR"
                 Name          = "AllowGameDVR"
                 Value         = 0
                 OriginalValue = "<RemoveEntry>"
@@ -1661,7 +1661,7 @@ $generalTweaks = @(
         Category     = "Advanced - CAUTION"
         Name         = "Disable Background Apps"
         Description  = "Disables all Microsoft Store apps from running in the background, which has to be done individually since Win11"
-        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications"
+        RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\BackgroundAccessApplications"
         ValueName    = "GlobalUserDisabled"
         TweakValue   = 1
         DefaultValue = 0
@@ -1671,7 +1671,7 @@ $generalTweaks = @(
         Category     = "Gaming"
         Name         = "Disable Fullscreen Optimizations"
         Description  = "Disables FSO in all applications. NOTE: This will disable Color Management in Exclusive Fullscreen"
-        RegistryPath = "HKCU\System\GameConfigStore"
+        RegistryPath = "HKCU:\System\GameConfigStore"
         ValueName    = "GameDVR_DXGIHonorFSEWindowsCompatible"
         TweakValue   = 1
         DefaultValue = 0
@@ -1681,7 +1681,7 @@ $generalTweaks = @(
         Category     = "Customize Preferences"
         Name         = "Disable Bing Search in Start Menu"
         Description  = "If enable then includes web search results from Bing in your Start Menu search."
-        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Search"
+        RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Search"
         ValueName    = "BingSearchEnabled"
         TweakValue   = 0
         DefaultValue = 1
@@ -1693,14 +1693,14 @@ $generalTweaks = @(
         Description      = "Toggle the Num Lock key state when your computer starts."
         RegistrySettings = @(
              @{
-                Path          = "HKU\.Default\Control Panel\Keyboard"
+                Path          = "HKU:\.Default\Control Panel\Keyboard"
                 Name          = "InitialKeyboardIndicators"
                 Value         = 2
                 OriginalValue = 0
                 Type          = "DWord"
             },
             @{
-                Path          = "HKCU\Control Panel\Keyboard"
+                Path          = "HKCU:\Control Panel\Keyboard"
                 Name          = "InitialKeyboardIndicators"
                 Value         = 2
                 OriginalValue = 0
@@ -1712,7 +1712,7 @@ $generalTweaks = @(
         Category     = "Customize Preferences"
         Name         = "Verbose Messages During Logon"
         Description  = "Show detailed messages during the login process for troubleshooting and diagnostics."
-        RegistryPath = "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"
+        RegistryPath = "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System"
         ValueName    = "VerboseStatus"
         TweakValue   = 1
         DefaultValue = 0
@@ -1724,21 +1724,21 @@ $generalTweaks = @(
         Description      = "If disabled then you will not see recommendations in the Start Menu. | Enables 'iseducationenvironment' | Relogin Required. | WARNING: This will also disable Windows Spotlight on your Lock Screen as a side effect."
         RegistrySettings = @(
              @{
-                Path          = "HKLM\SOFTWARE\Microsoft\PolicyManager\current\device\Start"
+                Path          = "HKLM:\SOFTWARE\Microsoft\PolicyManager\current\device\Start"
                 Name          = "HideRecommendedSection"
                 Value         = 1
                 OriginalValue = 0
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM\SOFTWARE\Microsoft\PolicyManager\current\device\Education"
+                Path          = "HKLM:\SOFTWARE\Microsoft\PolicyManager\current\device\Education"
                 Name          = "IsEducationEnvironment"
                 Value         = 1
                 OriginalValue = 0
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM\SOFTWARE\Policies\Microsoft\Windows\Explorer"
+                Path          = "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Explorer"
                 Name          = "HideRecommendedSection"
                 Value         = 1
                 OriginalValue = 0
@@ -1750,7 +1750,7 @@ $generalTweaks = @(
         Category     = "Customize Preferences"
         Name         = "Remove Settings Home Page"
         Description  = "Removes the Home page in the Windows Settings app."
-        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer"
+        RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Policies\Explorer"
         ValueName    = "SettingsPageVisibility"
         TweakValue   = "hide:home"
         DefaultValue = "show:home"
@@ -1760,7 +1760,7 @@ $generalTweaks = @(
         Category     = "Customize Preferences"
         Name         = "Disable Sticky Keys"
         Description  = "If Enabled then Sticky Keys is activated - Sticky keys is an accessibility feature of some graphical user interfaces which assists users who have physical disabilities or help users reduce repetitive strain injury."
-        RegistryPath = "HKCU\Control Panel\Accessibility\StickyKeys"
+        RegistryPath = "HKCU:\Control Panel\Accessibility\StickyKeys"
         ValueName    = "Flags"
         TweakValue   = 510
         DefaultValue = 58
@@ -1772,14 +1772,14 @@ $generalTweaks = @(
         Description      = "If Enabled then you will see a detailed Blue Screen of Death (BSOD) with more information."
         RegistrySettings = @(
              @{
-                Path          = "HKLM\SYSTEM\CurrentControlSet\Control\CrashControl"
+                Path          = "HKLM:\SYSTEM\CurrentControlSet\Control\CrashControl"
                 Name          = "DisplayParameters"
                 Value         = 1
                 OriginalValue = 0
                 Type          = "DWord"
             },
             @{
-                Path          = "HKLM\SYSTEM\CurrentControlSet\Control\CrashControl"
+                Path          = "HKLM:\SYSTEM\CurrentControlSet\Control\CrashControl"
                 Name          = "DisableEmoticon"
                 Value         = 1
                 OriginalValue = 0
@@ -1791,7 +1791,7 @@ $generalTweaks = @(
         Category     = "Customize Preferences"
         Name         = "Use small taskbar buttons"
         Description  = "Enables smaller taskbar buttons for a more compact taskbar"
-        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+        RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
         ValueName    = "TaskbarSmallIcons"
         TweakValue   = 1
         DefaultValue = 0
@@ -1801,7 +1801,7 @@ $generalTweaks = @(
         Category     = "File Explorer & UI"
         Name         = "Disable Snap Assist Flyout"
         Description  = "If enabled then Snap preview is disabled when maximize button is hovered."
-        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+        RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
         ValueName    = "EnableSnapAssistFlyout"
         TweakValue   = 0
         DefaultValue = 1
@@ -1811,7 +1811,7 @@ $generalTweaks = @(
         Category     = "File Explorer & UI"
         Name         = "Disable Snap Assist Suggestion"
         Description  = "If enabled then you will get suggestions to snap other applications in the left over spaces."
-        RegistryPath = "HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
+        RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced"
         ValueName    = "SnapAssist"
         TweakValue   = 0
         DefaultValue = 1
@@ -1821,7 +1821,7 @@ $generalTweaks = @(
         Category     = "Customize Preferences"
         Name         = "Disable Message 'Let Windows and apps access your location'"
         Description  = "If enabled then you will not see the message 'Let Windows and apps access your location'"
-        RegistryPath = "HKEY_CURRENT_USER\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location"
+        RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location"
         ValueName    = "ShowGlobalPrompts"
         TweakValue   = 0
         DefaultValue = 1
@@ -1831,7 +1831,7 @@ $generalTweaks = @(
         Category     = "Advanced - CAUTION"
         Name         = "Enable Network Acceleration (TCP Offload)"
         Description  = "Enables TCP Offloading and RSS for better network performance (may cause issues with some network cards)"
-        RegistryPath = "HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"
+        RegistryPath = "HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters"
         ValueName    = "DisableTaskOffload"
         TweakValue   = 0
         DefaultValue = 1

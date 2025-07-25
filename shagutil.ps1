@@ -1118,7 +1118,8 @@ function Update-GeneralTweaksStatus {
                 $isApplied = $false
                 if ($currentValue -ne $null) { # Handle different data types properly
                     if ($expectedValue -is [int] -or $expectedValue -is [long]) {
-                        $isApplied = ([int]$currentValue -eq [int]$expectedValue)
+                        #$isApplied = ([int]$currentValue -eq [int]$expectedValue)
+                        $isApplied = ([uint32]$currentValue -eq [uint32]$expectedValue)
                     }
                     elseif ($expectedValue -is [string]) {
                         $isApplied = ([string]$currentValue -eq [string]$expectedValue)
@@ -1606,16 +1607,6 @@ $generalTweaks = @(
         DefaultValue = "Automatic"
     },
     @{
-        Category     = "Customize Preferences"
-        Name         = "Disable Enhance Pointer Precision"
-        Description  = "Disables mouse acceleration (Enhance Pointer Precision)"
-        RegistryPath = "HKCU:\Control Panel\Mouse"
-        ValueName    = "MouseSpeed"
-        TweakValue   = "0"
-        DefaultValue = "1"
-        ValueType    = "String"
-    },
-    @{
         Category         = "Gaming"
         Name             = "Disable GameDVR"
         Description      = "GameDVR is a Windows App that is a dependency for some Store Games. I've never met someone that likes it, but it's there for the XBOX crowd."
@@ -1836,6 +1827,207 @@ $generalTweaks = @(
         TweakValue   = 0
         DefaultValue = 1
         ValueType    = "DWord"
+    },
+    <# Test tweaks #>
+    @{
+        Category = "Gaming"
+        Name = "Optimal Gaming Prioritization (System & Game)"
+        Description = "Sets system responsiveness to 0 and defines special priorities for games to ensure maximum performance."
+        RegistrySettings = @(
+            @{
+                Path = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile"
+                Name = "SystemResponsiveness"
+                DefaultValue = 20
+                TweakValue = 0
+                Type = "DWord"
+            },
+            @{
+                Path = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games"
+                Name = "GPU Priority"
+                DefaultValue = 0
+                TweakValue = 8
+                Type = "DWord"
+            },
+            @{
+                Path = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games"
+                Name = "Priority"
+                DefaultValue = 2
+                TweakValue = 6
+                Type = "DWord"
+            },
+            @{
+                Path = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games"
+                Name = "Scheduling Category"
+                DefaultValue = "Medium"
+                TweakValue = "High"
+                Type = "String"
+            },
+            @{
+                Path = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games"
+                Name = "SFIO Priority"
+                DefaultValue = "Normal"
+                TweakValue = "High"
+                Type = "String"
+            },
+            @{
+                Path = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile\Tasks\Games"
+                Name = "Background Only"
+                DefaultValue = "True"
+                TweakValue = "False"
+                Type = "String"
+            }
+        )
+    },
+    @{
+        Category     = "Gaming"
+        Name         = "Disable Network Throttling"
+        Description  = "Disables network throttling to allow full bandwidth for games and other network-intensive applications."
+        RegistryPath = "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile"
+        ValueName    = "NetworkThrottlingIndex"
+        TweakValue   = 0
+        DefaultValue = 10
+        ValueType    = "DWord"
+    },
+    @{
+        Category     = "Performance"
+        Name         = "Memory: DisablePagingExecutive"
+        Description  = "Prevents kernel-mode code and drivers from being paged to disk, which can reduce stutter in games."
+        RegistryPath = "HKLM:\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management"
+        ValueName    = "DisablePagingExecutive"
+        TweakValue   = 1
+        DefaultValue = 0
+        ValueType    = "DWord"
+    },
+    @{
+        Category     = "System & Storage"
+        Name         = "Faster System Shutdown"
+        Description  = "Reduces the waiting time for services to terminate during system shutdown."
+        RegistryPath = "HKLM:\SYSTEM\CurrentControlSet\Control"
+        ValueName    = "WaitToKillServiceTimeout"
+        DefaultValue = "5000"
+        TweakValue = "2000"
+        ValueType = "String"
+    },
+    @{
+        Category = "Performance"
+        Name = "Service: Disable SysMain (Superfetch)"
+        Description = "Disables the SysMain (Superfetch) service, which can cause issues in some gaming scenarios."
+        InvokeScript = @(
+            "Set-Service -Name 'SysMain' -StartupType Disabled -ErrorAction SilentlyContinue | Out-Null",
+            "Stop-Service -Name 'SysMain' -ErrorAction SilentlyContinue | Out-Null"
+        )
+        UndoScript = @(
+            "Set-Service -Name 'SysMain' -StartupType Automatic -ErrorAction SilentlyContinue | Out-Null"
+        )
+    },
+    @{
+        Category = "Privacy & Security"
+        Name = "Service: Disable Diagnostic Data (DiagTrack)"
+        Description = "Disables the Connected User Experiences and Telemetry service (DiagTrack), which sends telemetry data to Microsoft."
+        InvokeScript = @(
+            "Set-Service -Name 'DiagTrack' -StartupType Disabled -ErrorAction SilentlyContinue | Out-Null",
+            "Stop-Service -Name 'DiagTrack' -ErrorAction SilentlyContinue | Out-Null"
+        )
+        UndoScript = @(
+            "Set-Service -Name 'DiagTrack' -StartupType Automatic -ErrorAction SilentlyContinue | Out-Null"
+        )
+    },
+    @{
+        Category = "Gaming"
+        Name = "Enable Game Mode (Optimized)"
+        Description = "Ensures Windows Game Mode core functionality is enabled to prioritize game performance, excluding Game Bar UI settings and avoiding conflict with GameDVR disable tweaks."
+        RegistrySettings = @(
+            @{
+                Path = "HKCU:\System\GameConfigStore"
+                Name = "GameDVR_FSEBehaviorMode"
+                DefaultValue = 0 # Default (fullscreen optimizations enabled)
+                TweakValue = 2 # 2=Fullscreen Optimization disable (Game Mode)
+                Type = "DWord"
+            },
+            @{
+                Path = "HKCU:\System\GameConfigStore"
+                Name = "GameDVR_DXGIBlocking"
+                DefaultValue = 0 # Default
+                TweakValue = 1
+                Type = "DWord"
+            },
+            @{
+                Path = "HKCU:\System\GameConfigStore"
+                Name = "GameDVR_HonorUserModeSettings"
+                DefaultValue = 0 # Default
+                TweakValue = 1
+                Type = "DWord"
+            },
+            @{
+                Path = "HKLM:\SOFTWARE\Microsoft\GameBar"
+                Name = "AllowAutoGameMode"
+                DefaultValue = 1
+                TweakValue = 1
+                Type = "DWord"
+            }
+        )
+    },
+    @{
+        Category = "Customize Preferences"
+        Name = "Disable Mouse Acceleration"
+        Description = "Disables mouse acceleration (Enhance Pointer Precision) for more precise mouse input in games."
+        RegistrySettings = @(
+            @{
+                Path = "HKCU:\Control Panel\Mouse"
+                Name = "MouseSensitivity"
+                DefaultValue = "10"
+                TweakValue = "10" # This value is usually not changed for accel, but affects overall speed
+                Type = "String"
+            },
+            @{
+                Path = "HKCU:\Control Panel\Mouse"
+                Name = "SmoothMouseScrollLines"
+                DefaultValue = "3"
+                TweakValue = "3" # Standard value, not directly related to accel
+                Type = "String"
+            },
+            @{
+                Path = "HKCU:\Control Panel\Mouse"
+                Name = "MouseThreshold1"
+                DefaultValue = "6"
+                TweakValue = "0"
+                Type = "String"
+            },
+            @{
+                Path = "HKCU:\Control Panel\Mouse"
+                Name = "MouseThreshold2"
+                DefaultValue = "10"
+                TweakValue = "0"
+                Type = "String"
+            },
+            @{
+                Path = "HKCU:\Control Panel\Mouse"
+                Name = "MouseSpeed"
+                DefaultValue = "1" # 1 = Enabled (Enhance pointer precision), 0 = Disabled
+                TweakValue = "0"
+                Type = "String"
+            }
+        )
+    },
+    @{
+        Category     = "Performance"
+        Name         = "Adjust Visual Effects for Performance"
+        Description  = "Adjusts Windows visual effects for best performance (e.g., disabling animations)"
+        RegistryPath = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects"
+        ValueName    = "VisualFXSetting"
+        TweakValue   = 0
+        DefaultValue = 2
+        ValueType    = "DWord"
+    },
+    @{
+        Category     = "Privacy & Security"
+        Name         = "Disable Memory Integrity"
+        Description  = "Disables Memory Integrity (Core Isolation) for potentially better gaming performance. Note: This reduces system security."
+        RegistryPath = "HKLM:\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity"
+        ValueName    = "Enabled"
+        TweakValue   = 0
+        DefaultValue = 1
+        ValueType    = "DWord"
     }
 )
 
@@ -1949,7 +2141,14 @@ function Set-RecommendedTweaks {
         "Disable Recommendations in Start Menu",
         "Remove Settings Home Page",
         "Disable Sticky Keys",
-        "Enable Network Acceleration (TCP Offload)"
+        "Enable Network Acceleration (TCP Offload)",
+        "Optimal Gaming Prioritization (System & Game)",
+        "Disable Network Throttling",
+        "Memory: DisablePagingExecutive",
+        "Service: Disable Diagnostic Data (DiagTrack)",
+        "Disable Mouse Acceleration",
+        "Disable Memory Integrity",
+        "Disable Message 'Let Windows and apps access your location'"
     )
     
     # Check the recommended tweaks

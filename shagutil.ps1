@@ -724,6 +724,14 @@ $discord2Link.Location = New-Object System.Drawing.Point(10, $contactYPos)
 $discord2Link.Add_LinkClicked({ Start-Process "https://discord.gg/qxPNcgtTqn" })
 [void]$contactPanel.Controls.Add($discord2Link)
 $contactYPos += 25
+
+$donateLink = New-Object System.Windows.Forms.LinkLabel
+$donateLink.Text = "Donate"
+$donateLink.AutoSize = $true
+$donateLink.Location = New-Object System.Drawing.Point(10, $contactYPos)
+$donateLink.Add_LinkClicked({ Start-Process "https://ko-fi.com/shaggybot" })
+[void]$contactPanel.Controls.Add($donateLink)
+$contactYPos += 25
 #endregion
 
 #region 5. Tab: Tweaks
@@ -2946,20 +2954,35 @@ $debloatMainPanel.ColumnCount = 1
 $debloatDescriptionLabel = New-Object System.Windows.Forms.Label
 $debloatDescriptionLabel.Text = "Select the Windows apps you want to remove and click 'Remove Selected'."
 $debloatDescriptionLabel.Dock = [System.Windows.Forms.DockStyle]::Top
-$debloatDescriptionLabel.Padding = New-Object System.Windows.Forms.Padding(0, 0, 0, 10)
-# TreeView for debloat options
-$debloatTreeView = New-Object System.Windows.Forms.TreeView
-$debloatTreeView.Dock = [System.Windows.Forms.DockStyle]::Fill
-$debloatTreeView.CheckBoxes = $true
-$debloatTreeView.ShowNodeToolTips = $true
-$debloatTreeView.ShowRootLines = $false
-$debloatTreeView.ShowPlusMinus = $false
-$debloatTreeView.HideSelection = $false
-$debloatTreeView.FullRowSelect = $false
-$debloatTreeView.Indent = 15
-$debloatTreeView.ItemHeight = 20
-$debloatTreeView.PathSeparator = "\"
-$debloatTreeView.Sorted = $false
+$debloatDescriptionLabel.Height = 40
+$debloatDescriptionLabel.Padding = New-Object System.Windows.Forms.Padding(10, 10, 10, 10)
+$debloatDescriptionLabel.TextAlign = [System.Drawing.ContentAlignment]::MiddleLeft
+# ListView for debloat options
+$debloatListView = New-Object System.Windows.Forms.ListView
+$debloatListView.Dock = [System.Windows.Forms.DockStyle]::Fill
+$debloatListView.BorderStyle = [System.Windows.Forms.BorderStyle]::FixedSingle
+$debloatListView.BackColor = [System.Drawing.Color]::White
+$debloatListView.CheckBoxes = $true
+$debloatListView.View = [System.Windows.Forms.View]::Details
+$debloatListView.FullRowSelect = $true
+$debloatListView.HideSelection = $false
+$debloatListView.MultiSelect = $true
+$debloatListView.HeaderStyle = [System.Windows.Forms.ColumnHeaderStyle]::None  # Verstecke die Spaltenüberschrift
+
+$column = $debloatListView.Columns.Add("") # Add column with empty header
+
+$adjustColumnWidth = { # Function to adjust column width
+    if ($debloatListView.Items.Count -gt 0) {
+        $debloatListView.BeginUpdate()
+        $debloatListView.Columns[0].Width = $debloatListView.ClientSize.Width - 1
+        $debloatListView.EndUpdate()
+    }
+}
+
+$column.Width = $debloatListView.Width - 25 # Set initial width
+$debloatListView.Add_Resize($adjustColumnWidth) # Add event handler for resize
+$form.Add_Shown({ & $adjustColumnWidth }) # Also adjust when form is shown
+
 # Status label
 $debloatStatusLabel = New-Object System.Windows.Forms.Label
 $debloatStatusLabel.Text = "Ready. Select apps to remove and click 'Remove Selected'."
@@ -2998,17 +3021,13 @@ $debloatUncheckAllButton.BackColor = [System.Drawing.Color]::LightGray
 [void]$debloatButtonsPanel.Controls.Add($debloatUncheckAllButton)
 # Add controls to main panel
 [void]$debloatMainPanel.Controls.Add($debloatDescriptionLabel, 0, 0)
-[void]$debloatMainPanel.Controls.Add($debloatTreeView, 0, 1)
+[void]$debloatMainPanel.Controls.Add($debloatListView, 0, 1)
 [void]$debloatMainPanel.Controls.Add($debloatStatusLabel, 0, 2)
 [void]$debloatMainPanel.Controls.Add($debloatButtonsPanel, 0, 3)
 
-# Add main panel to tab
-$tabDebloat.Controls.Add($debloatMainPanel)
+$tabDebloat.Controls.Add($debloatMainPanel) # Add main panel to tab
 
-# List of safely removable Windows 11 apps
-# Only includes apps that can be safely removed without breaking Windows functionality
-$bloatwareApps = @(
-    # Entertainment & Social Media
+$bloatwareApps = @( # List of safely removable Windows 11 apps
     @{ Name = "3D Viewer"; PackageName = "Microsoft.Microsoft3DViewer" },
     @{ Name = "Bing Weather"; PackageName = "Microsoft.BingWeather" },
     @{ Name = "Bing Finance"; PackageName = "Microsoft.BingFinance" },
@@ -3019,7 +3038,6 @@ $bloatwareApps = @(
     @{ Name = "Disney+"; PackageName = "Disney.37853FC22B2CE" },
     @{ Name = "Facebook"; PackageName = "Facebook.Facebook" },
     @{ Name = "Spotify"; PackageName = "SpotifyAB.SpotifyMusic" },
-    # Microsoft Apps (safely removable)
     @{ Name = "Feedback Hub"; PackageName = "Microsoft.WindowsFeedbackHub" },
     @{ Name = "Get Help"; PackageName = "Microsoft.GetHelp" },
     @{ Name = "People"; PackageName = "Microsoft.People" },
@@ -3048,45 +3066,79 @@ $bloatwareApps = @(
     # @{ Name = "Microsoft Store"; PackageName = "Microsoft.WindowsStore" },
 )
 
-# Populate the TreeView with bloatware apps
-foreach ($app in $bloatwareApps) {
-    $node = New-Object System.Windows.Forms.TreeNode
-    $node.Text = $app.Name
-    $node.ToolTipText = "Package: $($app.PackageName)"
-    $node.Tag = $app.PackageName
-    [void]$debloatTreeView.Nodes.Add($node)
+# Create a hashtable to store package names and installation status
+$packageNames = @{}
+$installedApps = @()
+
+function Test-AppInstalled { # Function to check if an app is installed
+    param([string]$packageName)
+    try {
+        $app = Get-AppxPackage -Name $packageName -ErrorAction Stop
+        return ($null -ne $app)
+    } catch {
+        return $false
+    }
 }
 
-# Check All button click event
-$debloatCheckAllButton.Add_Click({
-    $global:IgnoreCheckEvent = $true
-    foreach ($node in $debloatTreeView.Nodes) {
-        $node.Checked = $true
+foreach ($app in $bloatwareApps) { # Populate the ListView with bloatware apps
+    $isInstalled = Test-AppInstalled -packageName $app.PackageName
+    $item = New-Object System.Windows.Forms.ListViewItem($app.Name)
+    $item.Checked = $false
+    $item.Tag = $app.PackageName
+    if ($isInstalled) { # Set text color based on installation status
+        $item.ForeColor = [System.Drawing.Color]::Green
+        #$item.Font = New-Object System.Drawing.Font($debloatListView.Font, [System.Drawing.FontStyle]::Bold)
     }
-    $global:IgnoreCheckEvent = $false
+    [void]$debloatListView.Items.Add($item)
+    $packageNames[$app.Name] = @{ # Store package info
+        PackageName = $app.PackageName
+        IsInstalled = $isInstalled
+    }
+    if ($isInstalled) {
+        $installedApps += $app.Name
+    }
+}
+
+# Add a tooltip for the ListView
+$toolTip = New-Object System.Windows.Forms.ToolTip
+$debloatListView.Add_MouseMove({
+    $point = $debloatListView.PointToClient([System.Windows.Forms.Cursor]::Position)
+    $item = $debloatListView.GetItemAt($point.X, $point.Y)
+    if ($null -ne $item -and $packageNames.ContainsKey($item.Text)) {
+        $packageInfo = $packageNames[$item.Text]
+        $toolTipText = "Package: $($packageInfo.PackageName)"
+        if ($packageInfo.IsInstalled) {
+            $toolTipText += "`nStatus: Installed"
+        } else {
+            $toolTipText += "`nStatus: Not installed"
+        }
+        $toolTip.SetToolTip($debloatListView, $toolTipText)
+    } else {
+        $toolTip.SetToolTip($debloatListView, "")
+    }
 })
 
-# Uncheck All button click event
-$debloatUncheckAllButton.Add_Click({
-    $global:IgnoreCheckEvent = $true
-    foreach ($node in $debloatTreeView.Nodes) {
-        $node.Checked = $false
+$debloatCheckAllButton.Add_Click({ # Check All button click event
+    foreach ($item in $debloatListView.Items) {
+        $item.Checked = $true
     }
-    $global:IgnoreCheckEvent = $false
 })
 
-# Function to remove selected apps
-function Remove-SelectedApps {
-    $selectedNodes = @($debloatTreeView.Nodes | Where-Object { $_.Checked })
+$debloatUncheckAllButton.Add_Click({ # Uncheck All button click event
+    foreach ($item in $debloatListView.Items) {
+        $item.Checked = $false
+    }
+})
+
+function Remove-SelectedApps { # Function to remove selected apps
+    $checkedItems = @($debloatListView.CheckedItems)
     
-    if ($selectedNodes.Count -eq 0) {
-        [System.Windows.Forms.MessageBox]::Show("Please select at least one app to remove.", "No Apps Selected", 
-            [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
+    if ($checkedItems.Count -eq 0) {
+        [System.Windows.Forms.MessageBox]::Show("Please select at least one app to remove.", "No Apps Selected", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
         return
     }
     
-    $result = [System.Windows.Forms.MessageBox]::Show("Are you sure you want to remove the selected apps? This action cannot be undone.", 
-        "Confirmation", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
+    $result = [System.Windows.Forms.MessageBox]::Show("Are you sure you want to remove the selected apps? This action cannot be undone.", "Confirmation", [System.Windows.Forms.MessageBoxButtons]::YesNo, [System.Windows.Forms.MessageBoxIcon]::Question)
     
     if ($result -eq [System.Windows.Forms.DialogResult]::Yes) {
         $progressForm = New-Object System.Windows.Forms.Form
@@ -3097,69 +3149,53 @@ function Remove-SelectedApps {
         $progressForm.MaximizeBox = $false
         $progressForm.MinimizeBox = $false
         $progressForm.ControlBox = $false
-        
         $progressLabel = New-Object System.Windows.Forms.Label
         $progressLabel.Text = "Preparing to remove selected apps..."
         $progressLabel.Location = New-Object System.Drawing.Point(10, 20)
         $progressLabel.Width = 380
-        
         $progressBar = New-Object System.Windows.Forms.ProgressBar
         $progressBar.Location = New-Object System.Drawing.Point(10, 50)
         $progressBar.Width = 370
         $progressBar.Style = [System.Windows.Forms.ProgressBarStyle]::Continuous
-        
         $progressForm.Controls.Add($progressLabel)
         $progressForm.Controls.Add($progressBar)
         $progressForm.Show()
         $progressForm.Refresh()
-        
         $progressBar.Maximum = $selectedNodes.Count
         $progressBar.Value = 0
-        
         $removedCount = 0
         $failedApps = @()
         
         foreach ($node in $selectedNodes) {
             $progressLabel.Text = "Removing: $($node.Text)"
             $progressForm.Refresh()
-            
             try {
                 $packageName = $node.Tag
                 Get-AppxPackage -Name $packageName -AllUsers | Remove-AppxPackage -ErrorAction Stop
-                Get-AppxProvisionedPackage -Online | Where-Object { $_.PackageName -like "$packageName*" } | 
-                    ForEach-Object { Remove-AppxProvisionedPackage -Online -PackageName $_.PackageName -ErrorAction SilentlyContinue }
+                Get-AppxProvisionedPackage -Online | Where-Object { $_.PackageName -like "$packageName*" } | ForEach-Object { Remove-AppxProvisionedPackage -Online -PackageName $_.PackageName -ErrorAction SilentlyContinue }
                 $removedCount++
-            }
-            catch {
+            } catch {
                 $failedApps += "$($node.Text) ($($_.Exception.Message))"
             }
-            
             $progressBar.Value++
             [System.Windows.Forms.Application]::DoEvents()
         }
-        
         $progressForm.Close()
-        
         $message = "Successfully removed $removedCount of $($selectedNodes.Count) apps."
         if ($failedApps.Count -gt 0) {
             $message += "`n`nFailed to remove the following apps:`n" + ($failedApps -join "`n")
         }
-        
-        [System.Windows.Forms.MessageBox]::Show($message, "Removal Complete", 
-            [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
-        
+        [System.Windows.Forms.MessageBox]::Show($message, "Removal Complete", [System.Windows.Forms.MessageBoxButtons]::OK, [System.Windows.Forms.MessageBoxIcon]::Information)
         # Update status label
         $debloatStatusLabel.Text = "Removal complete. $removedCount of $($selectedNodes.Count) apps were removed."
     }
 }
 
-# Add click handler for remove button
-$removeSelectedButton.Add_Click({
+$removeSelectedButton.Add_Click({ # Add click handler for remove button
     Remove-SelectedApps
 })
 
-# Add the tab to the tab control
-[void]$tabControl.TabPages.Add($tabDebloat)
+[void]$tabControl.TabPages.Add($tabDebloat) # Add the tab to the tab control
 #endregion
 
 #region 9. Tab: Untested
@@ -3228,7 +3264,7 @@ $buttonPanel.Padding = New-Object System.Windows.Forms.Padding(0, 15, 0, 5)
 $buttonPanel.CellBorderStyle = [System.Windows.Forms.TableLayoutPanelCellBorderStyle]::None
 $buttonPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 50))) | Out-Null
 $buttonPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 50))) | Out-Null
-$aboutContainer.Controls.Add($buttonPanel, 0, 1) | Out-Null
+$aboutContainer.Controls.Add($buttonPanel, 0, 1)
 
 # Function to create styled buttons
 function New-StyledButton {
@@ -3243,9 +3279,20 @@ function New-StyledButton {
     $button.Margin = New-Object System.Windows.Forms.Padding(5)
     $button.Dock = [System.Windows.Forms.DockStyle]::Fill
     $button.Cursor = [System.Windows.Forms.Cursors]::Hand
-    $button.Add_Click({ Start-Process $url })
-    # Store the original color in the button's Tag property
-    $button.Tag = $color
+    
+    # Store both URL and color in the Tag property using a custom object
+    $button.Tag = @{
+        Url = $url
+        Color = $color
+    }
+    
+    $button.Add_Click({ 
+        param($sender, $e)
+        $tag = $this.Tag
+        if ($tag.Url) { 
+            Start-Process $tag.Url 
+        } 
+    })
     $button.Add_MouseEnter({ # Add hover effect
             $this.BackColor = [System.Drawing.Color]::FromArgb( 
                 [Math]::Min(($this.BackColor.R + 40), 255), 
@@ -3253,7 +3300,8 @@ function New-StyledButton {
                 [Math]::Min(($this.BackColor.B + 40), 255)) 
         })
     $button.Add_MouseLeave({ 
-            $this.BackColor = $this.Tag
+            $tag = $this.Tag
+            $this.BackColor = $tag.Color
         })
     return $button
 }
@@ -3270,6 +3318,9 @@ $buttonPanel.Controls.Add($botDcButton, 0, 1)
 
 $githubButton = New-StyledButton -text "GitHub" -url "https://github.com/leeshhi" -color ([System.Drawing.Color]::DodgerBlue)
 $buttonPanel.Controls.Add($githubButton, 1, 1)
+
+$donateButton = New-StyledButton -text "Donate" -url "https://ko-fi.com/shaggybot" -color ([System.Drawing.Color]::DodgerBlue)
+$buttonPanel.Controls.Add($donateButton, 0, 2)
 
 # Add a small footer with version info
 $footerLabel = New-Object System.Windows.Forms.Label

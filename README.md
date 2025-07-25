@@ -1,5 +1,10 @@
 # shagutil
 
+## ⚠️ Backup
+
+Currently, Shagutil doesn't automatically create a backup to ensure that all tweaks can be rolled back to their original state. Therefore, I recommend doing this manually before applying any tweaks.
+**Link:** https://support.microsoft.com/en-us/topic/how-to-back-up-and-restore-the-registry-in-windows-855140ad-e318-2a13-2829-d428a2ab0692
+
 ## 💡 Usage
 
 ShagUtil must be run in Admin mode because it performs system-wide tweaks. To achieve this, run PowerShell as an administrator. Here are a few ways to do it:

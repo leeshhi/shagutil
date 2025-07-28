@@ -1,5 +1,7 @@
 # shagutil
 
+# BETA - Use at own risk at this time!
+
 ## ⚠️ Backup
 
 Currently, Shagutil doesn't automatically create a backup to ensure that all tweaks can be rolled back to their original state. Therefore, I recommend doing this manually before applying any tweaks.
